@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Anton, Atkinson_Hyperlegible, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
+import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
 
 const atkinson = Atkinson_Hyperlegible({
@@ -37,7 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="">
+    <ClerkProvider>
+    <html lang="en">
       <body
         className={`${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
          cz-shortcut-listen="true"
@@ -47,5 +49,6 @@ export default function RootLayout({
         {children}
       </body>
     </html>
+    </ClerkProvider>
   );
 }

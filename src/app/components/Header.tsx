@@ -2,12 +2,13 @@
 import Image from "next/image";
 import React, { useState } from "react";
 import { HiBars3BottomRight } from "react-icons/hi2";
+import Link from "next/link";
 
 const navItems = [
-    { label: "Services", href: "" },
+    { label: "Services", href: "#" },
     { label: "About", href: "#" },
     { label: "Contact Us", href: "#" },
-    { label: "Login", href: "#" },
+    { label: "Login", href: "/auth/login" },
 ];
 
 export default function Header() {
@@ -18,6 +19,7 @@ export default function Header() {
             <nav className="max-w-7xl mx-auto flex items-center justify-between px-6">
                 {/* Left: Logo */}
                 <div className="flex items-center h-20">
+                    <Link href={'/'}>
                     <Image
                         src={'/ustaz_logo.png'}
                         width={120}
@@ -25,6 +27,7 @@ export default function Header() {
                         alt="Ustaz Logo"
                         className="w-26 h-26 object-contain"
                     />
+                    </Link>
                     {/* Mobile menu button */}
                     <button
                         className="ml-4 md:hidden text-3xl text-gray-700 focus:outline-none"
@@ -45,12 +48,12 @@ export default function Header() {
                             {item.label}
                         </a>
                     ))}
-                    <a
-                        href="#"
+                    <Link
+                        href={'/auth/register'}
                         className="ml-4 px-5 py-2 rounded bg-[#db4b0d] text-white font-semibold hover:bg-[#b53c0a] transition-colors"
                     >
                         Get Started
-                    </a>
+                    </Link>
                 </div>
                 {/* Mobile Menu */}
                 {menuOpen && (
