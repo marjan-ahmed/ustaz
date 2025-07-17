@@ -1,9 +1,9 @@
-'use client'
-import { SignIn, useSignIn } from '@clerk/nextjs';
-import React from 'react';
+"use client";
 
-function Login() {
-      const { isLoaded } = useSignIn();
+import { SignIn,useSignIn } from "@clerk/nextjs";
+
+export default function Register() {
+  const { isLoaded } = useSignIn();
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -12,11 +12,9 @@ function Login() {
       ) : (
         <div className="space-y-4 text-center">
           <h1 className="text-2xl font-bold">Login</h1>
-          <SignIn path="/auth/login" routing="path" redirectUrl="/" />
+          <SignIn path="/auth/login" redirectUrl="/" afterSignUpUrl={'/'} />
         </div>
       )}
     </div>
   );
 }
-
-export default Login;

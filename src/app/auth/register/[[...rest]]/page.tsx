@@ -1,6 +1,6 @@
 "use client";
 
-import { SignUp, useSignUp } from "@clerk/nextjs";
+import { SignUp,useSignUp } from "@clerk/nextjs";
 
 export default function Register() {
   const { isLoaded } = useSignUp();
@@ -10,9 +10,9 @@ export default function Register() {
       {!isLoaded ? (
         <div className="text-lg font-medium">Loading...</div>
       ) : (
-        <div className="space-y-4 text-center">
+        <div className="mt-12 space-y-4 text-center">
           <h1 className="text-2xl font-bold">Register</h1>
-          <SignUp path="/auth/register" routing="path" redirectUrl="/" />
+          <SignUp path="/auth/register" redirectUrl="/" afterSignUpUrl={'/'} />
         </div>
       )}
     </div>

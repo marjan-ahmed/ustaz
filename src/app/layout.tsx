@@ -4,7 +4,6 @@ import "./globals.css";
 import Header from "./components/Header";
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
-
 const atkinson = Atkinson_Hyperlegible({
   subsets: ["latin"],
   weight: ["400", "700"],
@@ -38,10 +37,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+  signInUrl="/auth/login"
+  signUpUrl="/auth/register"
+  afterSignInUrl="/"
+  afterSignUpUrl="/"
+  >
     <html lang="en">
       <body
-        className={`${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${anton.variable} ${atkinson.variable} antialiased`}
          cz-shortcut-listen="true"
 
       >
