@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -122,16 +123,19 @@ body {
     @apply border-border outline-ring/50;
   }
 
-  body {
-    /* @apply bg-background text-foreground antialiased; */
+  html {
     font-family: var(--font-atkinson, sans-serif);
   }
 
-  html, h1, h2, h3, h4, h5, h6, p {
-    /* @apply bg-background text-foreground antialiased; */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-atkinson, sans-serif);
+  }
+
+  p {
     font-family: var(--font-atkinson, sans-serif);
   }
 }
+
 
 /* Example Utility Classes (Optional) */
 .container {
