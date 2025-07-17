@@ -7,10 +7,10 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { useUser, UserButton } from "@clerk/nextjs";
 
 const navItems = [
-  { label: "Services", href: "#" },
-  { label: "Become Ustaz", href: "#" },
-  { label: "About", href: "#" },
-  { label: "Contact", href: "#" },
+  { label: "Services", href: "/services" },
+  { label: "Become Ustaz", href: "/become-ustaz" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function Header() {
