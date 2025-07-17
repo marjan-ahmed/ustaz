@@ -24,7 +24,7 @@ const atkinson = localFont({
 
 const anton = localFont({
   src: '../../public/fonts/Anton-Regular.ttf',
-  variable: '--font-anton'
+  variable: '--font-anton',
 })
 
 const geistSans = Geist({

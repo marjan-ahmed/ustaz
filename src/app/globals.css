@@ -123,11 +123,16 @@ body {
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-family: var(--font-atkinson, sans-serif);
   }
 
-  h2, h3, h4, h5, h6 {
-    font-family: var(--font-anton, sans-serif);
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-atkinson, sans-serif);
   }
+}
+
+/* Example Utility Classes (Optional) */
+.container {
+  @apply mx-auto max-w-7xl px-4;
 }
