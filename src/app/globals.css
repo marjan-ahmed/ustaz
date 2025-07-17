@@ -127,7 +127,7 @@ body {
     font-family: var(--font-atkinson, sans-serif);
   }
 
-  h1, h2, h3, h4, h5, h6, p {
+  html, h1, h2, h3, h4, h5, h6, p {
     /* @apply bg-background text-foreground antialiased; */
     font-family: var(--font-atkinson, sans-serif);
   }
