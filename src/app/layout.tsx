@@ -3,18 +3,29 @@ import { Anton, Atkinson_Hyperlegible, Geist, Geist_Mono } from "next/font/googl
 import "./globals.css";
 import Header from "./components/Header";
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import localFont from 'next/font/local';
 
-const atkinson = Atkinson_Hyperlegible({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-atkinson",
+// const atkinson = Atkinson_Hyperlegible({
+//   subsets: ["latin"],
+//   weight: ["400", "700"],
+//   variable: "--font-atkinson",
+// });
+
+// const anton = Anton({
+//   subsets: ["latin"],
+//   weight: "400",
+//   variable: "--font-anton",
+// });
+
+const atkinson = localFont({
+  src: '../../public/fonts/AtkinsonHyperlegible-Regular.ttf',
+  variable: '--font-atkinson',
 });
 
-const anton = Anton({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-anton",
-});
+const anton = localFont({
+  src: '../../public/fonts/Anton-Regular.ttf',
+  variable: '--font-anton'
+})
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
