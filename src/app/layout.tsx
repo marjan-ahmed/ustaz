@@ -39,8 +39,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ustaz - Trusted Home Service Providers in Pakistan",
-  description: "Book reliable electricians, plumbers, and carpenters with Ustaz. Quick, verified home services across Pakistan.",
+  description: "Find reliable electricians, plumbers, and carpenters in your city with Ustaz. Affordable, quick, and verified home services across Pakistan. Book your service today!",
 };
+
 
 
 export default function RootLayout({
