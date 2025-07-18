@@ -23,10 +23,10 @@ export default function Header() {
           <Link href="/">
             <Image
               src="/ustaz_logo.png"
-              width={120}
-              height={120}
+              width={118}
+              height={118}
               alt="Ustaz Logo"
-              className="w-26 h-26 object-contain"
+              className="w-25 h-25 object-contain"
             />
           </Link>
         </div>

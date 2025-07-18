@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from "lucide-react";
+import Image from "next/image";
 
 function Footer() {
   return (
@@ -9,7 +10,15 @@ function Footer() {
 
         {/* Logo & Tagline */}
         <div>
-          <h2 className="text-2xl font-bold text-white">Ustaz</h2>
+           <Link href="/">
+            <Image
+              src="/ustaz_logo_dark.png"
+              width={118}
+              height={118}
+              alt="Ustaz Logo"
+              className="w-24 h-24 object-contain"
+            />
+          </Link>
           <p className="mt-4 text-sm">
             Your trusted digital platform for electricians, plumbers, AC repair, and solar services—all in one place.
           </p>
