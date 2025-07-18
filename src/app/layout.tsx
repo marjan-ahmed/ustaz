@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "./components/Header";
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import localFont from 'next/font/local';
+import Footer from "./components/Footer";
 
 // const atkinson = Atkinson_Hyperlegible({
 //   subsets: ["latin"],
@@ -63,6 +64,7 @@ export default function RootLayout({
       >
         <Header/>
         {children}
+        <Footer />
       </body>
     </html>
     </ClerkProvider>

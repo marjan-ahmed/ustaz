@@ -7,7 +7,6 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { useUser, UserButton } from "@clerk/nextjs";
 
 const navItems = [
-  { label: "Services", href: "/services" },
   { label: "Become Ustaz", href: "/become-ustaz" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
