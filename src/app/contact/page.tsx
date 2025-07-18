@@ -16,7 +16,7 @@ export default function ContactPage() {
       {/* Banner Image with Your Overlay Color */}
       <div className="w-full h-[300px] md:h-[500px] relative mb-12">
         <img
-          src="https://images.pexels.com/photos/2422280/pexels-photo-2422280.jpeg"
+          src="https://images.pexels.com/photos/4345107/pexels-photo-4345107.jpeg"
           alt="Contact Banner"
           className="w-full h-full object-cover"
         />
