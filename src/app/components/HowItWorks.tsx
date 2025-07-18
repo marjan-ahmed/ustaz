@@ -30,7 +30,7 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-[#fcf8f5]">
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-4xl font-bold mb-12">How It Works</h2>
 

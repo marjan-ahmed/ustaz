@@ -4,7 +4,7 @@ import Link from "next/link";
 
 function FAQ() {
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-[#fcf8f5]">
       <div className="container mx-auto px-4 max-w-2xl">
         <h2 className="text-4xl font-bold text-center mb-10">Frequently Asked Questions</h2>
 

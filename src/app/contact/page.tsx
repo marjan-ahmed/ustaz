@@ -7,7 +7,7 @@ export default function ContactPage() {
 
       {/* Header Title */}
       <div className="text-center py-10">
-        <h1 className="text-4xl font-bold">Contact Ustaz</h1>
+        <h1 className="text-4xl font-bold">Contact Us</h1>
         <p className="mt-4 max-w-xl mx-auto text-gray-600">
           We’re ready to assist you with your service needs—reach out anytime.
         </p>

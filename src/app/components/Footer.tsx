@@ -48,9 +48,9 @@ function Footer() {
         <div>
           <h3 className="font-semibold text-white mb-4">Follow Us</h3>
           <div className="flex gap-4">
-            <a href="#" className="text-gray-400 hover:text-white"><Facebook size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-white"><Twitter size={20} /></a>
-            <a href="#" className="text-gray-400 hover:text-white"><Instagram size={20} /></a>
+            <Link href="https://www.facebook.com/profile.php?id=61574423382909" className="text-gray-400 hover:text-white"><Facebook size={20} /></Link>
+            <Link href="https://x.com/@m_marjanahmed" className="text-gray-400 hover:text-white"><Twitter size={20} /></Link>
+            <Link href="https://instagram.com/m.marjan.ahmed" className="text-gray-400 hover:text-white"><Instagram size={20} /></Link>
           </div>
         </div>
       </div>

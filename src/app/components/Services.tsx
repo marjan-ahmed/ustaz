@@ -36,9 +36,9 @@ function Services() {
 
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-16 bg-gradient-to-b from-[#fcf8f5] to-white">
       <div className="container mx-auto space-y-12">
-        <h2 className="text-4xl font-bold text-center mb-8">Our Services</h2>
+        <h2 className="text-4xl font-extrabold text-center mb-8">Our Services</h2>
 
         {services.map((service, index) => (
           <div
