@@ -270,7 +270,7 @@ import React from 'react'
 
 function Dashbaord() {
   return (
-    <div>Dashbaord</div>
+    <div>baad me kaam karte hen isme</div>
   )
 }
 

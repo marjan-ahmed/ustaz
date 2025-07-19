@@ -61,7 +61,7 @@ export default function Header() {
           ))}
 
           {/* Language Selector */}
-       <LanguageSwitcher />
+       {/* <LanguageSwitcher /> */}
 
           {isSignedIn ? (
             <UserButton />
