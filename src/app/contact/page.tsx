@@ -131,7 +131,7 @@ export default function ContactPage() {
           ></textarea>
           <button
             type="submit"
-            className="w-full bg-orange-600 text-white py-3 rounded-md hover:bg-orange-700 transition"
+            className="w-full bg-[#db4b0d] text-white py-3 rounded-md hover:bg-orange-700 transition"
             disabled={isSubmitting}
           >
             {isSubmitting ? "Submitting..." : "Send Message"}
