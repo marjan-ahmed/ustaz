@@ -51,12 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-  signInUrl="/auth/login"
-  signUpUrl="/auth/register"
-  afterSignInUrl="/"
-  afterSignUpUrl="/"
-  >
+    <ClerkProvider>
     <html lang="en">
       <body
         className={`${anton.variable} ${atkinson.variable} antialiased`}

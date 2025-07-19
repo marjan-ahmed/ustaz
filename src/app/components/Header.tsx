@@ -5,8 +5,11 @@ import Link from "next/link";
 import { HiBars3BottomRight } from "react-icons/hi2";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { useUser, UserButton } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const navItems = [
+  { label: "Home", href: "/" },
   { label: "Become Ustaz", href: "/become-ustaz" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
@@ -14,6 +17,20 @@ const navItems = [
 
 export default function Header() {
   const { isSignedIn } = useUser();
+  const [language, setLanguage] = useState("en");
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem("language");
+    if (savedLang) setLanguage(savedLang);
+  }, []);
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = e.target.value;
+    setLanguage(selected);
+    localStorage.setItem("language", selected);
+    // optional: reload or update text direction
+    // window.location.reload(); 
+  };
 
   return (
     <header className="w-full bg-white shadow">
@@ -42,6 +59,9 @@ export default function Header() {
               {item.label}
             </Link>
           ))}
+
+          {/* Language Selector */}
+       <LanguageSwitcher />
 
           {isSignedIn ? (
             <UserButton />
@@ -84,6 +104,9 @@ export default function Header() {
                   {item.label}
                 </Link>
               ))}
+
+              {/* Language Selector Mobile */}
+             <LanguageSwitcher />
 
               {isSignedIn ? (
                 <UserButton />
