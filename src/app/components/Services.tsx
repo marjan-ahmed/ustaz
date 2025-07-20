@@ -59,7 +59,7 @@ function Services() {
             {/* Right Side - Content */}
             <div className="w-full md:w-1/2 flex flex-col justify-center p-6 bg-white">
               <h3 className="text-2xl sm:text-3xl font-bold text-orange-600">{service.title}</h3>
-              <p className="text-sm md:text-md mt-4 text-gray-600">{service.description}</p>
+              <p className="text-sm sm:text-[15px] mt-4 text-gray-600">{service.description}</p>
             </div>
           </div>
         ))}
