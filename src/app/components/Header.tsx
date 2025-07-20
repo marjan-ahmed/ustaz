@@ -58,11 +58,9 @@ export default function Header() {
             >
               {item.label}
             </Link>
-          ))}
+          ))}        
 
-          {/* Language Selector */}
-       {/* <LanguageSwitcher /> */}
-
+          
           {isSignedIn ? (
             <UserButton />
           ) : (
@@ -73,6 +71,8 @@ export default function Header() {
               >
                 Login
               </Link>
+                     <LanguageSwitcher />
+
               <Link
                 href="/auth/register"
                 className="ml-4 px-5 py-2 rounded bg-[#db4b0d] text-white font-semibold hover:bg-[#b53c0a] transition-colors"
@@ -81,6 +81,7 @@ export default function Header() {
               </Link>
             </>
           )}
+            {/* Language Selector */}
         </div>
 
         {/* Mobile Nav Button */}

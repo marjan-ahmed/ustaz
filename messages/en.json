@@ -1,0 +1,17 @@
+{
+  "ourServices": "Our Services",
+  "electrician": "Electrician",
+  "electricianDesc": "Our certified electricians provide expert electrical services including safe wiring, modern lighting installations, appliance fittings, fault diagnosis, and regular maintenance for homes, offices, and commercial setups. Ensuring quality, safety, and reliability is our top priority.",
+  
+  "plumber": "Plumber",
+  "plumberDesc": "We offer professional plumbing services including leak detection and repair, pipe installations, drainage system setup, bathroom and kitchen fittings, and complete water system maintenance. Our team ensures prompt service, high-quality materials, and long-lasting solutions for residential and commercial properties.",
+  
+  "carpenter": "Carpenter",
+  "carpenterDesc": "Our skilled carpenters specialize in custom furniture making, woodwork repairs, structural carpentry, door and window installations, and decorative wood finishes. From modern to traditional designs, we deliver craftsmanship that enhances both functionality and aesthetics for your living or work space.",
+  
+  "acRepair": "AC Repair",
+  "acRepairDesc": "Stay cool year-round with our reliable AC repair services. We handle air conditioner installations, gas refilling, deep cleaning, filter replacements, and troubleshooting for all major brands. Count on us for efficient, affordable cooling system care with quick response times.",
+  
+  "solarTechnician": "Solar Technician",
+  "solarTechnicianDesc": "Go green with our solar technician services. We provide solar panel setup, inverter installations, renewable energy consultations, and complete maintenance to ensure optimal energy generation. Save on electricity bills while contributing to a sustainable future with our expert solar solutions."
+}

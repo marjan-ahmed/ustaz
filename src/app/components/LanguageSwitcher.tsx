@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,29 +12,27 @@ import { Button } from '@/components/ui/button';
 import { Globe } from 'lucide-react';
 
 const languages = [
-  { code: 'EN', label: 'English' },
-  { code: 'UR', label: 'Urdu' },
-  { code: 'AR', label: 'Arabic' },
+  { code: 'en', label: 'English' },
+  { code: 'ur', label: 'Urdu' },
+  { code: 'ar', label: 'Arabic' },
 ];
 
 export default function LanguageSwitcher() {
-  const [selectedLang, setSelectedLang] = useState('EN');
+  const { i18n } = useTranslation();
+  const [selectedLang, setSelectedLang] = useState(i18n.language || 'en');
 
   const handleLanguageChange = (code: string) => {
+    i18n.changeLanguage(code);
     setSelectedLang(code);
-    // Optional: Add your language switching logic here (i18n or routing)
   };
 
   return (
-    <div className="w-full flex justify-start sm:justify-center ">
+    <div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className="text-sm sm:text-base"
-          >
+          <Button variant="outline" className="text-sm sm:text-base gap-2">
             <Globe className="w-4 h-4" />
-            {selectedLang}
+            {selectedLang.toUpperCase()}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-32 text-sm">
@@ -43,7 +42,7 @@ export default function LanguageSwitcher() {
               onClick={() => handleLanguageChange(lang.code)}
               className="cursor-pointer"
             >
-              {lang.code}
+              {lang.label}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>

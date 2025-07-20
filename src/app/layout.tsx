@@ -5,6 +5,8 @@ import Header from "./components/Header";
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import localFont from 'next/font/local';
 import Footer from "./components/Footer";
+import {NextIntlClientProvider} from 'next-intl';
+import {getLocale} from 'next-intl/server';
 
 // const atkinson = Atkinson_Hyperlegible({
 //   subsets: ["latin"],
@@ -45,11 +47,13 @@ export const metadata: Metadata = {
 
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+    const locale = await getLocale();
+
   return (
     <ClerkProvider>
     <html lang="en">
@@ -57,9 +61,11 @@ export default function RootLayout({
         className={`${anton.variable} ${atkinson.variable} antialiased`}
          cz-shortcut-listen="true"
       >
+         <NextIntlClientProvider>
         <Header/>
         {children}
         <Footer />
+        </NextIntlClientProvider>
       </body>
     </html>
     </ClerkProvider>
