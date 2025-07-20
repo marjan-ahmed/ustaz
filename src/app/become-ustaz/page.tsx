@@ -19,6 +19,18 @@ import {
 import { Button } from "@/components/ui/button" // Assuming this path is correct for your Button component
 import Link from "next/link" // Assuming this is for Next.js Link component
 
+// Import Shadcn UI Select and Input components
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select" // Assuming this path for shadcn select
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label" // Import Label component
+import { useRouter } from "next/navigation"
+
 // Define TypeScript Interfaces
 interface IFormData {
   firstName: string
@@ -30,6 +42,7 @@ interface IFormData {
   phoneCountryCode: string
   phoneNumber: string
   heardFrom: string
+  service_type: string; // New field for service type
   hasExperience: boolean | null
   experienceYears: string
   experienceDetails: string
@@ -43,17 +56,18 @@ interface IFormData {
 interface ICountry {
   name: {
     common: string
-  }
+  };
   idd: {
-    root: string
-    suffixes?: string[]
-  }
-  capital?: string[]
+    root: string;
+    suffixes?: string[];
+  };
+  capital?: string[];
 }
 
 
 function App() {
   const [currentStep, setCurrentStep] = useState<number>(1)
+  const router = useRouter()
   const [formData, setFormData] = useState<IFormData>({
     firstName: "",
     lastName: "",
@@ -64,6 +78,7 @@ function App() {
     phoneCountryCode: "+92",
     phoneNumber: "",
     heardFrom: "",
+    service_type: "", // Initialize new field
     hasExperience: null,
     experienceYears: "",
     experienceDetails: "",
@@ -200,13 +215,18 @@ function App() {
     "Twitter (X)",
     "LinkedIn",
     "YouTube",
-    "TikTok",
-    "Snapchat",
-    "Pinterest",
-    "Reddit",
-    "WhatsApp",
-    "Other",
+    "Referal/Friend",
+    "Other"
   ]
+
+  // Options for "Select a service" dropdown
+  const service_types = [
+    "Electrician Service",
+    "Plumbing",
+    "Carpentry",
+    "AC Maintenance",
+    "Solar Technician",
+  ];
 
   // Handle input changes for all form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -301,6 +321,10 @@ function App() {
       if (!formData.heardFrom.trim()) {
         newErrors.heardFrom = "This question is required."
         isValid = false
+      }
+      if (!formData.service_type.trim()) { // New validation for service_type
+        newErrors.service_type = "Please select a service type."
+        isValid = false;
       }
       if (formData.hasExperience === null) {
         newErrors.hasExperience = "Please select an option."
@@ -452,6 +476,7 @@ function App() {
         phoneCountryCode: data.phoneCountryCode,
         phoneNumber: data.phoneNumber,
         heardFrom: data.heardFrom,
+        service_type: data.service_type, // Include new service_type field
         hasExperience: data.hasExperience,
         // Convert experienceYears to number or null
         experienceYears:
@@ -478,6 +503,9 @@ function App() {
       console.error("Error sending data to Supabase:", error.message)
       setIsLoading(false)
       setIsRegisteredSuccessfully(false) // Ensure success state is false on error
+      localStorage.setItem('registeredUserId', userId);
+      localStorage.setItem('isRegisteredSuccessfully', 'true');
+      router.push(`/dashboard?userId=${userId}`);
     }
   }
 
@@ -504,6 +532,16 @@ function App() {
     if (slideDirection === "next") return "opacity-0 translate-x-8 scale-95"
     return "opacity-0 -translate-x-8 scale-95"
   }
+
+  useEffect(() => {
+  const storedUserId = localStorage.getItem('registeredUserId');
+  const storedSuccess = localStorage.getItem('isRegisteredSuccessfully');
+
+  if (storedUserId && storedSuccess === 'true') {
+    setUserId(storedUserId);
+    setIsRegisteredSuccessfully(true);
+  }
+}, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">
@@ -570,16 +608,17 @@ function App() {
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* First Name */}
                     <div className="group">
-                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                      <Label htmlFor="firstName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                         <User className="w-4 h-4 mr-2 text-orange-500" />
                         First Name <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
+                      </Label>
+                      <Input
+                        id="firstName"
                         type="text"
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleChange}
-                        className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                        className={`${
                           errors.firstName
                             ? "border-red-300 bg-red-50"
                             : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
@@ -593,16 +632,17 @@ function App() {
 
                     {/* Last Name */}
                     <div className="group">
-                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                      <Label htmlFor="lastName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                         <User className="w-4 h-4 mr-2 text-orange-500" />
                         Last Name <span className="text-red-500 ml-1">*</span>
-                      </label>
-                      <input
+                      </Label>
+                      <Input
+                        id="lastName"
                         type="text"
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleChange}
-                        className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                        className={`${
                           errors.lastName
                             ? "border-red-300 bg-red-50"
                             : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
@@ -617,33 +657,34 @@ function App() {
 
                   {/* Email */}
                   <div className="group">
-                    <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Label htmlFor="email" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                       <Mail className="w-4 h-4 mr-2 text-orange-500" />
                       Email Address <span className="text-gray-400">(Optional)</span>
-                    </label>
-                    <input
+                    </Label>
+                    <Input
+                      id="email"
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 focus:border-orange-400 bg-white hover:border-gray-300"
                       placeholder="your.email@example.com"
                     />
                   </div>
 
                   {/* CNIC */}
                   <div className="group">
-                    <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Label htmlFor="cnic" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                       <FileText className="w-4 h-4 mr-2 text-orange-500" />
                       CNIC Number <span className="text-red-500 ml-1">*</span>
-                    </label>
-                    <input
+                    </Label>
+                    <Input
+                      id="cnic"
                       type="text"
                       name="cnic"
                       value={formData.cnic}
                       onChange={handleChange}
                       maxLength={13}
-                      className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                      className={`${
                         errors.cnic
                           ? "border-red-300 bg-red-50"
                           : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
@@ -654,97 +695,119 @@ function App() {
                   </div>
 
                   {/* Address Section */}
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
-                    <h3 className="flex items-center text-lg font-semibold text-gray-800 mb-4">
-                      <MapPin className="w-5 h-5 mr-2 text-orange-500" />
-                      Address Information
-                    </h3>
+                  <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 md:p-8 rounded-2xl border border-orange-100 shadow-sm">
+  <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-6">
+    <MapPin className="w-5 h-5 mr-2 text-orange-500" />
+    Address Information
+  </h3>
 
-                    <div className="grid md:grid-cols-2 gap-6">
-                      {/* Country */}
-                      <div className="group">
-                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                          Country <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          name="country"
-                          value={formData.country}
-                          onChange={(e) => {
-                            handleChange(e)
-                            const selectedCountry = countries.find((c) => c.name.common === e.target.value)
-                            if (selectedCountry && selectedCountry.idd.root) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                phoneCountryCode: `${selectedCountry.idd.root}${selectedCountry.idd.suffixes?.[0] || ""}`,
-                                city: "",
-                              }))
-                            } else {
-                              setFormData((prev) => ({ ...prev, phoneCountryCode: "", city: "" }))
-                            }
-                          }}
-                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
-                            errors.country
-                              ? "border-red-300 bg-red-50"
-                              : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                          }`}
-                        >
-                          <option value="">Select Country</option>
-                          {countries.map((country) => (
-                            <option key={country.name.common} value={country.name.common}>
-                              {country.name.common}
-                            </option>
-                          ))}
-                        </select>
-                        {errors.country && (
-                          <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.country}</p>
-                        )}
-                      </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Country */}
+    <div className="space-y-2">
+      <Label htmlFor="country" className="text-sm font-semibold text-gray-700">
+        Country <span className="text-red-500">*</span>
+      </Label>
+      <Select
+        value={formData.country}
+        onValueChange={(value) => {
+          const selectedCountry = countries.find(
+            (c) => c.name.common === value
+          );
+          setFormData((prev) => ({
+            ...prev,
+            country: value,
+            phoneCountryCode:
+              selectedCountry?.idd?.root +
+                (selectedCountry?.idd?.suffixes?.[0] || "") || "",
+            city: "",
+          }));
+        }}
+      >
+        <SelectTrigger
+          id="country"
+          className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
+            errors.country
+              ? "border-red-300 bg-red-50"
+              : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+          }`}
+        >
+          <SelectValue placeholder="Select Country" />
+        </SelectTrigger>
+        <SelectContent>
+          {countries.map((country) => (
+            <SelectItem key={country.name.common} value={country.name.common}>
+              {country.name.common}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {errors.country && (
+        <p className="text-red-500 text-xs mt-1 animate-fade-in">
+          {errors.country}
+        </p>
+      )}
+    </div>
 
-                      {/* City */}
-                      <div className="group">
-                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                          City <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          name="city"
-                          value={formData.city}
-                          onChange={handleChange}
-                          disabled={!formData.country || !citiesByCountry[formData.country]}
-                          className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
-                            errors.city
-                              ? "border-red-300 bg-red-50"
-                              : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                          } ${!formData.country ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          <option value="">Select City</option>
-                          {formData.country &&
-                            citiesByCountry[formData.country]?.map((city) => (
-                              <option key={city} value={city}>
-                                {city}
-                              </option>
-                            ))}
-                        </select>
-                        {errors.city && <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.city}</p>}
-                      </div>
-                    </div>
-                  </div>
-
+    {/* City */}
+    <div className="space-y-2">
+      <Label htmlFor="city" className="text-sm font-semibold text-gray-700">
+        City <span className="text-red-500">*</span>
+      </Label>
+      <Select
+        value={formData.city}
+        onValueChange={(value) =>
+          setFormData((prev) => ({ ...prev, city: value }))
+        }
+        disabled={!formData.country || !citiesByCountry[formData.country]}
+      >
+        <SelectTrigger
+          id="city"
+          className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
+            errors.city
+              ? "border-red-300 bg-red-50"
+              : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+          } ${
+            !formData.country || !citiesByCountry[formData.country]
+              ? "opacity-50 cursor-not-allowed"
+              : ""
+          }`}
+        >
+          <SelectValue placeholder="Select City" />
+        </SelectTrigger>
+        <SelectContent>
+          {formData.country &&
+            citiesByCountry[formData.country]?.map((city) => (
+              <SelectItem key={city} value={city}>
+                {city}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      {errors.city && (
+        <p className="text-red-500 text-xs mt-1 animate-fade-in">
+          {errors.city}
+        </p>
+      )}
+    </div>
+  </div>
+</div>
                   {/* Phone Number */}
                   <div className="group">
-                    <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                    <Label htmlFor="phoneNumber" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                       <Phone className="w-4 h-4 mr-2 text-orange-500" />
                       Phone Number <span className="text-red-500 ml-1">*</span>
-                    </label>
+                    </Label>
                     <div className="flex">
                       <span className="inline-flex items-center px-4 rounded-l-xl border-2 border-r-0 border-gray-200 bg-gray-50 text-gray-600 font-medium">
                         {formData.phoneCountryCode}
                       </span>
-                      <input
+                      <Input
+                        id="phoneNumber"
                         type="tel"
                         name="phoneNumber"
                         value={formData.phoneNumber}
                         onChange={handleChange}
-                        className={`flex-1 px-4 py-3 border-2 rounded-r-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                        className={`rounded-l-none ${
                           errors.phoneNumber
                             ? "border-red-300 bg-red-50"
                             : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
@@ -759,13 +822,13 @@ function App() {
 
                   {/* Navigation */}
                   <div className="flex justify-end pt-6">
-                    <button
+                    <Button
                       onClick={handleNext}
                       className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                     >
                       Continue
                       <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -782,10 +845,11 @@ function App() {
 
                   {/* Where did you hear about us */}
                   <div className="group">
-                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
+                    <Label htmlFor="heardFrom" className="text-sm font-semibold text-gray-700 mb-3 block">
                       Where did you hear about us? <span className="text-red-500">*</span>
-                    </label>
+                    </Label>
                     <select
+                      id="heardFrom"
                       name="heardFrom"
                       value={formData.heardFrom}
                       onChange={handleChange}
@@ -807,11 +871,42 @@ function App() {
                     )}
                   </div>
 
+                  {/* New: Select a service (Shadcn UI Select) */}
+                  <div className="group">
+                    <Label htmlFor="service_type" className="text-sm font-semibold text-gray-700 mb-3 block">
+                      Select a Service <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      name="service_type"
+                      value={formData.service_type}
+                      onValueChange={(value) => handleChange({ target: { name: "service_type", value: value, type: "select-one" } } as React.ChangeEvent<HTMLSelectElement>)}
+                    >
+                      <SelectTrigger id="service_type" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                        errors.service_type
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+                      }`}>
+                        <SelectValue placeholder="Select a service type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 rounded-xl shadow-lg">
+                        {service_types.map((service) => (
+                          <SelectItem key={service} value={service}>
+                            {service}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.service_type && (
+                      <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.service_type}</p>
+                    )}
+                  </div>
+
+
                   {/* Experience Question */}
                   <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
-                    <label className="text-sm font-semibold text-gray-700 mb-4 block">
+                    <Label className="text-sm font-semibold text-gray-700 mb-4 block">
                       Do you have prior experience as an Ustaz/Service Provider? <span className="text-red-500">*</span>
-                    </label>
+                    </Label>
                     <div className="flex gap-4 mb-4">
                       <label className="flex items-center cursor-pointer group">
                         <input
@@ -848,17 +943,18 @@ function App() {
                     {formData.hasExperience && (
                       <div className="mt-6 space-y-4 p-4 bg-white rounded-xl border border-orange-200 animate-fade-in">
                         <div>
-                          <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                          <Label htmlFor="experienceYears" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                             <Calendar className="w-4 h-4 mr-2 text-orange-500" />
                             Years of Experience <span className="text-red-500">*</span>
-                          </label>
-                          <input
+                          </Label>
+                          <Input
+                            id="experienceYears"
                             type="number"
                             name="experienceYears"
                             value={formData.experienceYears}
                             onChange={handleChange}
                             min="0"
-                            className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                            className={`${
                               errors.experienceYears
                                 ? "border-red-300 bg-red-50"
                                 : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
@@ -870,10 +966,11 @@ function App() {
                           )}
                         </div>
                         <div>
-                          <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                          <Label htmlFor="experienceDetails" className="text-sm font-semibold text-gray-700 mb-2 block">
                             Experience Details <span className="text-red-500">*</span>
-                          </label>
+                          </Label>
                           <textarea
+                            id="experienceDetails"
                             name="experienceDetails"
                             rows={4}
                             value={formData.experienceDetails}
@@ -895,9 +992,9 @@ function App() {
 
                   {/* Active Mobile Question */}
                   <div className="group">
-                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
+                    <Label className="text-sm font-semibold text-gray-700 mb-3 block">
                       Do you have an active mobile for calling? <span className="text-red-500">*</span>
-                    </label>
+                    </Label>
                     <div className="flex gap-4">
                       <label className="flex items-center cursor-pointer group">
                         <input
@@ -933,20 +1030,20 @@ function App() {
 
                   {/* Navigation */}
                   <div className="flex justify-between pt-6">
-                    <button
+                    <Button
                       onClick={handleBack}
                       className="group bg-gray-200 text-gray-800 px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                     >
                       <ChevronLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
                       Back
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={handleNext}
                       className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                     >
                       Continue
                       <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -961,11 +1058,11 @@ function App() {
                       <span className="block sm:inline"> Thank you, {userFullName}!</span>
                       <p className="text-sm mt-2">Your unique User ID is: <span className="font-mono font-semibold break-all">{userId}</span></p>
                       <p className="text-sm mt-1">Please keep this ID safe for future reference.</p>
-                      <Button asChild>
-                        <Link href={'/dashboard'}>
-                        Dashboard 
-                        </Link>
-                      </Button>
+                       <Link href={`/dashboard?userId=${userId}`} passHref>
+//                        <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md">
+//                          Go to Dashboard
+//                        </Button>
+//                       </Link>
                     </div>
                   ) : (
                     <>
@@ -989,10 +1086,10 @@ function App() {
                           )}
                         </div>
                         <div>
-                          <label htmlFor="avatar" className="block text-sm font-semibold text-gray-700 mb-2">
+                          <Label htmlFor="avatar" className="block text-sm font-semibold text-gray-700 mb-2">
                             Upload Your Avatar (Optional)
-                          </label>
-                          <input
+                          </Label>
+                          <input // Keeping standard HTML input for type="file"
                             type="file"
                             id="avatar"
                             name="avatar"
@@ -1014,7 +1111,7 @@ function App() {
                         </p>
                         {!isPhoneVerified && (
                           <>
-                            <button
+                            <Button
                               onClick={sendOtp}
                               disabled={otpSent || isSendingOtp}
                               className={`w-full px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 mt-4 shadow-md hover:shadow-lg flex items-center justify-center
@@ -1031,7 +1128,7 @@ function App() {
                               ) : (
                                 'Send OTP'
                               )}
-                            </button>
+                            </Button>
                             {otpSentMessage && (
                               <p className={`text-sm mt-3 ${isPhoneVerified ? 'text-green-600' : 'text-blue-600'}`}>
                                 {otpSentMessage}
@@ -1039,16 +1136,16 @@ function App() {
                             )}
                             {otpSent && (
                               <div className="flex flex-col items-start mt-6 p-4 bg-blue-100 rounded-lg border border-blue-200 animate-fade-in">
-                                <label htmlFor="otpInput" className="text-sm font-semibold text-gray-700 mb-2">
+                                <Label htmlFor="otpInput" className="text-sm font-semibold text-gray-700 mb-2">
                                   Enter OTP
-                                </label>
-                                <input
-                                  type="text"
+                                </Label>
+                                <Input
                                   id="otpInput"
+                                  type="text"
                                   name="otpInput"
                                   value={otpInput}
                                   onChange={(e) => setOtpInput(e.target.value)}
-                                  className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                                  className={`${
                                     otpError
                                       ? "border-red-300 bg-red-50"
                                       : "border-gray-200 focus:border-blue-400 bg-white hover:border-gray-300"
@@ -1058,7 +1155,7 @@ function App() {
                                 />
                                 {otpError && <p className="text-red-500 text-sm mt-2 animate-fade-in">{otpError}</p>}
                                 <div className="flex flex-col sm:flex-row gap-4 w-full mt-6">
-                                  <button
+                                  <Button
                                     onClick={verifyOtp}
                                     disabled={isVerifyingOtp}
                                     className="flex-1 px-6 py-3 rounded-xl font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
@@ -1074,13 +1171,13 @@ function App() {
                                     ) : (
                                       'Verify OTP'
                                     )}
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button
                                     onClick={skipVerification}
                                     className="flex-1 px-6 py-3 rounded-xl font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors duration-300 shadow-md hover:shadow-lg"
                                   >
                                     Skip for now
-                                  </button>
+                                  </Button>
                                 </div>
                               </div>
                             )}
@@ -1099,9 +1196,9 @@ function App() {
                             onChange={handleChange}
                             className="h-5 w-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                           />
-                          <label htmlFor="agreedToTerms" className="ml-3 text-base text-gray-700">
+                          <Label htmlFor="agreedToTerms" className="ml-3 text-base text-gray-700">
                             I agree to the <Link href="#" className="text-orange-600 hover:underline font-medium">Terms & Conditions</Link> and <Link href="#" className="text-orange-600 hover:underline font-medium">Privacy Policy</Link> <span className="text-red-500">*</span>
-                          </label>
+                          </Label>
                         </div>
                         {errors.agreedToTerms && <p className="text-red-500 text-sm mt-2 animate-fade-in">{errors.agreedToTerms}</p>}
 
@@ -1114,22 +1211,22 @@ function App() {
                             onChange={handleChange}
                             className="h-5 w-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                           />
-                          <label htmlFor="wantsUpdates" className="ml-3 text-base text-gray-700">
+                          <Label htmlFor="wantsUpdates" className="ml-3 text-base text-gray-700">
                             I would like to receive the latest updates from Ustaz
-                          </label>
+                          </Label>
                         </div>
                       </div>
 
                       {/* Navigation */}
                       <div className="flex justify-between pt-6">
-                        <button
+                        <Button
                           onClick={handleBack}
                           className="group bg-gray-200 text-gray-800 px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                         >
                           <ChevronLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
                           Back
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           onClick={handleSubmit}
                           disabled={isLoading || !formData.agreedToTerms || isRegisteredSuccessfully}
                           className="group bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
@@ -1153,15 +1250,14 @@ function App() {
                                 <path
                                   className="opacity-75"
                                   fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
                               Submitting...
                             </div>
                           ) : (
                             'Submit Registration'
                           )}
-                        </button>
+                        </Button>
                       </div>
                     </>
                   )}
