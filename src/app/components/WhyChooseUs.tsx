@@ -34,7 +34,7 @@ function WhyChooseUs() {
       <div className="container mx-auto px-4">
         <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">Why Choose Us</h2>
 
-        <p className="text-center text-sm sm:text-md max-w-2xl mx-auto mb-10 text-gray-600">
+        <p className="text-center text-sm sm:text-[15px] max-w-2xl mx-auto mb-10 text-gray-600">
           In the past, you had to search for electricians or plumbers by visiting shops and explaining your issue.
           Now, we’ve made it all digital. Find professionals, book instantly, and get things fixed—without leaving your home.
         </p>
