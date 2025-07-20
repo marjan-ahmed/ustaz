@@ -38,7 +38,7 @@ function Services() {
   return (
     <section className="py-16 bg-gradient-to-b from-[#fcf8f5] to-white">
       <div className="container mx-auto space-y-12">
-        <h2 className="text-4xl font-extrabold text-center mb-8">Our Services</h2>
+        <h2 className="text-3xl sm:text-4xl font-extrabold text-center mb-8">Our Services</h2>
 
         {services.map((service, index) => (
           <div
@@ -58,8 +58,8 @@ function Services() {
 
             {/* Right Side - Content */}
             <div className="w-full md:w-1/2 flex flex-col justify-center p-6 bg-white">
-              <h3 className="text-3xl font-bold text-orange-600">{service.title}</h3>
-              <p className="mt-4 text-gray-600">{service.description}</p>
+              <h3 className="text-2xl sm:text-3xl font-bold text-orange-600">{service.title}</h3>
+              <p className="text-sm md:text-md mt-4 text-gray-600">{service.description}</p>
             </div>
           </div>
         ))}

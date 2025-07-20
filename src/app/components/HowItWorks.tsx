@@ -32,7 +32,7 @@ function HowItWorks() {
   return (
     <section className="py-16 bg-[#fcf8f5]">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-4xl font-bold mb-12">How It Works</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold mb-12">How It Works</h2>
 
         <div className="flex flex-col items-center">
           <div className="flex items-center justify-center flex-wrap md:flex-nowrap gap-8 md:gap-12">

@@ -32,9 +32,9 @@ function WhyChooseUs() {
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12">Why Choose Us</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">Why Choose Us</h2>
 
-        <p className="text-center max-w-2xl mx-auto mb-10 text-gray-600">
+        <p className="text-center text-sm sm:text-md max-w-2xl mx-auto mb-10 text-gray-600">
           In the past, you had to search for electricians or plumbers by visiting shops and explaining your issue.
           Now, we’ve made it all digital. Find professionals, book instantly, and get things fixed—without leaving your home.
         </p>
@@ -42,10 +42,10 @@ function WhyChooseUs() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature, index) => (
             <div key={index} className="flex items-start space-x-4">
-              <div className="bg-orange-100 p-3 rounded-full">{feature.icon}</div>
+              <div className="bg-orange-100 p-2 sm:p-3 rounded-full">{feature.icon}</div>
               <div>
-                <h3 className="font-bold text-lg text-orange-600">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="font-bold text-md sm:text-lg text-orange-600">{feature.title}</h3>
+                <p className="text-gray-600 text-sm sm:text-lg">{feature.description}</p>
               </div>
             </div>
           ))}
