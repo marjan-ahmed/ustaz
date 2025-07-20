@@ -961,6 +961,11 @@ function App() {
                       <span className="block sm:inline"> Thank you, {userFullName}!</span>
                       <p className="text-sm mt-2">Your unique User ID is: <span className="font-mono font-semibold break-all">{userId}</span></p>
                       <p className="text-sm mt-1">Please keep this ID safe for future reference.</p>
+                      <Button asChild>
+                        <Link href={'/dashboard'}>
+                        Dashboard 
+                        </Link>
+                      </Button>
                     </div>
                   ) : (
                     <>
