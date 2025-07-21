@@ -1,7 +1,7 @@
 "use client"
+export const dynamic = "force-dynamic";
 
-import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { supabase } from "../../../client/supabaseClient"
 import {
   User,
@@ -71,8 +71,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-// import { ImageEditor } from "../../components/image-editor"
-// import { ImageEditor } from "../components/image-editor"
 
 // Define TypeScript Interfaces
 interface IProviderData {
@@ -108,13 +106,14 @@ interface ICountry {
   capital?: string[]
 }
 
-// Dashboard Skeleton Component
+// Loading skeleton components
 function DashboardSkeleton() {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
-        <Sidebar className="border-r border-gray-200">
-          <SidebarHeader className="border-b border-gray-200 p-6">
+        {/* Sidebar Skeleton */}
+        <div className="w-64 border-r border-gray-200 bg-white">
+          <div className="border-b border-gray-200 p-6">
             <div className="flex items-center space-x-3">
               <Skeleton className="w-10 h-10 rounded-lg" />
               <div className="space-y-2">
@@ -122,8 +121,9 @@ function DashboardSkeleton() {
                 <Skeleton className="h-3 w-24" />
               </div>
             </div>
-          </SidebarHeader>
-          <SidebarContent className="p-6">
+          </div>
+
+          <div className="p-6">
             <div className="mb-8">
               <div className="flex items-center space-x-4 mb-4">
                 <Skeleton className="h-16 w-16 rounded-full" />
@@ -135,73 +135,110 @@ function DashboardSkeleton() {
               </div>
               <Skeleton className="h-12 w-full rounded-lg" />
             </div>
-            <SidebarGroup>
-              <SidebarGroupLabel>
-                <Skeleton className="h-3 w-16" />
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1">
-                  {[1, 2, 3].map((i) => (
-                    <SidebarMenuItem key={i}>
-                      <Skeleton className="h-10 w-full rounded-lg" />
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          <SidebarFooter className="border-t border-gray-200 p-6">
+
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16" />
+              <div className="space-y-1">
+                <Skeleton className="h-10 w-full rounded-lg" />
+                <Skeleton className="h-10 w-full rounded-lg" />
+                <Skeleton className="h-10 w-full rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 p-6">
             <Skeleton className="h-10 w-full rounded-lg" />
-          </SidebarFooter>
-          <SidebarRail />
-        </Sidebar>
-        <SidebarInset className="flex-1">
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="flex-1">
           <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-6">
             <Skeleton className="h-6 w-6" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="h-4 w-px bg-gray-200 mx-2" />
             <div className="flex items-center space-x-2">
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-2" />
               <Skeleton className="h-4 w-20" />
             </div>
           </header>
+
           <main className="flex-1 p-6">
             <div className="max-w-4xl mx-auto">
               <Card className="shadow-sm border-gray-200">
-                <CardHeader className="pb-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <Skeleton className="h-6 w-48" />
-                      <Skeleton className="h-4 w-64" />
-                    </div>
-                    <Skeleton className="h-10 w-32 rounded-lg" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-64" />
                   </div>
+                  <Skeleton className="h-10 w-32" />
                 </CardHeader>
+
                 <CardContent className="space-y-8">
-                  {[1, 2, 3].map((section) => (
-                    <div key={section} className="space-y-4">
-                      <Skeleton className="h-5 w-32" />
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {[1, 2].map((field) => (
-                          <div key={field} className="space-y-2">
-                            <Skeleton className="h-4 w-20" />
-                            <Skeleton className="h-10 w-full rounded-lg" />
-                          </div>
-                        ))}
-                      </div>
+                  {/* Personal Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Location Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Contact Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Service Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
           </main>
-        </SidebarInset>
+        </div>
       </div>
     </SidebarProvider>
   )
 }
 
-function ProviderDashboard() {
+import { Suspense } from "react"
+
+function ProviderDashboardInner() {
   const [providerData, setProviderData] = useState<IProviderData | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -212,9 +249,6 @@ function ProviderDashboard() {
   const [editableFormData, setEditableFormData] = useState<IProviderData | null>(null)
   const [editErrors, setEditErrors] = useState<Record<string, string>>({})
   const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false)
-
-  // Image editor state
-  const [showImageEditor, setShowImageEditor] = useState<boolean>(false)
 
   // OTP States
   const [otpSent, setOtpSent] = useState<boolean>(false)
@@ -389,7 +423,6 @@ function ProviderDashboard() {
   // Handler for form changes
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     if (!editableFormData) return
-
     const { name, value, type } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     let newValue: string | boolean | number = value
 
@@ -416,7 +449,6 @@ function ProviderDashboard() {
   // Handler for select changes
   const handleSelectChange = (name: keyof IProviderData, value: string) => {
     if (!editableFormData) return
-
     setEditableFormData((prev) => ({
       ...(prev as IProviderData),
       [name]: value,
@@ -431,16 +463,7 @@ function ProviderDashboard() {
     }
   }
 
-  // Handle avatar save from image editor
-  const handleAvatarSave = (editedImageUrl: string) => {
-    setEditableFormData((prev) => ({
-      ...(prev as IProviderData),
-      avatarUrl: editedImageUrl,
-    }))
-    setShowImageEditor(false)
-  }
-
-  // Handle avatar file change (for initial upload)
+  // Handle avatar file change
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -450,10 +473,13 @@ function ProviderDashboard() {
           ...(prev as IProviderData),
           avatarUrl: reader.result as string,
         }))
-        // Automatically open image editor after upload
-        setShowImageEditor(true)
       }
       reader.readAsDataURL(file)
+    } else {
+      setEditableFormData((prev) => ({
+        ...(prev as IProviderData),
+        avatarUrl: null,
+      }))
     }
   }
 
@@ -604,7 +630,6 @@ function ProviderDashboard() {
     setIsEditingProfile(false)
     setEditableFormData(null)
     setEditErrors({})
-    setShowImageEditor(false)
   }
 
   // Handle phone number change
@@ -921,6 +946,7 @@ function ProviderDashboard() {
                   </div>
                 </div>
               </div>
+
               {!providerData.phone_verified && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
                   <p className="text-xs text-orange-700">Complete phone verification to receive service requests</p>
@@ -985,6 +1011,7 @@ function ProviderDashboard() {
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarFooter>
+
           <SidebarRail />
         </Sidebar>
 
@@ -1056,6 +1083,7 @@ function ProviderDashboard() {
                       </div>
                     )}
                   </CardHeader>
+
                   <CardContent className="space-y-8">
                     {isEditingProfile && editableFormData ? (
                       <div className="space-y-8">
@@ -1078,6 +1106,7 @@ function ProviderDashboard() {
                                 <p className="text-red-500 text-sm mt-1">{editErrors.firstName}</p>
                               )}
                             </div>
+
                             <div>
                               <Label htmlFor="editLastName" className="text-sm font-medium text-gray-700">
                                 Last Name <span className="text-red-500">*</span>
@@ -1093,6 +1122,7 @@ function ProviderDashboard() {
                                 <p className="text-red-500 text-sm mt-1">{editErrors.lastName}</p>
                               )}
                             </div>
+
                             <div>
                               <Label htmlFor="editEmail" className="text-sm font-medium text-gray-700">
                                 Email Address
@@ -1106,6 +1136,7 @@ function ProviderDashboard() {
                                 className="mt-1"
                               />
                             </div>
+
                             <div>
                               <Label htmlFor="editCnic" className="text-sm font-medium text-gray-700">
                                 CNIC Number <span className="text-red-500">*</span>
@@ -1149,6 +1180,7 @@ function ProviderDashboard() {
                               </Select>
                               {editErrors.country && <p className="text-red-500 text-sm mt-1">{editErrors.country}</p>}
                             </div>
+
                             <div>
                               <Label htmlFor="editCity" className="text-sm font-medium text-gray-700">
                                 City <span className="text-red-500">*</span>
@@ -1200,6 +1232,7 @@ function ProviderDashboard() {
                                 <p className="text-red-500 text-sm mt-1">{editErrors.phoneNumber}</p>
                               )}
                             </div>
+
                             <div>
                               <Label htmlFor="editServiceType" className="text-sm font-medium text-gray-700">
                                 Service Type <span className="text-red-500">*</span>
@@ -1268,6 +1301,7 @@ function ProviderDashboard() {
                                 <p className="text-red-500 text-sm mt-1">{editErrors.hasExperience}</p>
                               )}
                             </div>
+
                             {editableFormData.hasExperience && (
                               <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                                 <div>
@@ -1287,6 +1321,7 @@ function ProviderDashboard() {
                                     <p className="text-red-500 text-sm mt-1">{editErrors.experienceYears}</p>
                                   )}
                                 </div>
+
                                 <div>
                                   <Label htmlFor="editExperienceDetails" className="text-sm font-medium text-gray-700">
                                     Experience Details <span className="text-red-500">*</span>
@@ -1345,37 +1380,27 @@ function ProviderDashboard() {
                                 <p className="text-red-500 text-sm mt-1">{editErrors.hasActiveMobile}</p>
                               )}
                             </div>
+
                             <div>
                               <Label htmlFor="editAvatar" className="text-sm font-medium text-gray-700">
                                 Profile Picture
                               </Label>
-                              <div className="mt-2 space-y-4">
-                                <Input
-                                  id="editAvatar"
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleAvatarFileChange}
-                                  className="mt-1"
-                                />
-                                {editableFormData.avatarUrl && (
-                                  <div className="flex items-center space-x-4">
-                                    <img
-                                      src={editableFormData.avatarUrl || "/placeholder.svg"}
-                                      alt="Profile Preview"
-                                      className="h-20 w-20 object-cover rounded-full border-2 border-gray-200"
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      onClick={() => setShowImageEditor(true)}
-                                      className="text-[#db4b0d] border-[#db4b0d] hover:bg-[#db4b0d] hover:text-white"
-                                    >
-                                      <Edit className="w-4 h-4 mr-2" />
-                                      Edit Image
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
+                              <Input
+                                id="editAvatar"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarFileChange}
+                                className="mt-1"
+                              />
+                              {editableFormData.avatarUrl && (
+                                <div className="mt-2">
+                                  <img
+                                    src={editableFormData.avatarUrl || "/placeholder.svg"}
+                                    alt="Profile Preview"
+                                    className="h-20 w-20 object-cover rounded-full border-2 border-gray-200"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1396,14 +1421,17 @@ function ProviderDashboard() {
                                 {providerData.firstName} {providerData.lastName}
                               </p>
                             </div>
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">Email Address</Label>
                               <p className="text-base text-gray-900">{providerData.email || "Not provided"}</p>
                             </div>
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">CNIC Number</Label>
                               <p className="text-base text-gray-900">{providerData.cnic}</p>
                             </div>
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">Registration Date</Label>
                               <p className="text-base text-gray-900">
@@ -1424,6 +1452,7 @@ function ProviderDashboard() {
                               <Label className="text-sm font-medium text-gray-500">Country</Label>
                               <p className="text-base text-gray-900">{providerData.country}</p>
                             </div>
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">City</Label>
                               <p className="text-base text-gray-900">{providerData.city}</p>
@@ -1445,6 +1474,7 @@ function ProviderDashboard() {
                                 {providerData.phoneNumber}
                               </p>
                             </div>
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">Phone Status</Label>
                               <div>
@@ -1475,6 +1505,7 @@ function ProviderDashboard() {
                               <Label className="text-sm font-medium text-gray-500">Service Type</Label>
                               <p className="text-base font-semibold text-[#db4b0d]">{providerData.service_type}</p>
                             </div>
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">Experience</Label>
                               <p className="text-base text-gray-900">
@@ -1483,6 +1514,7 @@ function ProviderDashboard() {
                                   : "No prior experience"}
                               </p>
                             </div>
+
                             {providerData.hasExperience && providerData.experienceDetails && (
                               <div className="col-span-1 md:col-span-2 space-y-1">
                                 <Label className="text-sm font-medium text-gray-500">Experience Details</Label>
@@ -1491,9 +1523,15 @@ function ProviderDashboard() {
                                 </p>
                               </div>
                             )}
+
                             <div className="space-y-1">
                               <Label className="text-sm font-medium text-gray-500">Active Mobile</Label>
                               <p className="text-base text-gray-900">{providerData.hasActiveMobile ? "Yes" : "No"}</p>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-500">How did you hear about us?</Label>
+                              <p className="text-base text-gray-900">{providerData.heardFrom}</p>
                             </div>
                           </div>
                         </div>
@@ -1562,6 +1600,7 @@ function ProviderDashboard() {
                             Pending
                           </Badge>
                         )}
+
                         <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
                           <DialogTrigger asChild>
                             <Button
@@ -1585,6 +1624,7 @@ function ProviderDashboard() {
                                 service requests.
                               </DialogDescription>
                             </DialogHeader>
+
                             <div className="space-y-4 py-4">
                               <div>
                                 <Label htmlFor="phoneCountry" className="text-sm font-medium text-gray-700">
@@ -1617,6 +1657,7 @@ function ProviderDashboard() {
                                   <p className="text-red-500 text-sm mt-1">{phoneChangeErrors.phoneCountryCode}</p>
                                 )}
                               </div>
+
                               <div>
                                 <Label htmlFor="newPhoneNumber" className="text-sm font-medium text-gray-700">
                                   Phone Number <span className="text-red-500">*</span>
@@ -1639,6 +1680,7 @@ function ProviderDashboard() {
                                   <p className="text-red-500 text-sm mt-1">{phoneChangeErrors.phoneNumber}</p>
                                 )}
                               </div>
+
                               {(newPhoneData.phoneCountryCode !== providerData?.phoneCountryCode ||
                                 newPhoneData.phoneNumber !== providerData?.phoneNumber) && (
                                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
@@ -1652,6 +1694,7 @@ function ProviderDashboard() {
                                 </div>
                               )}
                             </div>
+
                             <DialogFooter className="flex space-x-2">
                               <Button
                                 variant="outline"
@@ -1799,16 +1842,15 @@ function ProviderDashboard() {
           </main>
         </SidebarInset>
       </div>
-
-      {/* Image Editor Modal */}
-      {/* {showImageEditor && (
-        <ImageEditor
-          onSave={handleAvatarSave}
-          onCancel={() => setShowImageEditor(false)}
-          initialImage={editableFormData?.avatarUrl || undefined}
-        />
-      )} */}
     </SidebarProvider>
+  )
+}
+
+function ProviderDashboard() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <ProviderDashboardInner />
+    </Suspense>
   )
 }
 

@@ -16,6 +16,7 @@ const navItems = [
 ];
 
 export default function Header() {
+  const [open, setOpen] = useState(false)
   const { isSignedIn } = useUser();
   const [language, setLanguage] = useState("en");
 
@@ -97,7 +98,7 @@ export default function Header() {
 
         {/* Mobile Nav Button (hidden on md and up) */}
         <div className="md:hidden flex items-center">
-          <Sheet>
+          <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button
                 className="text-3xl text-gray-700 focus:outline-none"
