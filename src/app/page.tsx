@@ -12,26 +12,28 @@ import WhyChooseUs from "./components/WhyChooseUs";
 import FAQ from "./components/Faq";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
+import { useTranslations } from "next-intl";
 
 export default function Home() {
-  const banners = [
+  const t = useTranslations('hero')
+ const banners = [
     {
-      src: "https://plus.unsplash.com/premium_photo-1661908782924-de673a5c6988?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      title: "Electrician Services",
-      description: "Get expert plumbing solutions quickly and affordably.",
-      button: "Book a Plumber",
+      src: "https://plus.unsplash.com/premium_photo-1661908782924-de673a5c6988?q=80&w=1170&auto=format&fit=crop",
+      title: t("elecTitle"),
+      description: t("electDesc"),
+      button: t("elecBtn"),
     },
     {
-      src: "https://plus.unsplash.com/premium_photo-1663013675008-bd5a7898ac4f?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8cGx1bWJlcnxlbnwwfHwwfHx8MA%3D%3D",
-      title: "Plumber Services",
-      description: "Certified electricians for home and office electrical work.",
-      button: "Hire Electrician",
+      src: "https://plus.unsplash.com/premium_photo-1663013675008-bd5a7898ac4f?w=600&auto=format&fit=crop",
+      title: t("plumbTitle"),
+      description: t("plumbDesc"),
+      button: t("plumbBtn"),
     },
     {
-      src: "https://plus.unsplash.com/premium_photo-1664300497978-49eaa30a815e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDV8fHxlbnwwfHx8fHw%3D",
-      title: "Carpentry Services",
-      description: "Custom furniture and woodwork by skilled carpenters.",
-      button: "Find a Carpenter",
+      src: "https://plus.unsplash.com/premium_photo-1664300497978-49eaa30a815e?w=600&auto=format&fit=crop",
+      title: t("carpTitle"),
+      description: t("CarpDesc"),
+      button: t("carpBtn"),
     },
   ];
 
@@ -41,7 +43,7 @@ export default function Home() {
   return (
     <>
     <Header />
-    <section className="w-full h-[300px] md:h-screen relative">
+    <section dir="ltr" className="w-full h-[300px] md:h-screen relative">
       <Carousel
         autoPlay
         infiniteLoop
@@ -59,7 +61,7 @@ export default function Home() {
         onChange={(index) => setCurrentIndex(index)}
       >
         {banners.map((item, index) => (
-          <div key={index} className="relative w-full h-[300px] md:h-screen">
+          <div key={index}  className="relative w-full h-[300px] md:h-screen">
             <Image
               src={item.src}
               alt={item.title}
@@ -80,7 +82,7 @@ export default function Home() {
       {/* Dynamic Overlay Content */}
       <div className="absolute inset-0 flex flex-col justify-center items-center md:items-start md:justify-start pt-0 md:pt-40">
         <div className="w-full px-4 md:px-8 max-w-7xl mx-auto text-center md:text-left">
-          <div className="text-white space-y-4 transition-all duration-700">
+          <div className="text-white  text space-y-4 transition-all duration-700">
             <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold leading-tight">
               {banners[currentIndex].title}
             </h1>

@@ -6,7 +6,7 @@ import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserBut
 import localFont from 'next/font/local';
 import Footer from "./components/Footer";
 import {NextIntlClientProvider} from 'next-intl';
-import {getLocale} from 'next-intl/server';
+import {getLocale, getMessages} from 'next-intl/server';
 
 // const atkinson = Atkinson_Hyperlegible({
 //   subsets: ["latin"],
@@ -52,18 +52,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
     const locale = await getLocale();
-
+    const messages = await getMessages();
+    const direction = ['ur', 'ar'].includes(locale) ? 'rtl' : 'ltr';
   return (
     <ClerkProvider>
-    <html lang="en">
+    <html lang={locale} dir={direction}>
       <body
         className={`${anton.variable} ${atkinson.variable} antialiased`}
          cz-shortcut-listen="true"
       >
-         {/* <NextIntlClientProvider> */}
-  
+         <NextIntlClientProvider messages={messages}>
         {children}
-        {/* </NextIntlClientProvider> */}
+        </NextIntlClientProvider>
       </body>
     </html>
     </ClerkProvider>

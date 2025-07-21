@@ -1,38 +1,39 @@
 import React from "react";
 import { ClipboardList, PhoneCall, Wrench, CheckCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 function HowItWorks() {
+  const t = useTranslations("howItWorks");
+
   const steps = [
     {
       icon: <ClipboardList className="h-6 w-6 text-white" />,
-      title: "Choose Service",
-      description:
-        "Select from various services like electrician, plumbing, carpentry, AC repair, or solar setup.",
+      title: t("chooseTitle"),
+      description: t("chooseDesc"),
     },
     {
       icon: <PhoneCall className="h-6 w-6 text-white" />,
-      title: "Book Appointment",
-      description:
-        "Schedule a convenient time online or via phone. Quick confirmation guaranteed.",
+      title: t("bookTitle"),
+      description: t("bookDesc"),
     },
     {
       icon: <Wrench className="h-6 w-6 text-white" />,
-      title: "Get Service",
-      description:
-        "Our professional visits your location fully prepared and completes the job efficiently.",
+      title: t("getTitle"),
+      description: t("getDesc"),
     },
     {
       icon: <CheckCircle className="h-6 w-6 text-white" />,
-      title: "Complete",
-      description:
-        "Job done! Review, provide feedback, and enjoy your hassle-free experience.",
+      title: t("completeTitle"),
+      description: t("completeDesc"),
     },
   ];
 
   return (
     <section className="py-16 bg-[#fcf8f5]">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold mb-12">How It Works</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold mb-12">
+          {t('howItWorks')}
+        </h2>
 
         <div className="flex flex-col items-center">
           <div className="flex items-center justify-center flex-wrap md:flex-nowrap gap-8 md:gap-12">

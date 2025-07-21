@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation"
 import { ImageCropEditor } from "../components/image-crop-editor"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
+import { useTranslations } from "next-intl"
 
 // Define TypeScript Interfaces
 interface IFormData {
@@ -74,6 +75,7 @@ function generateUUID(): string {
 }
 
 function App() {
+  const t = useTranslations("form")
   const [currentStep, setCurrentStep] = useState<number>(1)
   const router = useRouter()
   const [formData, setFormData] = useState<IFormData>({
@@ -275,80 +277,82 @@ function App() {
 
   // Validation function for each step of the form
   const validateStep = (): boolean => {
-    const newErrors: Record<string, string> = {}
-    let isValid = true
-    if (currentStep === 1) {
-      if (!formData.firstName.trim()) {
-        newErrors.firstName = "First name is required."
+  const newErrors: Record<string, string> = {}
+  let isValid = true
+
+  if (currentStep === 1) {
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = t("errors.firstNameRequired")
+      isValid = false
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = t("errors.lastNameRequired")
+      isValid = false
+    }
+    if (!formData.cnic.trim()) {
+      newErrors.cnic = t("errors.cnicRequired")
+      isValid = false
+    } else if (!formData.cnic.startsWith("42201")) {
+      newErrors.cnic = t("errors.cnicStart")
+      isValid = false
+    } else if (!/^\d{13}$/.test(formData.cnic)) {
+      newErrors.cnic = t("errors.cnicLength")
+      isValid = false
+    }
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = t("errors.phoneRequired")
+      isValid = false
+    } else if (!/^\d{7,}$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = t("errors.phoneInvalid")
+      isValid = false
+    }
+    if (!formData.country.trim()) {
+      newErrors.country = t("errors.countryRequired")
+      isValid = false
+    }
+    if (!formData.city.trim()) {
+      newErrors.city = t("errors.cityRequired")
+      isValid = false
+    }
+  } else if (currentStep === 2) {
+    if (!formData.heardFrom.trim()) {
+      newErrors.heardFrom = t("errors.heardFromRequired")
+      isValid = false
+    }
+    if (!formData.service_type.trim()) {
+      newErrors.service_type = t("errors.serviceTypeRequired")
+      isValid = false
+    }
+    if (formData.hasExperience === null) {
+      newErrors.hasExperience = t("errors.experienceOptionRequired")
+      isValid = false
+    } else if (formData.hasExperience) {
+      if (!formData.experienceYears.trim()) {
+        newErrors.experienceYears = t("errors.experienceYearsRequired")
+        isValid = false
+      } else if (isNaN(Number.parseInt(formData.experienceYears)) || Number.parseInt(formData.experienceYears) <= 0) {
+        newErrors.experienceYears = t("errors.experienceYearsInvalid")
         isValid = false
       }
-      if (!formData.lastName.trim()) {
-        newErrors.lastName = "Last name is required."
-        isValid = false
-      }
-      if (!formData.cnic.trim()) {
-        newErrors.cnic = "CNIC number is required."
-        isValid = false
-      } else if (!formData.cnic.startsWith("42201")) {
-        newErrors.cnic = "CNIC must start with 42201."
-        isValid = false
-      } else if (!/^\d{13}$/.test(formData.cnic)) {
-        newErrors.cnic = "CNIC must be 13 digits (e.g., 4220112345678)."
-        isValid = false
-      }
-      if (!formData.phoneNumber.trim()) {
-        newErrors.phoneNumber = "Phone number is required."
-        isValid = false
-      } else if (!/^\d{7,}$/.test(formData.phoneNumber)) {
-        newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7)."
-        isValid = false
-      }
-      if (!formData.country.trim()) {
-        newErrors.country = "Country is required."
-        isValid = false
-      }
-      if (!formData.city.trim()) {
-        newErrors.city = "City is required."
-        isValid = false
-      }
-    } else if (currentStep === 2) {
-      if (!formData.heardFrom.trim()) {
-        newErrors.heardFrom = "This question is required."
-        isValid = false
-      }
-      if (!formData.service_type.trim()) {
-        newErrors.service_type = "Please select a service type."
-        isValid = false
-      }
-      if (formData.hasExperience === null) {
-        newErrors.hasExperience = "Please select an option."
-        isValid = false
-      } else if (formData.hasExperience) {
-        if (!formData.experienceYears.trim()) {
-          newErrors.experienceYears = "Years of experience is required."
-          isValid = false
-        } else if (isNaN(Number.parseInt(formData.experienceYears)) || Number.parseInt(formData.experienceYears) <= 0) {
-          newErrors.experienceYears = "Please enter a valid number of years."
-          isValid = false
-        }
-        if (!formData.experienceDetails.trim()) {
-          newErrors.experienceDetails = "Experience details are required."
-          isValid = false
-        }
-      }
-      if (formData.hasActiveMobile === null) {
-        newErrors.hasActiveMobile = "Please select an option."
-        isValid = false
-      }
-    } else if (currentStep === 3) {
-      if (!formData.agreedToTerms) {
-        newErrors.agreedToTerms = "You must agree to the Terms & Conditions and Privacy Policy."
+      if (!formData.experienceDetails.trim()) {
+        newErrors.experienceDetails = t("errors.experienceDetailsRequired")
         isValid = false
       }
     }
-    setErrors(newErrors)
-    return isValid
+    if (formData.hasActiveMobile === null) {
+      newErrors.hasActiveMobile = t("errors.mobileOptionRequired")
+      isValid = false
+    }
+  } else if (currentStep === 3) {
+    if (!formData.agreedToTerms) {
+      newErrors.agreedToTerms = t("errors.mustAgree")
+      isValid = false
+    }
   }
+
+  setErrors(newErrors)
+  return isValid
+}
 
   // Handle "Next" button click with animation
   const handleNext = () => {
@@ -500,9 +504,24 @@ function App() {
 
   // Configuration for progress bar steps
   const steps = [
-    { number: 1, title: "Personal Info", icon: User, description: "Basic details" },
-    { number: 2, title: "Experience", icon: Briefcase, description: "Background info" },
-    { number: 3, title: "Complete", icon: CheckCircle, description: "Final step" },
+   {
+      number: 1,
+      title: t("title1"),
+      icon: User,
+      description: t("description1"),
+    },
+    {
+      number: 2,
+      title: t("title2"),
+      icon: Briefcase,
+      description: t("description2"),
+    },
+    {
+      number: 3,
+      title: t("title3"),
+      icon: CheckCircle,
+      description: t("description3"),
+    },
   ]
 
   // CSS for step transition animations
@@ -579,16 +598,16 @@ function App() {
                 <div className="space-y-8">
                   <div className="text-center mb-8">
                     <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
-                      Welcome to Ustaz
+                      {t('welcomeUstaz')}
                     </h2>
-                    <p className="text-gray-600 text-lg">Let's start with your personal information</p>
+                    <p className="text-gray-600 text-lg">{t('personalInfoIntro')}</p>
                   </div>
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* First Name */}
                     <div className="group">
                       <Label htmlFor="firstName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                         <User className="w-4 h-4 mr-2 text-orange-500" />
-                        First Name <span className="text-red-500 ml-1">*</span>
+                        {t('firstName')} <span className="text-red-500 ml-1">*</span>
                       </Label>
                       <Input
                         id="firstName"
@@ -611,7 +630,7 @@ function App() {
                     <div className="group">
                       <Label htmlFor="lastName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                         <User className="w-4 h-4 mr-2 text-orange-500" />
-                        Last Name <span className="text-red-500 ml-1">*</span>
+                        {t('lastName')} <span className="text-red-500 ml-1">*</span>
                       </Label>
                       <Input
                         id="lastName"
@@ -635,7 +654,7 @@ function App() {
                   <div className="group">
                     <Label htmlFor="email" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                       <Mail className="w-4 h-4 mr-2 text-orange-500" />
-                      Email Address <span className="text-gray-400">(Optional)</span>
+                      {t('email')} <span className="text-gray-400">{t('optional')}</span>
                     </Label>
                     <Input
                       id="email"
@@ -650,7 +669,7 @@ function App() {
                   <div className="group">
                     <Label htmlFor="cnic" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                       <FileText className="w-4 h-4 mr-2 text-orange-500" />
-                      CNIC Number <span className="text-red-500 ml-1">*</span>
+                      {t('cnic')} <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <Input
                       id="cnic"
@@ -672,13 +691,13 @@ function App() {
                   <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 md:p-8 rounded-2xl border border-orange-100 shadow-sm">
                     <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-6">
                       <MapPin className="w-5 h-5 mr-2 text-orange-500" />
-                      Address Information
+                      {t('address')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Country */}
                       <div className="space-y-2">
                         <Label htmlFor="country" className="text-sm font-semibold text-gray-700">
-                          Country <span className="text-red-500">*</span>
+                          {t('country')} <span className="text-red-500">*</span>
                         </Label>
                         <Select
                           value={formData.country}
@@ -718,7 +737,7 @@ function App() {
                       {/* City */}
                       <div className="space-y-2">
                         <Label htmlFor="city" className="text-sm font-semibold text-gray-700">
-                          City <span className="text-red-500">*</span>
+                          {t('city')} <span className="text-red-500">*</span>
                         </Label>
                         <Select
                           value={formData.city}
@@ -756,7 +775,7 @@ function App() {
                   <div className="group">
                     <Label htmlFor="phoneNumber" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
                       <Phone className="w-4 h-4 mr-2 text-orange-500" />
-                      Phone Number <span className="text-red-500 ml-1">*</span>
+                      {t('phoneNumber')} <span className="text-red-500 ml-1">*</span>
                     </Label>
                     <div className="flex">
                       <span className="inline-flex items-center px-4 rounded-l-xl border-2 border-r-0 border-gray-200 bg-gray-50 text-gray-600 font-medium">
@@ -786,7 +805,7 @@ function App() {
                       onClick={handleNext}
                       className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                     >
-                      Continue
+                      {t('continue')}
                       <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                     </Button>
                   </div>
@@ -798,14 +817,14 @@ function App() {
                 <div className="space-y-8">
                   <div className="text-center mb-8">
                     <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
-                      Tell Us About Your Experience
+                      {t('experienceTitle')}
                     </h2>
-                    <p className="text-gray-600 text-lg">Help us understand your background better</p>
+                    <p className="text-gray-600 text-lg">{t('experienceHelpText')}</p>
                   </div>
                   {/* Where did you hear about us */}
                   <div className="group">
                     <Label htmlFor="heardFrom" className="text-sm font-semibold text-gray-700 mb-3 block">
-                      Where did you hear about us? <span className="text-red-500">*</span>
+                      {t('heardFrom')} <span className="text-red-500">*</span>
                     </Label>
                     <select
                       id="heardFrom"
@@ -818,7 +837,7 @@ function App() {
                           : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
                       }`}
                     >
-                      <option value="">Select an option</option>
+                      <option value="">{t('selectOption')}</option>
                       {socialMediaPlatforms.map((platform) => (
                         <option key={platform} value={platform}>
                           {platform}
@@ -832,7 +851,7 @@ function App() {
                   {/* Select a service */}
                   <div className="group">
                     <Label htmlFor="service_type" className="text-sm font-semibold text-gray-700 mb-3 block">
-                      Select a Service <span className="text-red-500">*</span>
+                      {t('selectService')} <span className="text-red-500">*</span>
                     </Label>
                     <Select
                       name="service_type"
@@ -868,7 +887,7 @@ function App() {
                   {/* Experience Question */}
                   <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
                     <Label className="text-sm font-semibold text-gray-700 mb-4 block">
-                      Do you have prior experience as an Ustaz/Service Provider? <span className="text-red-500">*</span>
+                      {t('priorExperience')} <span className="text-red-500">*</span>
                     </Label>
                     <div className="flex gap-4 mb-4">
                       <label className="flex items-center cursor-pointer group">
@@ -881,7 +900,7 @@ function App() {
                           className="w-5 h-5 text-orange-500 border-2 border-gray-300 focus:ring-orange-500 focus:ring-2"
                         />
                         <span className="ml-3 text-gray-700 font-medium group-hover:text-orange-600 transition-colors duration-200">
-                          Yes
+                          {t('yes')}
                         </span>
                       </label>
                       <label className="flex items-center cursor-pointer group">
@@ -894,7 +913,7 @@ function App() {
                           className="w-5 h-5 text-orange-500 border-2 border-gray-300 focus:ring-orange-500 focus:ring-2"
                         />
                         <span className="ml-3 text-gray-700 font-medium group-hover:text-orange-600 transition-colors duration-200">
-                          No
+                          {t('no')}
                         </span>
                       </label>
                     </div>
@@ -910,7 +929,7 @@ function App() {
                             className="flex items-center text-sm font-semibold text-gray-700 mb-2"
                           >
                             <Calendar className="w-4 h-4 mr-2 text-orange-500" />
-                            Years of Experience <span className="text-red-500">*</span>
+                            {t('yearsOfExperience')} <span className="text-red-500">*</span>
                           </Label>
                           <Input
                             id="experienceYears"
@@ -932,7 +951,7 @@ function App() {
                         </div>
                         <div>
                           <Label htmlFor="experienceDetails" className="text-sm font-semibold text-gray-700 mb-2 block">
-                            Experience Details <span className="text-red-500">*</span>
+                            {t('experienceDetails')} <span className="text-red-500">*</span>
                           </Label>
                           <textarea
                             id="experienceDetails"
@@ -957,7 +976,7 @@ function App() {
                   {/* Active Mobile Question */}
                   <div className="group">
                     <Label className="text-sm font-semibold text-gray-700 mb-3 block">
-                      Do you have an active mobile for calling? <span className="text-red-500">*</span>
+                      {t('activeMobile')} <span className="text-red-500">*</span>
                     </Label>
                     <div className="flex gap-4">
                       <label className="flex items-center cursor-pointer group">
@@ -970,7 +989,7 @@ function App() {
                           className="w-5 h-5 text-orange-500 border-2 border-gray-300 focus:ring-orange-500 focus:ring-2"
                         />
                         <span className="ml-3 text-gray-700 font-medium group-hover:text-orange-600 transition-colors duration-200">
-                          Yes
+                          {t('yes')}
                         </span>
                       </label>
                       <label className="flex items-center cursor-pointer group">
@@ -983,7 +1002,7 @@ function App() {
                           className="w-5 h-5 text-orange-500 border-2 border-gray-300 focus:ring-orange-500 focus:ring-2"
                         />
                         <span className="ml-3 text-gray-700 font-medium group-hover:text-orange-600 transition-colors duration-200">
-                          No
+                          {t('no')}
                         </span>
                       </label>
                     </div>
@@ -998,13 +1017,13 @@ function App() {
                       className="group bg-gray-200 text-gray-800 px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                     >
                       <ChevronLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-                      Back
+                      {t('back')}
                     </Button>
                     <Button
                       onClick={handleNext}
                       className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                     >
-                      Continue
+                      {t('continue')}
                       <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                     </Button>
                   </div>
@@ -1020,25 +1039,25 @@ function App() {
                       className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative"
                       role="alert"
                     >
-                      <strong className="font-bold">Registration Successful!</strong>
-                      <span className="block sm:inline"> Thank you, {userFullName}!</span>
+                      <strong className="font-bold">{t('registrationSuccess')}</strong>
+                      <span className="block sm:inline"> {t('thankYou')}, {userFullName}!</span>
                       <p className="text-sm mt-2">
-                        Your unique User ID is: <span className="font-mono font-semibold break-all">{userId}</span>
+                        {t('yourUniqueIdIs')} <span className="font-mono font-semibold break-all">{userId}</span>
                       </p>
-                      <p className="text-sm mt-1">Please keep this ID safe for future reference.</p>
+                      <p className="text-sm mt-1">{t('keepIdSafe')}</p>
                       <Link href={`/dashboard?userId=${userId}`} passHref>
                         <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md">
-                          Go to Dashboard
+                          {t('goToDashboardButton')}
                         </Button>
                       </Link>
                     </div>
                   ) : (
                     <>
                       <h2 className="text-4xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-4">
-                        Welcome, {userFullName || "Future Ustaz"}!
+                        {t('greeting')}, {userFullName || "Future Ustaz"}!
                       </h2>
                       <p className="text-lg text-gray-600">
-                        We're excited to have you join our community of service providers.
+                        {t('welcomeServiceProvider')}
                       </p>
 
                       {/* Avatar Upload Section with Image Crop Editor */}
@@ -1067,7 +1086,7 @@ function App() {
                         </div>
                         <div>
                           <Label htmlFor="avatar" className="block text-sm font-semibold text-gray-700 mb-2">
-                            Upload Your Avatar (Optional)
+                            {t('uploadAvatar')} {t('optional')}
                           </Label>
                           <input
                             type="file"
@@ -1083,15 +1102,15 @@ function App() {
                       {/* Phone Verification Section */}
                       <div className="space-y-4 mt-8 p-6 bg-blue-50 rounded-2xl border border-blue-200 text-left shadow-inner">
                         <h3 className="text-xl font-bold text-blue-800 flex items-center mb-4">
-                          <Phone className="w-5 h-5 mr-2 text-blue-600" /> Verify Your Phone Number
+                          <Phone className="w-5 h-5 mr-2 text-blue-600" /> {t('verifyPhone')}
                         </h3>
                         <p className="text-base text-gray-700">
-                          Your registered phone number:{" "}
+                          {t('registeredPhone')}:{" "}
                           <span className="font-bold text-blue-700">
                             {formData.phoneCountryCode}
                             {formData.phoneNumber}
                           </span>
-                          {isPhoneVerified && <span className="text-green-600 ml-2 font-semibold"> (Verified!)</span>}
+                          {isPhoneVerified && <span className="text-green-600 ml-2 font-semibold"> ({t('verified')})</span>}
                         </p>
                         {!isPhoneVerified && (
                           <>
@@ -1118,7 +1137,7 @@ function App() {
                                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     ></path>
                                   </svg>
-                                  Sending OTP...
+                                  {t('sendingOTP')}
                                 </div>
                               ) : (
                                 "Send OTP"
@@ -1132,7 +1151,7 @@ function App() {
                             {otpSent && (
                               <div className="flex flex-col items-start mt-6 p-4 bg-blue-100 rounded-lg border border-blue-200 animate-fade-in">
                                 <Label htmlFor="otpInput" className="text-sm font-semibold text-gray-700 mb-2">
-                                  Enter OTP
+                                  {t('enterOTP')}
                                 </Label>
                                 <Input
                                   id="otpInput"
@@ -1172,7 +1191,7 @@ function App() {
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                           ></path>
                                         </svg>
-                                        Verifying...
+                                        {t('verifying')}
                                       </div>
                                     ) : (
                                       "Verify OTP"
@@ -1182,7 +1201,7 @@ function App() {
                                     onClick={skipVerification}
                                     className="flex-1 px-6 py-3 rounded-xl font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors duration-300 shadow-md hover:shadow-lg"
                                   >
-                                    Skip for now
+                                    {t('skip')}
                                   </Button>
                                 </div>
                               </div>
@@ -1211,7 +1230,7 @@ function App() {
                             <Link href="#" className="text-orange-600 hover:underline font-medium">
                               Privacy Policy
                             </Link>{" "} */}
-                            I agree to the Terms & Conditions Privacy Policy
+                            {t('agreeTerms')}
                             <span className="text-red-500">*</span>
                           </Label>
                         </div>
@@ -1228,7 +1247,7 @@ function App() {
                             className="h-5 w-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                           />
                           <Label htmlFor="wantsUpdates" className="ml-3 text-base text-gray-700">
-                            I would like to receive the latest updates from Ustaz
+                            {t('latestUpdates')}
                           </Label>
                         </div>
                       </div>
@@ -1240,7 +1259,7 @@ function App() {
                           className="group bg-gray-200 text-gray-800 px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
                         >
                           <ChevronLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-                          Back
+                          {t('back')}
                         </Button>
                         <Button
                           onClick={handleSubmit}
@@ -1269,10 +1288,10 @@ function App() {
                                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                 ></path>
                               </svg>
-                              Submitting...
+                              {t('submitting')}
                             </div>
                           ) : (
-                            "Submit Registration"
+                            t("submit")
                           )}
                         </Button>
                       </div>
@@ -1280,7 +1299,7 @@ function App() {
                   )}
                   {userId && !isRegisteredSuccessfully && (
                     <p className="text-sm text-gray-500 mt-4">
-                      Your User ID: <span className="font-mono text-gray-700 break-all">{userId}</span>
+                      {t('yourUserId')}: <span className="font-mono text-gray-700 break-all">{userId}</span>
                     </p>
                   )}
                 </div>
@@ -1290,8 +1309,7 @@ function App() {
         </div>
       </div>
 
-      {/* Image Crop Editor Modal */}
-      {showImageEditor && (
+      {/* Image Crop Editor Modal */}      {showImageEditor && (
         <ImageCropEditor
           initialImage={tempImageUrl}
           onSave={handleSaveCroppedImage}

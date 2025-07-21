@@ -1,44 +1,43 @@
+'use client'
 import React from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 
 function Services() {
-  const services = [
-  {
-    title: "Electrical Service",
-    description:
-      "Our certified electricians provide expert electrical services including safe wiring, modern lighting installations, appliance fittings, fault diagnosis, and regular maintenance for homes, offices, and commercial setups. Ensuring quality, safety, and reliability is our top priority.",
-    image: "https://plus.unsplash.com/premium_photo-1661911309991-cc81afcce97d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZWxlY3RyaWNpYW58ZW58MHx8MHx8fDA%3D",
-  },
-  {
-    title: "Plumbing Service",
-    description:
-      "We offer professional plumbing services including leak detection and repair, pipe installations, drainage system setup, bathroom and kitchen fittings, and complete water system maintenance. Our team ensures prompt service, high-quality materials, and long-lasting solutions for residential and commercial properties.",
-    image: "https://plus.unsplash.com/premium_photo-1664298589198-b15ff5382648?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8cGx1bWJlcnxlbnwwfHwwfHx8MA%3D%3D",
-  },
-  {
-    title: "Carpentry",
-    description:
-      "Our skilled carpenters specialize in custom furniture making, woodwork repairs, structural carpentry, door and window installations, and decorative wood finishes. From modern to traditional designs, we deliver craftsmanship that enhances both functionality and aesthetics for your living or work space.",
-    image: "https://images.unsplash.com/photo-1595844730289-b248c919d6f9?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Y2FycGVudGVyfGVufDB8fDB8fHww",
-  },
-  {
-    title: "AC Maintenance",
-    description:
-      "Stay cool year-round with our reliable AC repair services. We handle air conditioner installations, gas refilling, deep cleaning, filter replacements, and troubleshooting for all major brands. Count on us for efficient, affordable cooling system care with quick response times.",
-    image: "https://plus.unsplash.com/premium_photo-1682126009570-3fe2399162f7?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8YWMlMjByZXBhaXJ8ZW58MHx8MHx8fDA%3D",
-  },
-  {
-    title: "Solar Technician",
-    description:
-      "Go green with our solar technician services. We provide solar panel setup, inverter installations, renewable energy consultations, and complete maintenance to ensure optimal energy generation. Save on electricity bills while contributing to a sustainable future with our expert solar solutions.",
-    image: "https://plus.unsplash.com/premium_photo-1671808063421-697d6de53c2e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8c29sYXIlMjBpbnN0YWxsYXRpb258ZW58MHx8MHx8fDA%3D",
-  },
-];
+  const locale = useLocale()
+  const t = useTranslations("section");
+   const services = [
+    {
+      title: t('elecTitle'),
+      description: t('electDesc'),
+      image: 'https://plus.unsplash.com/premium_photo-1661911309991-cc81afcce97d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZWxlY3RyaWNpYW58ZW58MHx8MHx8fDA%3D',
+    },
+    {
+      title: t('plumbTitle'),
+      description: t('plumbDesc'),
+      image: 'https://plus.unsplash.com/premium_photo-1664298589198-b15ff5382648?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8cGx1bWJlcnxlbnwwfHwwfHx8MA%3D%3D',
+    },
+    {
+      title: t('carpTitle'),
+      description: t('carpDesc'),
+      image: 'https://images.unsplash.com/photo-1595844730289-b248c919d6f9?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Y2FycGVudGVyfGVufDB8fDB8fHww',
+    },
+    {
+      title: t('acTitle'),
+      description: t('acDesc'),
+      image: 'https://plus.unsplash.com/premium_photo-1682126009570-3fe2399162f7?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8YWMlMjByZXBhaXJ8ZW58MHx8MHx8fDA%3D',
+    },
+    {
+      title: t('solarTitle'),
+      description: t('solarDesc'),
+      image: 'https://plus.unsplash.com/premium_photo-1671808063421-697d6de53c2e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8c29sYXIlMjBpbnN0YWxsYXRpb258ZW58MHx8MHx8fDA%3D',
+    },
+  ];
 
 
   return (
   <section className="py-8 sm:py-16 bg-gradient-to-b from-[#fcf8f5] to-white">
   <div className="container mx-auto px-4 sm:px-6">
-    <h2 className="text-2xl sm:text-4xl font-extrabold text-center mb-6 sm:mb-8">Our Services</h2>
+    <h2 className="text-2xl sm:text-4xl font-extrabold text-center mb-6 sm:mb-8">{t('ourservices')}</h2>
 
     <div className="grid grid-cols-2 gap-4 md:grid-cols-1 md:gap-12"> {/* New: Grid for 2 columns on mobile, 1 on md+ */}
       {services.map((service, index) => (
