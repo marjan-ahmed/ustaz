@@ -46,7 +46,6 @@ export const metadata: Metadata = {
 };
 
 
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -61,11 +60,10 @@ export default async function RootLayout({
         className={`${anton.variable} ${atkinson.variable} antialiased`}
          cz-shortcut-listen="true"
       >
-         <NextIntlClientProvider>
-        <Header/>
+         {/* <NextIntlClientProvider> */}
+  
         {children}
-        <Footer />
-        </NextIntlClientProvider>
+        {/* </NextIntlClientProvider> */}
       </body>
     </html>
     </ClerkProvider>

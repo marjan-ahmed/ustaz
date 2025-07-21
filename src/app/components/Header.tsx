@@ -7,7 +7,6 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescri
 import { useUser, UserButton, SignIn } from "@clerk/nextjs"; // Import SignIn directly
 import { useEffect, useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
-// Removed: import LoginRegisterForm from "./LoginRegisterForm"; // No longer using custom form
 
 const navItems = [
   { label: "Home", href: "/" },

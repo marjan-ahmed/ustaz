@@ -2,6 +2,8 @@ import React from 'react';
 import Head from 'next/head';
 import { FaTools, FaBolt, FaWater, FaPhoneAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import Image from 'next/image';
+import Footer from '../components/Footer';
+import Header from '../components/Header';
 
 function AboutUs() {
   return (
@@ -9,6 +11,7 @@ function AboutUs() {
       <Head>
         <title>About Us | Ustaz</title>
       </Head>
+      <Header />
 
       <div className="min-h-screen bg-orange-50 text-gray-800">
 
@@ -81,6 +84,7 @@ function AboutUs() {
           </a>
         </section>
       </div>
+      <Footer />
     </>
   );
 }

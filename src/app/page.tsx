@@ -11,6 +11,7 @@ import HowItWorks from "./components/HowItWorks";
 import WhyChooseUs from "./components/WhyChooseUs";
 import FAQ from "./components/Faq";
 import Footer from "./components/Footer";
+import Header from "./components/Header";
 
 export default function Home() {
   const banners = [
@@ -39,6 +40,7 @@ export default function Home() {
 
   return (
     <>
+    <Header />
     <section className="w-full h-[300px] md:h-screen relative">
       <Carousel
         autoPlay
@@ -100,6 +102,7 @@ export default function Home() {
           <HowItWorks />
           <WhyChooseUs />
           <FAQ />
+          <Footer />
     </>
   );
 }

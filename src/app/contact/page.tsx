@@ -8,6 +8,8 @@ import {
   Twitter,
   Instagram,
 } from "lucide-react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +45,8 @@ export default function ContactPage() {
   };
 
   return (
+    <>
+    <Header/>
     <section className="bg-gray-50 relative">
 
       {/* Header Title */}
@@ -167,5 +171,7 @@ export default function ContactPage() {
         ></iframe>
       </div>
     </section>
+    <Footer/>
+    </>
   );
 }

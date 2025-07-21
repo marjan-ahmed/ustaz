@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { ImageCropEditor } from "../components/image-crop-editor"
+import Header from "../components/Header"
+import Footer from "../components/Footer"
 
 // Define TypeScript Interfaces
 interface IFormData {
@@ -58,6 +60,19 @@ interface ICountry {
   capital?: string[]
 }
 
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for environments where crypto.randomUUID is not available
+  // This is a simple UUID v4 approximation, not cryptographically strong
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function App() {
   const [currentStep, setCurrentStep] = useState<number>(1)
   const router = useRouter()
@@ -83,7 +98,7 @@ function App() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [userId, setUserId] = useState<string>(crypto.randomUUID())
+  const [userId, setUserId] = useState<string>(generateUUID())
   const [countries, setCountries] = useState<ICountry[]>([])
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [slideDirection, setSlideDirection] = useState<"next" | "back" | null>(null)
@@ -506,7 +521,10 @@ function App() {
     }
   }, [])
 
+  
   return (
+    <>
+    <Header/> 
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         {/* Enhanced Progress Bar */}
@@ -1185,14 +1203,15 @@ function App() {
                             className="h-5 w-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                           />
                           <Label htmlFor="agreedToTerms" className="ml-3 text-base text-gray-700">
-                            I agree to the{" "}
+                            {/* I agree to the{" "}
                             <Link href="#" className="text-orange-600 hover:underline font-medium">
                               Terms & Conditions
                             </Link>{" "}
                             and{" "}
                             <Link href="#" className="text-orange-600 hover:underline font-medium">
                               Privacy Policy
-                            </Link>{" "}
+                            </Link>{" "} */}
+                            I agree to the Terms & Conditions Privacy Policy
                             <span className="text-red-500">*</span>
                           </Label>
                         </div>
@@ -1280,6 +1299,8 @@ function App() {
         />
       )}
     </div>
+    <Footer/>
+    </>
   )
 }
 
