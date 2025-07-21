@@ -26,7 +26,7 @@ function AboutUs() {
           />
           <div>
             <h2 className="text-3xl font-semibold text-[#db4b0d] mb-4">Who We Are</h2>
-            <p className="text-lg leading-relaxed">
+            <p className="text-lg lea`ding-relaxed">
               QuickFix is a trusted service provider offering a wide range of home services including plumbing, electrical, handyman, and more. 
               We are committed to bringing reliability, affordability, and speed to every doorstep.
             </p>
@@ -91,7 +91,7 @@ function AboutUs() {
           <h2 className="text-3xl font-bold mb-4">Need Immediate Help?</h2>
           <p className="text-lg mb-6">Call or WhatsApp us anytime</p>
           <a
-            href="https://wa.me/923000000000"
+            href="https://wa.me/923051126649"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-white text-[#db4b0d] px-6 py-3 rounded-full font-semibold shadow hover:bg-orange-100 transition"
