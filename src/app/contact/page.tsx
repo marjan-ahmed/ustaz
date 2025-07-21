@@ -6,9 +6,9 @@ export default function ContactPage() {
     <section className="bg-gray-50">
 
       {/* Header Title */}
-      <div className="text-center py-10">
+      <div className="text-center py-10 bg-[#db4b0d] text-white">
         <h1 className="text-4xl font-bold">Contact Ustaz</h1>
-        <p className="mt-4 max-w-xl mx-auto text-gray-600">
+        <p className="mt-4 max-w-xl mx-auto text-white">
           We’re ready to assist you with your service needs—reach out anytime.
         </p>
       </div>
