@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { supabase } from "../../../client/supabaseClient" // Assuming this path is correct for your Supabase client
+import { supabase } from "../../../client/supabaseClient"
 import {
   ChevronRight,
   ChevronLeft,
@@ -15,21 +15,15 @@ import {
   MapPin,
   Calendar,
   Briefcase,
+  Edit3,
 } from "lucide-react"
-import { Button } from "@/components/ui/button" // Assuming this path is correct for your Button component
-import Link from "next/link" // Assuming this is for Next.js Link component
-
-// Import Shadcn UI Select and Input components
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select" // Assuming this path for shadcn select
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label" // Import Label component
+import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
+import { ImageCropEditor } from "../components/image-crop-editor"
 
 // Define TypeScript Interfaces
 interface IFormData {
@@ -42,7 +36,7 @@ interface IFormData {
   phoneCountryCode: string
   phoneNumber: string
   heardFrom: string
-  service_type: string; // New field for service type
+  service_type: string
   hasExperience: boolean | null
   experienceYears: string
   experienceDetails: string
@@ -56,14 +50,13 @@ interface IFormData {
 interface ICountry {
   name: {
     common: string
-  };
+  }
   idd: {
-    root: string;
-    suffixes?: string[];
-  };
-  capital?: string[];
+    root: string
+    suffixes?: string[]
+  }
+  capital?: string[]
 }
-
 
 function App() {
   const [currentStep, setCurrentStep] = useState<number>(1)
@@ -78,7 +71,7 @@ function App() {
     phoneCountryCode: "+92",
     phoneNumber: "",
     heardFrom: "",
-    service_type: "", // Initialize new field
+    service_type: "",
     hasExperience: null,
     experienceYears: "",
     experienceDetails: "",
@@ -90,11 +83,15 @@ function App() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [userId, setUserId] = useState<string>(crypto.randomUUID()) // Unique ID for this registration session
+  const [userId, setUserId] = useState<string>(crypto.randomUUID())
   const [countries, setCountries] = useState<ICountry[]>([])
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [slideDirection, setSlideDirection] = useState<"next" | "back" | null>(null)
   const [isRegisteredSuccessfully, setIsRegisteredSuccessfully] = useState<boolean>(false)
+
+  // Image crop editor states
+  const [showImageEditor, setShowImageEditor] = useState<boolean>(false)
+  const [tempImageUrl, setTempImageUrl] = useState<string>("")
 
   // OTP States
   const [otpSent, setOtpSent] = useState<boolean>(false)
@@ -105,9 +102,6 @@ function App() {
   const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false)
   const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false)
 
-  // Define primary color for consistent styling
-  const primaryColor = "#db4b0d" // Orange/Red shade
-
   // Fetch countries data from REST Countries API on component mount
   useEffect(() => {
     const fetchCountries = async () => {
@@ -117,11 +111,8 @@ function App() {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
         const data: ICountry[] = await response.json()
-        // Sort countries alphabetically for better UX
         data.sort((a, b) => a.name.common.localeCompare(b.name.common))
         setCountries(data)
-
-        // Set default phone country code if Pakistan is the default country
         const pakistan = data.find((c) => c.name.common === "Pakistan")
         if (pakistan && pakistan.idd.root) {
           setFormData((prev) => ({
@@ -131,7 +122,6 @@ function App() {
         }
       } catch (error) {
         console.error("Error fetching countries:", error)
-        // Fallback to a predefined list if API fails
         setCountries([
           { name: { common: "Pakistan" }, idd: { root: "+92" } },
           { name: { common: "United States" }, idd: { root: "+1" } },
@@ -144,7 +134,7 @@ function App() {
     fetchCountries()
   }, [])
 
-  // Simulated city data (as a comprehensive free API is difficult to integrate client-side)
+  // Simulated city data
   const citiesByCountry: Record<string, string[]> = {
     Pakistan: [
       "Karachi",
@@ -208,7 +198,6 @@ function App() {
     ],
   }
 
-  // Options for "Where did you hear about us?" dropdown
   const socialMediaPlatforms = [
     "Facebook",
     "Instagram",
@@ -216,17 +205,10 @@ function App() {
     "LinkedIn",
     "YouTube",
     "Referal/Friend",
-    "Other"
+    "Other",
   ]
 
-  // Options for "Select a service" dropdown
-  const service_types = [
-    "Electrician Service",
-    "Plumbing",
-    "Carpentry",
-    "AC Maintenance",
-    "Solar Technician",
-  ];
+  const service_types = ["Electrician Service", "Plumbing", "Carpentry", "AC Maintenance", "Solar Technician"]
 
   // Handle input changes for all form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -238,7 +220,6 @@ function App() {
       newValue = (e.target as HTMLInputElement).checked
     }
     setFormData((prev) => ({ ...prev, [name]: newValue }))
-    // Clear error for the field being edited
     if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev }
@@ -248,41 +229,39 @@ function App() {
     }
   }
 
-  // Handle file uploads (currently only for avatar)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: "avatar") => {
+  // Handle file uploads for avatar with image editor
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setFormData((prev) => ({
-          ...prev,
-          [fieldName]: file,
-          [`${fieldName}Url`]: reader.result as string, // Store URL for preview
-        }))
+        setTempImageUrl(reader.result as string)
+        setShowImageEditor(true)
       }
       reader.readAsDataURL(file)
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [fieldName]: null,
-        [`${fieldName}Url`]: "",
-      }))
     }
-    // Clear error for the field being edited
-    if (errors[fieldName]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[fieldName]
-        return newErrors
-      })
-    }
+  }
+
+  // Handle saving cropped image
+  const handleSaveCroppedImage = (croppedImageUrl: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      avatarUrl: croppedImageUrl,
+    }))
+    setShowImageEditor(false)
+    setTempImageUrl("")
+  }
+
+  // Handle canceling image editor
+  const handleCancelImageEditor = () => {
+    setShowImageEditor(false)
+    setTempImageUrl("")
   }
 
   // Validation function for each step of the form
   const validateStep = (): boolean => {
     const newErrors: Record<string, string> = {}
     let isValid = true
-
     if (currentStep === 1) {
       if (!formData.firstName.trim()) {
         newErrors.firstName = "First name is required."
@@ -298,14 +277,14 @@ function App() {
       } else if (!formData.cnic.startsWith("42201")) {
         newErrors.cnic = "CNIC must start with 42201."
         isValid = false
-      } else if (!/^\d{13}$/.test(formData.cnic)) { // 13 digits, no dashes
+      } else if (!/^\d{13}$/.test(formData.cnic)) {
         newErrors.cnic = "CNIC must be 13 digits (e.g., 4220112345678)."
         isValid = false
       }
       if (!formData.phoneNumber.trim()) {
         newErrors.phoneNumber = "Phone number is required."
         isValid = false
-      } else if (!/^\d{7,}$/.test(formData.phoneNumber)) { // Simple digit check for phone number
+      } else if (!/^\d{7,}$/.test(formData.phoneNumber)) {
         newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7)."
         isValid = false
       }
@@ -322,14 +301,14 @@ function App() {
         newErrors.heardFrom = "This question is required."
         isValid = false
       }
-      if (!formData.service_type.trim()) { // New validation for service_type
+      if (!formData.service_type.trim()) {
         newErrors.service_type = "Please select a service type."
-        isValid = false;
+        isValid = false
       }
       if (formData.hasExperience === null) {
         newErrors.hasExperience = "Please select an option."
         isValid = false
-      } else if (formData.hasExperience) { // If user has experience, these fields are mandatory
+      } else if (formData.hasExperience) {
         if (!formData.experienceYears.trim()) {
           newErrors.experienceYears = "Years of experience is required."
           isValid = false
@@ -347,11 +326,10 @@ function App() {
         isValid = false
       }
     } else if (currentStep === 3) {
-        // For the final step, only agreement to terms is mandatory before submission
-        if (!formData.agreedToTerms) {
-            newErrors.agreedToTerms = "You must agree to the Terms & Conditions and Privacy Policy."
-            isValid = false
-        }
+      if (!formData.agreedToTerms) {
+        newErrors.agreedToTerms = "You must agree to the Terms & Conditions and Privacy Policy."
+        isValid = false
+      }
     }
     setErrors(newErrors)
     return isValid
@@ -360,59 +338,56 @@ function App() {
   // Handle "Next" button click with animation
   const handleNext = () => {
     if (validateStep()) {
-      setSlideDirection("next") // Set slide direction for CSS transition
+      setSlideDirection("next")
       setIsTransitioning(true)
       setTimeout(() => {
-        setCurrentStep((prev) => prev + 1) // Move to next step
-        setIsTransitioning(false) // End transition
-        setSlideDirection(null) // Reset slide direction
-      }, 300) // Animation duration
+        setCurrentStep((prev) => prev + 1)
+        setIsTransitioning(false)
+        setSlideDirection(null)
+      }, 300)
     }
   }
 
   // Handle "Back" button click with animation
   const handleBack = () => {
-    setSlideDirection("back") // Set slide direction for CSS transition
+    setSlideDirection("back")
     setIsTransitioning(true)
     setTimeout(() => {
-      setCurrentStep((prev) => prev - 1) // Move to previous step
-      setIsTransitioning(false) // End transition
-      setSlideDirection(null) // Reset slide direction
-    }, 300) // Animation duration
+      setCurrentStep((prev) => prev - 1)
+      setIsTransitioning(false)
+      setSlideDirection(null)
+    }, 300)
   }
 
   // Function to send OTP via Next.js API route
   const sendOtp = async () => {
     setOtpError("")
     setOtpSentMessage("")
-    setIsSendingOtp(true) // Start loading state for OTP sending
-
+    setIsSendingOtp(true)
     try {
-      const response = await fetch('/api/send-otp', { // Call your Next.js API route
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber: formData.phoneNumber,
-          phoneCountryCode: formData.phoneCountryCode
-        })
-      });
-
-      const data = await response.json();
-
+          phoneCountryCode: formData.phoneCountryCode,
+        }),
+      })
+      const data = await response.json()
       if (!response.ok) {
-        // If response is not OK (e.g., status 400 or 500), throw an error
-        throw new Error(data.error || 'Failed to send OTP.');
+        throw new Error(data.error || "Failed to send OTP.")
       }
-
-      setOtpSent(true);
-      setOtpSentMessage(`OTP has been sent to ${formData.phoneCountryCode}${formData.phoneNumber}. Please check your phone.`);
-      console.log("OTP send request successful:", data);
+      setOtpSent(true)
+      setOtpSentMessage(
+        `OTP has been sent to ${formData.phoneCountryCode}${formData.phoneNumber}. Please check your phone.`,
+      )
+      console.log("OTP send request successful:", data)
     } catch (error: any) {
-      console.error("Error sending OTP:", error.message);
-      setOtpError(`Failed to send OTP: ${error.message}. Please check your phone number and try again.`);
-      setOtpSent(false); // Reset otpSent if sending failed
+      console.error("Error sending OTP:", error.message)
+      setOtpError(`Failed to send OTP: ${error.message}. Please check your phone number and try again.`)
+      setOtpSent(false)
     } finally {
-      setIsSendingOtp(false); // End loading state for OTP sending
+      setIsSendingOtp(false)
     }
   }
 
@@ -420,92 +395,81 @@ function App() {
   const verifyOtp = async () => {
     setOtpError("")
     setOtpSentMessage("")
-    setIsVerifyingOtp(true) // Start loading state for OTP verification
-
+    setIsVerifyingOtp(true)
     try {
-      const response = await fetch('/api/verify-otp', { // Call your Next.js API route
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phoneNumber: formData.phoneNumber,
           phoneCountryCode: formData.phoneCountryCode,
-          otp: otpInput
-        })
-      });
-
-      const data = await response.json();
-
+          otp: otpInput,
+        }),
+      })
+      const data = await response.json()
       if (!response.ok) {
-        // If response is not OK, throw an error
-        throw new Error(data.error || 'Failed to verify OTP.');
+        throw new Error(data.error || "Failed to verify OTP.")
       }
-
-      setIsPhoneVerified(true); // Mark phone as verified
-      setOtpError(""); // Clear any previous OTP errors
-      setOtpSentMessage("Phone number verified successfully!");
-      console.log("OTP verification successful:", data);
-
+      setIsPhoneVerified(true)
+      setOtpError("")
+      setOtpSentMessage("Phone number verified successfully!")
+      console.log("OTP verification successful:", data)
     } catch (error: any) {
-      console.error("Error verifying OTP:", error.message);
-      setIsPhoneVerified(false); // Keep phone as not verified on error
-      setOtpError(`Invalid OTP: ${error.message}. Please try again.`);
+      console.error("Error verifying OTP:", error.message)
+      setIsPhoneVerified(false)
+      setOtpError(`Invalid OTP: ${error.message}. Please try again.`)
     } finally {
-      setIsVerifyingOtp(false); // End loading state for OTP verification
+      setIsVerifyingOtp(false)
     }
   }
 
   // Function to skip phone verification
   const skipVerification = () => {
-    setIsPhoneVerified(false) // Explicitly mark as not verified
+    setIsPhoneVerified(false)
     setOtpError("")
     setOtpSentMessage("Phone verification skipped. Your request will be pending approval.")
   }
 
   // Function to send all form data to Supabase
   const sendToSupabase = async (data: IFormData) => {
-    setIsLoading(true) // Start loading state for form submission
+    setIsLoading(true)
     console.log("Attempting to send data to Supabase:", data)
     try {
       const dataToSave = {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email || null, // Send null if email is empty
+        email: data.email || null,
         cnic: data.cnic,
         country: data.country,
         city: data.city,
         phoneCountryCode: data.phoneCountryCode,
         phoneNumber: data.phoneNumber,
         heardFrom: data.heardFrom,
-        service_type: data.service_type, // Include new service_type field
+        service_type: data.service_type,
         hasExperience: data.hasExperience,
-        // Convert experienceYears to number or null
         experienceYears:
           data.hasExperience && data.experienceYears.trim() !== "" ? Number.parseInt(data.experienceYears) : null,
-        experienceDetails: data.experienceDetails || null, // Send null if empty
+        experienceDetails: data.experienceDetails || null,
         hasActiveMobile: data.hasActiveMobile,
-        avatarUrl: data.avatarUrl || null, // Send null if no avatar
-        // agreedToTerms and wantsUpdates are intentionally NOT sent to DB as per previous user request
-        registrationDate: new Date().toISOString(), // Timestamp for registration
-        userId: userId, // Include the generated unique user ID
-        phone_verified: isPhoneVerified, // Include phone verification status from Twilio Verify
+        avatarUrl: data.avatarUrl || null,
+        registrationDate: new Date().toISOString(),
+        userId: userId,
+        phone_verified: isPhoneVerified,
       }
-
-      // Insert data into the 'ustaz_registrations' table
       const { data: supabaseData, error } = await supabase.from("ustaz_registrations").insert([dataToSave])
-
       if (error) {
         throw error
       }
       console.log("Data successfully sent to Supabase:", supabaseData)
       setIsLoading(false)
-      setIsRegisteredSuccessfully(true) // Set success state on successful registration
+      setIsRegisteredSuccessfully(true)
     } catch (error: any) {
       console.error("Error sending data to Supabase:", error.message)
       setIsLoading(false)
-      setIsRegisteredSuccessfully(false) // Ensure success state is false on error
-      localStorage.setItem('registeredUserId', userId);
-      localStorage.setItem('isRegisteredSuccessfully', 'true');
-      router.push(`/dashboard?userId=${userId}`);
+      setIsRegisteredSuccessfully(false)
+      localStorage.setItem("registeredUserId", userId)
+      localStorage.setItem("isRegisteredSuccessfully", "true")
+      router.push(`/dashboard?userId=${userId}`)
     }
   }
 
@@ -534,14 +498,13 @@ function App() {
   }
 
   useEffect(() => {
-  const storedUserId = localStorage.getItem('registeredUserId');
-  const storedSuccess = localStorage.getItem('isRegisteredSuccessfully');
-
-  if (storedUserId && storedSuccess === 'true') {
-    setUserId(storedUserId);
-    setIsRegisteredSuccessfully(true);
-  }
-}, []);
+    const storedUserId = localStorage.getItem("registeredUserId")
+    const storedSuccess = localStorage.getItem("isRegisteredSuccessfully")
+    if (storedUserId && storedSuccess === "true") {
+      setUserId(storedUserId)
+      setIsRegisteredSuccessfully(true)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">
@@ -556,13 +519,11 @@ function App() {
                 style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
               />
             </div>
-
             {/* Step Indicators */}
             {steps.map((step, index) => {
               const StepIcon = step.icon
               const isActive = currentStep >= step.number
               const isCurrent = currentStep === step.number
-
               return (
                 <div key={step.number} className="relative flex flex-col items-center z-10">
                   <div
@@ -604,7 +565,6 @@ function App() {
                     </h2>
                     <p className="text-gray-600 text-lg">Let's start with your personal information</p>
                   </div>
-
                   <div className="grid md:grid-cols-2 gap-6">
                     {/* First Name */}
                     <div className="group">
@@ -629,7 +589,6 @@ function App() {
                         <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.firstName}</p>
                       )}
                     </div>
-
                     {/* Last Name */}
                     <div className="group">
                       <Label htmlFor="lastName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
@@ -654,7 +613,6 @@ function App() {
                       )}
                     </div>
                   </div>
-
                   {/* Email */}
                   <div className="group">
                     <Label htmlFor="email" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
@@ -670,7 +628,6 @@ function App() {
                       placeholder="your.email@example.com"
                     />
                   </div>
-
                   {/* CNIC */}
                   <div className="group">
                     <Label htmlFor="cnic" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
@@ -693,104 +650,90 @@ function App() {
                     />
                     {errors.cnic && <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.cnic}</p>}
                   </div>
-
                   {/* Address Section */}
                   <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 md:p-8 rounded-2xl border border-orange-100 shadow-sm">
-  <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-6">
-    <MapPin className="w-5 h-5 mr-2 text-orange-500" />
-    Address Information
-  </h3>
-
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {/* Country */}
-    <div className="space-y-2">
-      <Label htmlFor="country" className="text-sm font-semibold text-gray-700">
-        Country <span className="text-red-500">*</span>
-      </Label>
-      <Select
-        value={formData.country}
-        onValueChange={(value) => {
-          const selectedCountry = countries.find(
-            (c) => c.name.common === value
-          );
-          setFormData((prev) => ({
-            ...prev,
-            country: value,
-            phoneCountryCode:
-              selectedCountry?.idd?.root +
-                (selectedCountry?.idd?.suffixes?.[0] || "") || "",
-            city: "",
-          }));
-        }}
-      >
-        <SelectTrigger
-          id="country"
-          className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
-            errors.country
-              ? "border-red-300 bg-red-50"
-              : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-          }`}
-        >
-          <SelectValue placeholder="Select Country" />
-        </SelectTrigger>
-        <SelectContent>
-          {countries.map((country) => (
-            <SelectItem key={country.name.common} value={country.name.common}>
-              {country.name.common}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {errors.country && (
-        <p className="text-red-500 text-xs mt-1 animate-fade-in">
-          {errors.country}
-        </p>
-      )}
-    </div>
-
-    {/* City */}
-    <div className="space-y-2">
-      <Label htmlFor="city" className="text-sm font-semibold text-gray-700">
-        City <span className="text-red-500">*</span>
-      </Label>
-      <Select
-        value={formData.city}
-        onValueChange={(value) =>
-          setFormData((prev) => ({ ...prev, city: value }))
-        }
-        disabled={!formData.country || !citiesByCountry[formData.country]}
-      >
-        <SelectTrigger
-          id="city"
-          className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
-            errors.city
-              ? "border-red-300 bg-red-50"
-              : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-          } ${
-            !formData.country || !citiesByCountry[formData.country]
-              ? "opacity-50 cursor-not-allowed"
-              : ""
-          }`}
-        >
-          <SelectValue placeholder="Select City" />
-        </SelectTrigger>
-        <SelectContent>
-          {formData.country &&
-            citiesByCountry[formData.country]?.map((city) => (
-              <SelectItem key={city} value={city}>
-                {city}
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
-      {errors.city && (
-        <p className="text-red-500 text-xs mt-1 animate-fade-in">
-          {errors.city}
-        </p>
-      )}
-    </div>
-  </div>
-</div>
+                    <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-6">
+                      <MapPin className="w-5 h-5 mr-2 text-orange-500" />
+                      Address Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Country */}
+                      <div className="space-y-2">
+                        <Label htmlFor="country" className="text-sm font-semibold text-gray-700">
+                          Country <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          value={formData.country}
+                          onValueChange={(value) => {
+                            const selectedCountry = countries.find((c) => c.name.common === value)
+                            setFormData((prev) => ({
+                              ...prev,
+                              country: value,
+                              phoneCountryCode:
+                                selectedCountry?.idd?.root + (selectedCountry?.idd?.suffixes?.[0] || "") || "",
+                              city: "",
+                            }))
+                          }}
+                        >
+                          <SelectTrigger
+                            id="country"
+                            className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
+                              errors.country
+                                ? "border-red-300 bg-red-50"
+                                : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+                            }`}
+                          >
+                            <SelectValue placeholder="Select Country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {countries.map((country) => (
+                              <SelectItem key={country.name.common} value={country.name.common}>
+                                {country.name.common}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.country && (
+                          <p className="text-red-500 text-xs mt-1 animate-fade-in">{errors.country}</p>
+                        )}
+                      </div>
+                      {/* City */}
+                      <div className="space-y-2">
+                        <Label htmlFor="city" className="text-sm font-semibold text-gray-700">
+                          City <span className="text-red-500">*</span>
+                        </Label>
+                        <Select
+                          value={formData.city}
+                          onValueChange={(value) => setFormData((prev) => ({ ...prev, city: value }))}
+                          disabled={!formData.country || !citiesByCountry[formData.country]}
+                        >
+                          <SelectTrigger
+                            id="city"
+                            className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
+                              errors.city
+                                ? "border-red-300 bg-red-50"
+                                : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+                            } ${
+                              !formData.country || !citiesByCountry[formData.country]
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select City" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {formData.country &&
+                              citiesByCountry[formData.country]?.map((city) => (
+                                <SelectItem key={city} value={city}>
+                                  {city}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.city && <p className="text-red-500 text-xs mt-1 animate-fade-in">{errors.city}</p>}
+                      </div>
+                    </div>
+                  </div>
                   {/* Phone Number */}
                   <div className="group">
                     <Label htmlFor="phoneNumber" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
@@ -819,7 +762,6 @@ function App() {
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.phoneNumber}</p>
                     )}
                   </div>
-
                   {/* Navigation */}
                   <div className="flex justify-end pt-6">
                     <Button
@@ -842,7 +784,6 @@ function App() {
                     </h2>
                     <p className="text-gray-600 text-lg">Help us understand your background better</p>
                   </div>
-
                   {/* Where did you hear about us */}
                   <div className="group">
                     <Label htmlFor="heardFrom" className="text-sm font-semibold text-gray-700 mb-3 block">
@@ -870,8 +811,7 @@ function App() {
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.heardFrom}</p>
                     )}
                   </div>
-
-                  {/* New: Select a service (Shadcn UI Select) */}
+                  {/* Select a service */}
                   <div className="group">
                     <Label htmlFor="service_type" className="text-sm font-semibold text-gray-700 mb-3 block">
                       Select a Service <span className="text-red-500">*</span>
@@ -879,13 +819,20 @@ function App() {
                     <Select
                       name="service_type"
                       value={formData.service_type}
-                      onValueChange={(value) => handleChange({ target: { name: "service_type", value: value, type: "select-one" } } as React.ChangeEvent<HTMLSelectElement>)}
+                      onValueChange={(value) =>
+                        handleChange({
+                          target: { name: "service_type", value: value, type: "select-one" },
+                        } as React.ChangeEvent<HTMLSelectElement>)
+                      }
                     >
-                      <SelectTrigger id="service_type" className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
-                        errors.service_type
-                          ? "border-red-300 bg-red-50"
-                          : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                      }`}>
+                      <SelectTrigger
+                        id="service_type"
+                        className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
+                          errors.service_type
+                            ? "border-red-300 bg-red-50"
+                            : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+                        }`}
+                      >
                         <SelectValue placeholder="Select a service type" />
                       </SelectTrigger>
                       <SelectContent className="bg-white border border-gray-200 rounded-xl shadow-lg">
@@ -900,8 +847,6 @@ function App() {
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.service_type}</p>
                     )}
                   </div>
-
-
                   {/* Experience Question */}
                   <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-6 border border-orange-100">
                     <Label className="text-sm font-semibold text-gray-700 mb-4 block">
@@ -938,12 +883,14 @@ function App() {
                     {errors.hasExperience && (
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.hasExperience}</p>
                     )}
-
                     {/* Experience Details */}
                     {formData.hasExperience && (
                       <div className="mt-6 space-y-4 p-4 bg-white rounded-xl border border-orange-200 animate-fade-in">
                         <div>
-                          <Label htmlFor="experienceYears" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                          <Label
+                            htmlFor="experienceYears"
+                            className="flex items-center text-sm font-semibold text-gray-700 mb-2"
+                          >
                             <Calendar className="w-4 h-4 mr-2 text-orange-500" />
                             Years of Experience <span className="text-red-500">*</span>
                           </Label>
@@ -989,7 +936,6 @@ function App() {
                       </div>
                     )}
                   </div>
-
                   {/* Active Mobile Question */}
                   <div className="group">
                     <Label className="text-sm font-semibold text-gray-700 mb-3 block">
@@ -1027,7 +973,6 @@ function App() {
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.hasActiveMobile}</p>
                     )}
                   </div>
-
                   {/* Navigation */}
                   <div className="flex justify-between pt-6">
                     <Button
@@ -1053,34 +998,51 @@ function App() {
                 <div className="space-y-8 text-center">
                   {isRegisteredSuccessfully ? (
                     // Success message and identifier component
-                    <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative" role="alert">
+                    <div
+                      className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative"
+                      role="alert"
+                    >
                       <strong className="font-bold">Registration Successful!</strong>
                       <span className="block sm:inline"> Thank you, {userFullName}!</span>
-                      <p className="text-sm mt-2">Your unique User ID is: <span className="font-mono font-semibold break-all">{userId}</span></p>
+                      <p className="text-sm mt-2">
+                        Your unique User ID is: <span className="font-mono font-semibold break-all">{userId}</span>
+                      </p>
                       <p className="text-sm mt-1">Please keep this ID safe for future reference.</p>
-                       <Link href={`/dashboard?userId=${userId}`} passHref>
+                      <Link href={`/dashboard?userId=${userId}`} passHref>
                         <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md">
                           Go to Dashboard
                         </Button>
-                       </Link>
+                      </Link>
                     </div>
                   ) : (
                     <>
                       <h2 className="text-4xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-4">
-                        Welcome, {userFullName || 'Future Ustaz'}!
+                        Welcome, {userFullName || "Future Ustaz"}!
                       </h2>
                       <p className="text-lg text-gray-600">
                         We're excited to have you join our community of service providers.
                       </p>
 
+                      {/* Avatar Upload Section with Image Crop Editor */}
                       <div className="flex flex-col items-center justify-center space-y-4">
-                        <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shadow-lg border-4 border-orange-400">
+                        <div className="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shadow-lg border-4 border-orange-400">
                           {formData.avatarUrl ? (
-                            <img
-                              src={formData.avatarUrl}
-                              alt="User Avatar"
-                              className="w-full h-full object-cover"
-                            />
+                            <>
+                              <img
+                                src={formData.avatarUrl || "/placeholder.svg"}
+                                alt="User Avatar"
+                                className="w-full h-full object-cover"
+                              />
+                              <button
+                                onClick={() => {
+                                  setTempImageUrl(formData.avatarUrl)
+                                  setShowImageEditor(true)
+                                }}
+                                className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-200"
+                              >
+                                <Edit3 className="w-6 h-6 text-white" />
+                              </button>
+                            </>
                           ) : (
                             <Upload className="w-20 h-20 text-gray-400" />
                           )}
@@ -1089,12 +1051,12 @@ function App() {
                           <Label htmlFor="avatar" className="block text-sm font-semibold text-gray-700 mb-2">
                             Upload Your Avatar (Optional)
                           </Label>
-                          <input // Keeping standard HTML input for type="file"
+                          <input
                             type="file"
                             id="avatar"
                             name="avatar"
                             accept="image/*"
-                            onChange={(e) => handleFileChange(e, 'avatar')}
+                            onChange={handleFileChange}
                             className="w-full max-w-xs px-4 py-2 border-2 border-gray-200 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 focus:border-orange-400 bg-white hover:border-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                           />
                         </div>
@@ -1106,7 +1068,11 @@ function App() {
                           <Phone className="w-5 h-5 mr-2 text-blue-600" /> Verify Your Phone Number
                         </h3>
                         <p className="text-base text-gray-700">
-                          Your registered phone number: <span className="font-bold text-blue-700">{formData.phoneCountryCode}{formData.phoneNumber}</span>
+                          Your registered phone number:{" "}
+                          <span className="font-bold text-blue-700">
+                            {formData.phoneCountryCode}
+                            {formData.phoneNumber}
+                          </span>
                           {isPhoneVerified && <span className="text-green-600 ml-2 font-semibold"> (Verified!)</span>}
                         </p>
                         {!isPhoneVerified && (
@@ -1115,22 +1081,33 @@ function App() {
                               onClick={sendOtp}
                               disabled={otpSent || isSendingOtp}
                               className={`w-full px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 mt-4 shadow-md hover:shadow-lg flex items-center justify-center
-                                ${otpSent || isSendingOtp ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                ${otpSent || isSendingOtp ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
                             >
                               {isSendingOtp ? (
                                 <div className="flex items-center">
                                   <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
                                   </svg>
                                   Sending OTP...
                                 </div>
                               ) : (
-                                'Send OTP'
+                                "Send OTP"
                               )}
                             </Button>
                             {otpSentMessage && (
-                              <p className={`text-sm mt-3 ${isPhoneVerified ? 'text-green-600' : 'text-blue-600'}`}>
+                              <p className={`text-sm mt-3 ${isPhoneVerified ? "text-green-600" : "text-blue-600"}`}>
                                 {otpSentMessage}
                               </p>
                             )}
@@ -1163,13 +1140,24 @@ function App() {
                                     {isVerifyingOtp ? (
                                       <div className="flex items-center">
                                         <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                          <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                          ></circle>
+                                          <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                          ></path>
                                         </svg>
                                         Verifying...
                                       </div>
                                     ) : (
-                                      'Verify OTP'
+                                      "Verify OTP"
                                     )}
                                   </Button>
                                   <Button
@@ -1197,11 +1185,20 @@ function App() {
                             className="h-5 w-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                           />
                           <Label htmlFor="agreedToTerms" className="ml-3 text-base text-gray-700">
-                            I agree to the <Link href="#" className="text-orange-600 hover:underline font-medium">Terms & Conditions</Link> and <Link href="#" className="text-orange-600 hover:underline font-medium">Privacy Policy</Link> <span className="text-red-500">*</span>
+                            I agree to the{" "}
+                            <Link href="#" className="text-orange-600 hover:underline font-medium">
+                              Terms & Conditions
+                            </Link>{" "}
+                            and{" "}
+                            <Link href="#" className="text-orange-600 hover:underline font-medium">
+                              Privacy Policy
+                            </Link>{" "}
+                            <span className="text-red-500">*</span>
                           </Label>
                         </div>
-                        {errors.agreedToTerms && <p className="text-red-500 text-sm mt-2 animate-fade-in">{errors.agreedToTerms}</p>}
-
+                        {errors.agreedToTerms && (
+                          <p className="text-red-500 text-sm mt-2 animate-fade-in">{errors.agreedToTerms}</p>
+                        )}
                         <div className="flex items-center">
                           <input
                             type="checkbox"
@@ -1250,18 +1247,19 @@ function App() {
                                 <path
                                   className="opacity-75"
                                   fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
                               </svg>
                               Submitting...
                             </div>
                           ) : (
-                            'Submit Registration'
+                            "Submit Registration"
                           )}
                         </Button>
                       </div>
                     </>
                   )}
-                  {userId && !isRegisteredSuccessfully && ( // Only show User ID if not yet successfully registered
+                  {userId && !isRegisteredSuccessfully && (
                     <p className="text-sm text-gray-500 mt-4">
                       Your User ID: <span className="font-mono text-gray-700 break-all">{userId}</span>
                     </p>
@@ -1272,6 +1270,15 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Image Crop Editor Modal */}
+      {showImageEditor && (
+        <ImageCropEditor
+          initialImage={tempImageUrl}
+          onSave={handleSaveCroppedImage}
+          onCancel={handleCancelImageEditor}
+        />
+      )}
     </div>
   )
 }
