@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useSearchParams } from "next/navigation"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
@@ -103,6 +104,136 @@ interface ICountry {
     suffixes?: string[]
   }
   capital?: string[]
+}
+
+// Loading skeleton components
+function DashboardSkeleton() {
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gray-50">
+        {/* Sidebar Skeleton */}
+        <div className="w-64 border-r border-gray-200 bg-white">
+          <div className="border-b border-gray-200 p-6">
+            <div className="flex items-center space-x-3">
+              <Skeleton className="w-10 h-10 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6">
+            <div className="mb-8">
+              <div className="flex items-center space-x-4 mb-4">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </div>
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16" />
+              <div className="space-y-1">
+                <Skeleton className="h-10 w-full rounded-lg" />
+                <Skeleton className="h-10 w-full rounded-lg" />
+                <Skeleton className="h-10 w-full rounded-lg" />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 p-6">
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="flex-1">
+          <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white px-6">
+            <Skeleton className="h-6 w-6" />
+            <div className="h-4 w-px bg-gray-200 mx-2" />
+            <div className="flex items-center space-x-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-2" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            <div className="max-w-4xl mx-auto">
+              <Card className="shadow-sm border-gray-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                  <Skeleton className="h-10 w-32" />
+                </CardHeader>
+
+                <CardContent className="space-y-8">
+                  {/* Personal Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Location Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Contact Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 2 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Service Information Skeleton */}
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-4" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="space-y-2">
+                          <Skeleton className="h-4 w-20" />
+                          <Skeleton className="h-6 w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  )
 }
 
 function ProviderDashboard() {
@@ -722,14 +853,7 @@ function ProviderDashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#db4b0d]"></div>
-          <p className="text-gray-600 font-medium">Loading dashboard...</p>
-        </div>
-      </div>
-    )
+    return <DashboardSkeleton />
   }
 
   if (error) {
@@ -947,11 +1071,7 @@ function ProviderDashboard() {
                           disabled={isSavingProfile}
                           className="bg-green-600 hover:bg-green-700"
                         >
-                          {isSavingProfile ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          ) : (
-                            <Save className="mr-2 h-4 w-4" />
-                          )}
+                          {isSavingProfile ? <Skeleton className="h-4 w-4 mr-2" /> : <Save className="mr-2 h-4 w-4" />}
                           Save Changes
                         </Button>
                         <Button onClick={handleCancelEdit} variant="outline">
@@ -1407,6 +1527,10 @@ function ProviderDashboard() {
                               <p className="text-base text-gray-900">{providerData.hasActiveMobile ? "Yes" : "No"}</p>
                             </div>
 
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-gray-500">How did you hear about us?</Label>
+                              <p className="text-base text-gray-900">{providerData.heardFrom}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1584,7 +1708,7 @@ function ProviderDashboard() {
                               >
                                 {isSavingPhone ? (
                                   <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    <Skeleton className="h-4 w-4 mr-2" />
                                     Saving...
                                   </div>
                                 ) : (
@@ -1622,7 +1746,7 @@ function ProviderDashboard() {
                           >
                             {isSendingOtp ? (
                               <div className="flex items-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                <Skeleton className="h-4 w-4 mr-2" />
                                 Sending OTP...
                               </div>
                             ) : (
@@ -1668,7 +1792,7 @@ function ProviderDashboard() {
                             >
                               {isVerifyingOtp ? (
                                 <div className="flex items-center">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  <Skeleton className="h-4 w-4 mr-2" />
                                   Verifying...
                                 </div>
                               ) : (

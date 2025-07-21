@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { HiBars3BottomRight } from "react-icons/hi2";
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { useUser, UserButton, SignIn } from "@clerk/nextjs"; // Import SignIn directly
 import { useEffect, useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
+// Removed: import LoginRegisterForm from "./LoginRegisterForm"; // No longer using custom form
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -29,7 +30,7 @@ export default function Header() {
     setLanguage(selected);
     localStorage.setItem("language", selected);
     // optional: reload or update text direction
-    // window.location.reload(); 
+    // window.location.reload();
   };
 
   return (
@@ -48,7 +49,7 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Desktop Nav */}
+        {/* Desktop (md and up) Nav */}
         <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <Link
@@ -58,20 +59,32 @@ export default function Header() {
             >
               {item.label}
             </Link>
-          ))}        
+          ))}
 
-          
           {isSignedIn ? (
             <UserButton />
           ) : (
             <>
-              <Link
-                href="/auth/login"
-                className="text-gray-700 hover:text-[#db4b0d] transition-colors"
-              >
-                Login
-              </Link>
-                     <LanguageSwitcher />
+              {/* Login Sheet Trigger for Desktop/Tablet (md and up) */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <button className="text-gray-700 hover:text-[#db4b0d] transition-colors focus:outline-none">
+                    Login
+                  </button>
+                </SheetTrigger>
+                <SheetContent side="top" className="h-screen flex flex-col p-4 sm:p-6 md:p-8">
+                  <SheetHeader className="pb-4 border-b border-gray-200">
+                    <SheetTitle className="text-2xl font-bold text-gray-800">Login to Your Account</SheetTitle>
+                    <SheetDescription className="text-gray-600">
+                      Enter your credentials to access the Ustaz dashboard.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="flex-1 overflow-y-auto pt-4 flex items-center justify-center">
+                    <SignIn /> {/* Directly using SignIn component */}
+                  </div>
+                </SheetContent>
+              </Sheet>
+              <LanguageSwitcher />
 
               <Link
                 href="/auth/register"
@@ -81,10 +94,9 @@ export default function Header() {
               </Link>
             </>
           )}
-            {/* Language Selector */}
         </div>
 
-        {/* Mobile Nav Button */}
+        {/* Mobile Nav Button (hidden on md and up) */}
         <div className="md:hidden flex items-center">
           <Sheet>
             <SheetTrigger asChild>
@@ -107,15 +119,16 @@ export default function Header() {
               ))}
 
               {/* Language Selector Mobile */}
-             <LanguageSwitcher />
+              <LanguageSwitcher />
 
               {isSignedIn ? (
                 <UserButton />
               ) : (
                 <>
+                  {/* Mobile Login Link - redirects to /auth/login */}
                   <Link
                     href="/auth/login"
-                    className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
                   >
                     Login
                   </Link>

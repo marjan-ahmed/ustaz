@@ -15,19 +15,19 @@ import Footer from "./components/Footer";
 export default function Home() {
   const banners = [
     {
-      src: "/plumber.png",
+      src: "https://plus.unsplash.com/premium_photo-1661908782924-de673a5c6988?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       title: "Electrician Services",
       description: "Get expert plumbing solutions quickly and affordably.",
       button: "Book a Plumber",
     },
     {
-      src: "/electrician.png",
+      src: "https://plus.unsplash.com/premium_photo-1663013675008-bd5a7898ac4f?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8cGx1bWJlcnxlbnwwfHwwfHx8MA%3D%3D",
       title: "Plumber Services",
       description: "Certified electricians for home and office electrical work.",
       button: "Hire Electrician",
     },
     {
-      src: "/carpenter.png",
+      src: "https://plus.unsplash.com/premium_photo-1664300497978-49eaa30a815e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1yZWxhdGVkfDV8fHxlbnwwfHx8fHw%3D",
       title: "Carpentry Services",
       description: "Custom furniture and woodwork by skilled carpenters.",
       button: "Find a Carpenter",
@@ -68,7 +68,7 @@ export default function Home() {
             <div
               className="absolute inset-0"
               style={{
-                backgroundColor: "rgba(150, 60, 13, 0.2)",
+                backgroundColor: "rgba(150, 60, 13, 0.4)",
               }}
             ></div>
           </div>

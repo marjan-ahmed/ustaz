@@ -3,9 +3,18 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 export const nextConfig: NextConfig = {
   /* config options here */
-   images: {
-    domains: ['images.pexels.com'],
-  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.pexels.com'
+      },
+      {
+        protocol: 'https',
+        hostname: 'plus.unsplash.com'
+      }
+    ]
+  }
 
 };
 

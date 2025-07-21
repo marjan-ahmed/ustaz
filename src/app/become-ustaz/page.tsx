@@ -1059,10 +1059,10 @@ function App() {
                       <p className="text-sm mt-2">Your unique User ID is: <span className="font-mono font-semibold break-all">{userId}</span></p>
                       <p className="text-sm mt-1">Please keep this ID safe for future reference.</p>
                        <Link href={`/dashboard?userId=${userId}`} passHref>
-//                        <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md">
-//                          Go to Dashboard
-//                        </Button>
-//                       </Link>
+                        <Button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-md">
+                          Go to Dashboard
+                        </Button>
+                       </Link>
                     </div>
                   ) : (
                     <>
