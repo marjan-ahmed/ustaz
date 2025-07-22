@@ -33,7 +33,6 @@ function Services() {
     },
   ];
 
-
   return (
   <section className="py-8 sm:py-16 bg-gradient-to-b from-[#fcf8f5] to-white">
   <div className="container mx-auto px-4 sm:px-6">
