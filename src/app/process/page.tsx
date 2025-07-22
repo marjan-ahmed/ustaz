@@ -15,12 +15,12 @@ import {
   MailOpen,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input" // Assuming you have an Input component
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import Header from "@/app/components/Header" // Adjust path as needed
 import Footer from "@/app/components/Footer" // Adjust path as needed
-// Removed: import { useTranslations } from "next-intl"
+// Removed: import { useTranslations } from "next-intl" // As requested, removing useTranslations
 
 // Define TypeScript Interfaces
 interface Provider {
@@ -38,6 +38,14 @@ interface Provider {
   distance?: number // Added for calculated distance
 }
 
+/**
+ * Calculates the distance between two geographical points using the Haversine formula.
+ * @param lat1 Latitude of the first point.
+ * @param lon1 Longitude of the first point.
+ * @param lat2 Latitude of the second point.
+ * @param lon2 Longitude of the second point.
+ * @returns Distance in kilometers, rounded to 2 decimal places.
+ */
 function calculateDistance(
   lat1: number,
   lon1: number,
@@ -59,7 +67,7 @@ function calculateDistance(
 }
 
 function FindProviderPage() {
-  // const t = useTranslations("findProvider") // Removed useTranslations
+  // const t = useTranslations("findProvider") // Commented out as requested
   const [selectedServiceType, setSelectedServiceType] = useState<string>("")
   const [userLatitude, setUserLatitude] = useState<number | null>(null)
   const [userLongitude, setUserLongitude] = useState<number | null>(null)
@@ -78,38 +86,70 @@ function FindProviderPage() {
     "Solar Technician",
   ]
 
-  // Function to get current location using browser's Geolocation API
+  /**
+   * Attempts to get the user's current location using the browser's Geolocation API.
+   * Handles success and various error scenarios, updating state accordingly.
+   */
   const getCurrentLocation = async () => {
     if (navigator.geolocation) {
       setIsLoading(true)
-      setSearchError(null)
+      setSearchError(null) // Clear previous search errors
       setLocationStatus("Getting your current location...")
-      // Clear manual address fields when using GPS
+      // Clear manual address fields when using GPS, as GPS takes precedence
       setManualAddress("")
       setManualPostalCode("")
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          // On successful location retrieval
           setUserLatitude(position.coords.latitude)
           setUserLongitude(position.coords.longitude)
-          setLocationStatus("Location detected!")
+          setLocationStatus("Location detected successfully!")
           setIsLoading(false)
         },
         (error) => {
+          // Handle various geolocation errors
           console.error("Error getting location:", error)
-          setSearchError("Failed to get your location. Please allow location access or enter your address manually.")
-          setLocationStatus("Location permission denied or not available.")
           setIsLoading(false)
+          let errorMessage = "Failed to get your location. Please allow location access or enter your address manually."
+          let statusMessage = "Location permission denied or not available."
+
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = "Location access denied. Please enable location permissions for this site in your browser settings.";
+              statusMessage = "Permission denied.";
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = "Location information is unavailable. Your device might not be able to determine its position.";
+              statusMessage = "Position unavailable.";
+              break;
+            case error.TIMEOUT:
+              errorMessage = "The request to get your location timed out. Try again or enter manually.";
+              statusMessage = "Location request timed out.";
+              break;
+            default:
+              errorMessage = "An unknown error occurred while trying to get your location. Please try again or enter manually.";
+              statusMessage = "Unknown error.";
+              break;
+          }
+          setSearchError(errorMessage);
+          setLocationStatus(statusMessage);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }, // Options for geolocation
       )
     } else {
-      setSearchError("Geolocation is not supported by your browser.")
+      // Geolocation not supported by the browser
+      setSearchError("Geolocation is not supported by your browser. Please enter your address manually.")
       setLocationStatus("Geolocation not supported.")
     }
   }
 
-  // Function to geocode a manual address using OpenStreetMap Nominatim API
+  /**
+   * Geocodes a given address and postal code into latitude and longitude using OpenStreetMap Nominatim API.
+   * @param address The street address and city.
+   * @param postalCode The postal code.
+   * @returns A Promise that resolves to an object with lat/lng, or null if geocoding fails.
+   */
   const geocodeAddress = async (address: string, postalCode: string): Promise<{ lat: number; lng: number } | null> => {
     const query = `${address}, ${postalCode}`;
     try {
@@ -135,11 +175,14 @@ function FindProviderPage() {
     }
   };
 
-  // Function to fetch providers from Supabase
+  /**
+   * Fetches providers from Supabase based on selected service type and user's location.
+   * Prioritizes GPS location, falls back to geocoding manual input.
+   */
   const fetchProviders = async () => {
     setIsLoading(true)
-    setSearchError(null)
-    setProviders([])
+    setSearchError(null) // Clear previous errors
+    setProviders([]) // Clear previous results
 
     if (!selectedServiceType) {
       setSearchError("Please select a service type.")
@@ -165,13 +208,13 @@ function FindProviderPage() {
                 return;
             }
         } else {
-            setSearchError("Please get your current location or enter your address and postal code manually.");
+            setSearchError("Please get your current location or enter your address and postal code manually to search.");
             setIsLoading(false);
             return;
         }
     }
 
-    // Double check coordinates are now available
+    // Double check coordinates are now available after all attempts
     if (finalLatitude === null || finalLongitude === null) {
       setSearchError("No valid location available to search for providers.");
       setIsLoading(false);
@@ -219,9 +262,10 @@ function FindProviderPage() {
     }
   }
 
+  // Determine if the search button should be enabled
   const canSearch = selectedServiceType && (
-    (userLatitude !== null && userLongitude !== null) ||
-    (manualAddress.trim() !== "" && manualPostalCode.trim() !== "")
+    (userLatitude !== null && userLongitude !== null) || // GPS location is available
+    (manualAddress.trim() !== "" && manualPostalCode.trim() !== "") // OR manual address is entered
   );
 
   return (
@@ -334,7 +378,7 @@ function FindProviderPage() {
                   value={manualPostalCode}
                   onChange={(e) => {
                     setManualPostalCode(e.target.value)
-                    // Clear GPS coords if user starts typing manually
+                     // Clear GPS coords if user starts typing manually
                     setUserLatitude(null);
                     setUserLongitude(null);
                     setLocationStatus(null);
