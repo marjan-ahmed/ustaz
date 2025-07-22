@@ -11,14 +11,14 @@ import {getLocale, getMessages} from 'next-intl/server';
 import { Noto_Nastaliq_Urdu } from "next/font/google";
 import { Noto_Naskh_Arabic } from "next/font/google";
 
-export const urduFont = Gulzar({
+const urduFont = Gulzar({
   subsets: ["arabic"],
   weight: ["400"], // Ensure this weight is available on Google Fonts
   variable: "--font-urdu",
   display: "swap",
 });
 
-export const arabicFont = IBM_Plex_Sans_Arabic({
+ const arabicFont = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
   weight: ["400"], // Ensure this weight is available on Google Fonts
   variable: "--font-arabic",
