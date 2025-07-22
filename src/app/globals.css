@@ -11,6 +11,10 @@
   font-family: 'IBM Plex Sans Arabic', serif;
 }
 
+.font-atkinson {
+  font-family: 'Atkinson Hyperlegible', serif;
+}
+
 [dir="rtl"] {
   direction: rtl;
 }
