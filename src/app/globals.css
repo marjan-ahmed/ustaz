@@ -12,7 +12,7 @@
 }
 
 .font-atkinson {
-  font-family: 'Atkinson Hyperlegible', serif;
+  font-family: var(--font-atkinson, sans-serif);
 }
 
 [dir="rtl"] {
