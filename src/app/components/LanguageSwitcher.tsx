@@ -14,7 +14,7 @@ const items = [
   { label: "العربية", value: "ar" },
 ];
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ className }: { className?: string }) {
   const locale = useLocale();
   const t = useTranslations("header");
   const router = useRouter();
@@ -44,11 +44,14 @@ export default function LanguageSwitcher() {
         </Select.Trigger>
 
         <Select.Portal>
-          <Select.Content
-            align="end"
-            className="min-w-[8rem] overflow-hidden rounded-sm bg-white py-1 shadow-md"
-            position="popper"
-          >
+         <Select.Content
+  align="end"
+  className={clsx(
+    className,
+    "min-w-[8rem] overflow-hidden rounded-sm bg-white py-1 shadow-md"
+  )}
+  position="popper"
+>
             <Select.Viewport>
               {items.map((item) => (
                 <Select.Item

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { HiBars3BottomRight } from "react-icons/hi2";
+import { RxHamburgerMenu } from "react-icons/rx";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useUser, UserButton, SignIn } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
@@ -90,8 +90,8 @@ export default function Header() {
         <div className="md:hidden flex items-center">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <button className="text-3xl text-gray-700 focus:outline-none" aria-label="Open menu">
-                <HiBars3BottomRight />
+              <button className="text-2xl text-gray-700 focus:outline-none" aria-label="Open menu">
+                <RxHamburgerMenu />
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="flex flex-col gap-6 p-6">
@@ -105,7 +105,7 @@ export default function Header() {
                 </Link>
               ))}
 
-              <LanguageSwitcher />
+                <LanguageSwitcher className="z-50" /> {/* <-- z-index applied here */}
 
               {isSignedIn ? (
                 <UserButton />
