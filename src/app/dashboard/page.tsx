@@ -272,6 +272,11 @@ function ProviderDashboardInner() {
 
   // Dashboard menu items
   const dashboardMenuItems = [
+     {
+      title: "Request",
+      tab: "request",
+      icon: User,
+    },
     {
       title: "Profile",
       tab: "profile",
