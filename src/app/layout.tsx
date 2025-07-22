@@ -1,24 +1,29 @@
+// layout.tsx
 import type { Metadata } from "next";
-import { Anton, Atkinson_Hyperlegible, Geist, Geist_Mono } from "next/font/google";
+import { Amiri, Anton, Atkinson_Hyperlegible, Cairo_Play, Geist, Geist_Mono, Gulzar, IBM_Plex_Sans_Arabic, Noto_Kufi_Arabic, Rakkas } from "next/font/google";
 import "./globals.css";
-import Header from "./components/Header";
+import Header from "./components/Header"; // Assuming Header exists
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import localFont from 'next/font/local';
-import Footer from "./components/Footer";
+import Footer from "./components/Footer"; // Assuming Footer exists
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
+import { Noto_Nastaliq_Urdu } from "next/font/google";
+import { Noto_Naskh_Arabic } from "next/font/google";
 
-// const atkinson = Atkinson_Hyperlegible({
-//   subsets: ["latin"],
-//   weight: ["400", "700"],
-//   variable: "--font-atkinson",
-// });
+export const urduFont = Gulzar({
+  subsets: ["arabic"],
+  weight: ["400"], // Ensure this weight is available on Google Fonts
+  variable: "--font-urdu",
+  display: "swap",
+});
 
-// const anton = Anton({
-//   subsets: ["latin"],
-//   weight: "400",
-//   variable: "--font-anton",
-// });
+export const arabicFont = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400"], // Ensure this weight is available on Google Fonts
+  variable: "--font-arabic",
+  display: "swap",
+});
 
 const atkinson = localFont({
   src: '../../public/fonts/AtkinsonHyperlegible-Regular.ttf',
@@ -28,7 +33,7 @@ const atkinson = localFont({
 const anton = localFont({
   src: '../../public/fonts/Anton-Regular.ttf',
   variable: '--font-anton',
-})
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,18 +59,28 @@ export default async function RootLayout({
     const locale = await getLocale();
     const messages = await getMessages();
     const direction = ['ur', 'ar'].includes(locale) ? 'rtl' : 'ltr';
+
   return (
     <ClerkProvider>
-    <html lang={locale} dir={direction}>
-      <body
-        className={`${anton.variable} ${atkinson.variable} antialiased`}
-         cz-shortcut-listen="true"
+      <html
+        lang={locale}
+        dir={direction}
+        // Apply all font variables to the html tag for Tailwind to pick them up
+        className={`${arabicFont.variable} ${urduFont.variable} ${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable}`}
       >
-         <NextIntlClientProvider messages={messages}>
-        {children}
-        </NextIntlClientProvider>
-      </body>
-    </html>
+        <body
+          className={
+            `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-geist-sans"} antialiased`
+
+          }
+        >
+          <NextIntlClientProvider messages={messages}>
+            {/* Header and Footer might need specific font classes if they are in a different language than the main content */}
+            {/* For example, if Header is always LTR with Atkinson font */}
+            {children}
+          </NextIntlClientProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }

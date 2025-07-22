@@ -3,13 +3,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.font-urdu {
+  font-family: 'Gulzar', serif;
+}
+
 .font-arabic {
-  font-family: 'Noto Nastaliq Urdu', 'Noto Arabic', sans-serif;
+  font-family: 'IBM Plex Sans Arabic', serif;
 }
 
 [dir="rtl"] {
   direction: rtl;
 }
+
 
 @theme inline {
   --color-background: var(--background);
@@ -126,22 +131,25 @@ body {
 }
 
 @layer base {
-  * {
+  /* * {
     @apply border-border outline-ring/50;
-  }
+  } */
 
-  html {
-    font-family: var(--font-atkinson, sans-serif);
-  }
+  /* html {
+  font-family: var(--font-atkinson, sans-serif);
+}
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-atkinson, sans-serif);
-  }
+  } */
 
-  p {
+  /* p {
     font-family: var(--font-atkinson, sans-serif);
-  }
+  } */
 }
+
+
+
 
 /* Example Utility Classes (Optional) */
 .container {

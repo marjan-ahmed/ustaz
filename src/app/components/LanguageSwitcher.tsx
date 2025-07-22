@@ -1,41 +1,74 @@
 "use client";
 
-import { useLocale, useTranslations } from 'next-intl';
-import { useRouter, usePathname } from 'next/navigation';
-import { useTransition } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import setLangVal from '@/actions/set-languge-action';
+import * as Select from "@radix-ui/react-select";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { CheckIcon, LanguageIcon } from "@heroicons/react/24/solid";
+import clsx from "clsx";
+import setLangVal from "@/actions/set-languge-action";
+
+const items = [
+  { label: "English", value: "en" },
+  { label: "اردو", value: "ur" },
+  { label: "العربية", value: "ar" },
+];
 
 export default function LanguageSwitcher() {
-  const t = useTranslations("header")
-  const router = useRouter();
-  const pathname = usePathname();
   const locale = useLocale();
+  const t = useTranslations("header");
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const handleLocaleChange = (nextLocale: string) => {
-    startTransition(() => {
-      // Set the NEXT_LOCALE cookie. next-intl will pick this up automatically.
-      // For client-side, you can directly set a cookie or use a utility.
-      // A simple way is to reload the page with the new locale in a query param
-      // or rely on a server action that sets the cookie.
-      // For a client-side only approach without route segments, you'd typically:
-      document.cookie = `NEXT_LOCALE=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
-      router.refresh(); // This will trigger a server re-render with the new cookie
+    startTransition(async () => {
+      await setLangVal(nextLocale); // Server action to set the cookie
+      router.refresh();             // Re-render page with new locale
     });
   };
 
   return (
-    <Select onValueChange={(value) => setLangVal(value)}>
-      <SelectTrigger className="w-[120px]">
-        <SelectValue placeholder={t("lang")} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="en">English</SelectItem>
-        <SelectItem value="ur">اردو</SelectItem>
-    <SelectItem value="ar">العربية</SelectItem>
-        {/* Add more languages as needed */}
-      </SelectContent>
-    </Select>
+    <div className="relative">
+      <Select.Root defaultValue={locale} onValueChange={handleLocaleChange}>
+        <Select.Trigger
+          aria-label={t("lang")}
+          className={clsx(
+            "rounded-sm p-2 transition-colors hover:bg-slate-200",
+            isPending && "pointer-events-none opacity-60"
+          )}
+        >
+          <Select.Value />
+          <Select.Icon>
+            <LanguageIcon className="h-6 w-6 text-slate-600 transition-colors group-hover:text-slate-900" />
+          </Select.Icon>
+        </Select.Trigger>
+
+        <Select.Portal>
+          <Select.Content
+            align="end"
+            className="min-w-[8rem] overflow-hidden rounded-sm bg-white py-1 shadow-md"
+            position="popper"
+          >
+            <Select.Viewport>
+              {items.map((item) => (
+                <Select.Item
+                  key={item.value}
+                  className="flex cursor-default items-center px-3 py-2 text-base data-[highlighted]:bg-slate-100"
+                  value={item.value}
+                >
+                  <div className="mr-2 w-[1rem]">
+                    {item.value === locale && (
+                      <CheckIcon className="h-5 w-5 text-slate-600" />
+                    )}
+                  </div>
+                  <span className="text-slate-900">{item.label}</span>
+                </Select.Item>
+              ))}
+            </Select.Viewport>
+            <Select.Arrow className="fill-white text-white" />
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
+    </div>
   );
 }
