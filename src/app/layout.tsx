@@ -1,15 +1,11 @@
 // layout.tsx
 import type { Metadata } from "next";
-import { Amiri, Anton, Atkinson_Hyperlegible, Cairo_Play, Geist, Geist_Mono, Gulzar, IBM_Plex_Sans_Arabic, Noto_Kufi_Arabic, Rakkas } from "next/font/google";
+import { Geist, Geist_Mono, Gulzar, IBM_Plex_Sans_Arabic, Noto_Kufi_Arabic, Rakkas } from "next/font/google";
 import "./globals.css";
-import Header from "./components/Header"; // Assuming Header exists
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import localFont from 'next/font/local';
-import Footer from "./components/Footer"; // Assuming Footer exists
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
-import { Noto_Nastaliq_Urdu } from "next/font/google";
-import { Noto_Naskh_Arabic } from "next/font/google";
 
 const urduFont = Gulzar({
   subsets: ["arabic"],
@@ -70,7 +66,7 @@ export default async function RootLayout({
       >
         <body
           className={
-            `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-geist-sans"} antialiased`
+            `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-atkinson"} antialiased`
 
           }
         >
