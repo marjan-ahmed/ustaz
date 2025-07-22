@@ -4,6 +4,7 @@ import { FaTools, FaBolt, FaWater, FaPhoneAlt, FaMapMarkerAlt } from 'react-icon
 import Image from 'next/image';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
+// import ProfileCard from '../components/ProfileCard';
 
 function AboutUs() {
   return (
@@ -35,9 +36,10 @@ function AboutUs() {
             <p className="text-lg leading-relaxed">
               Ustaz is a trusted service provider offering a wide range of home services including plumbing, electrical, handyman, and more. 
               We are committed to bringing reliability, affordability, and speed to every doorstep.
-            </p>
+            </p>  
           </div>
         </section>
+
 
         {/* Mission, Vision, Values */}
         <section className="bg-white py-12 px-6">

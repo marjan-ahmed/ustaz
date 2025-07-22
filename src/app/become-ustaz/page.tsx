@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { supabase } from "../../../client/supabaseClient"
 import {
   ChevronRight,
@@ -27,6 +27,7 @@ import { ImageCropEditor } from "../components/image-crop-editor"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import { useTranslations } from "next-intl"
+// Removed: dynamic import for LocationPickerMap
 
 // Define TypeScript Interfaces
 interface IFormData {
@@ -48,6 +49,8 @@ interface IFormData {
   avatarUrl: string
   agreedToTerms: boolean
   wantsUpdates: boolean
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface ICountry {
@@ -97,6 +100,8 @@ function App() {
     avatarUrl: "",
     agreedToTerms: false,
     wantsUpdates: false,
+    latitude: null,
+    longitude: null,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -246,6 +251,53 @@ function App() {
     }
   }
 
+  // Handle location selection (now also used by getCurrentLocation)
+  const handleLocationSelect = (lat: number, lng: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+    }));
+    // Clear location errors once selected
+    if (errors.latitude || errors.longitude) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.latitude;
+        delete newErrors.longitude;
+        return newErrors;
+      });
+    }
+  };
+
+  // NEW: Function to get current location using browser's Geolocation API
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      setIsLoading(true); // Indicate loading for location fetching
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          handleLocationSelect(position.coords.latitude, position.coords.longitude);
+          setIsLoading(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          setErrors(prev => ({
+            ...prev,
+            latitude: t("errors.locationPermissionDenied") // New translation key
+          }));
+          setIsLoading(false);
+          alert(t("errors.locationFetchFailed")); // New translation key
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      setErrors(prev => ({
+        ...prev,
+        latitude: t("errors.geolocationNotSupported") // New translation key
+      }));
+      alert(t("errors.geolocationNotSupported"));
+    }
+  };
+
   // Handle file uploads for avatar with image editor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -313,6 +365,12 @@ function App() {
     if (!formData.city.trim()) {
       newErrors.city = t("errors.cityRequired")
       isValid = false
+    }
+    // Validation for latitude and longitude
+    if (formData.latitude === null || formData.longitude === null) {
+      newErrors.latitude = t("errors.locationRequired");
+      newErrors.longitude = t("errors.locationRequired");
+      isValid = false;
     }
   } else if (currentStep === 2) {
     if (!formData.heardFrom.trim()) {
@@ -474,6 +532,8 @@ function App() {
         registrationDate: new Date().toISOString(),
         userId: userId,
         phone_verified: isPhoneVerified,
+        latitude: data.latitude,
+        longitude: data.longitude,
       }
       const { data: supabaseData, error } = await supabase.from("ustaz_registrations").insert([dataToSave])
       if (error) {
@@ -482,13 +542,13 @@ function App() {
       console.log("Data successfully sent to Supabase:", supabaseData)
       setIsLoading(false)
       setIsRegisteredSuccessfully(true)
+      localStorage.setItem("registeredUserId", userId)
+      localStorage.setItem("isRegisteredSuccessfully", "true")
+      router.push(`/dashboard?userId=${userId}`) // Redirect on success
     } catch (error: any) {
       console.error("Error sending data to Supabase:", error.message)
       setIsLoading(false)
       setIsRegisteredSuccessfully(false)
-      localStorage.setItem("registeredUserId", userId)
-      localStorage.setItem("isRegisteredSuccessfully", "true")
-      router.push(`/dashboard?userId=${userId}`)
     }
   }
 
@@ -540,10 +600,10 @@ function App() {
     }
   }, [])
 
-  
+
   return (
     <>
-    <Header/> 
+    <Header/>
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         {/* Enhanced Progress Bar */}
@@ -799,6 +859,48 @@ function App() {
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.phoneNumber}</p>
                     )}
                   </div>
+
+                  {/* Service Location Section (Updated for GPS button) */}
+                  <div className="mt-6 bg-gradient-to-br from-red-50 to-pink-50 p-6 md:p-8 rounded-2xl border border-red-100 shadow-sm">
+                    <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-6">
+                      <MapPin className="w-5 h-5 mr-2 text-red-500" />
+                      {t('serviceLocation')} <span className="text-red-500 ml-1">*</span>
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      {t('locationInstructionsGP')}
+                    </p>
+                    <div className="flex justify-center mb-4">
+                      <Button
+                        onClick={getCurrentLocation}
+                        disabled={isLoading}
+                        className="group bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
+                      >
+                        {isLoading ? (
+                          <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <MapPin className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+                        )}
+                        {t('getCurrentLocationButton')}
+                      </Button>
+                    </div>
+                    {formData.latitude !== null && formData.longitude !== null ? (
+                      <p className="text-sm text-gray-700 mt-3 text-center">
+                        {t('selectedLocation')}: Lat {formData.latitude.toFixed(4)}, Lng {formData.longitude.toFixed(4)}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-700 mt-3 text-center">
+                        {t('noLocationSelected')}
+                      </p>
+                    )}
+                    {(errors.latitude || errors.longitude) && (
+                      <p className="text-red-500 text-sm mt-1 animate-fade-in text-center">{errors.latitude}</p>
+                    )}
+                  </div>
+                  {/* End Service Location Section */}
+
                   {/* Navigation */}
                   <div className="flex justify-end pt-6">
                     <Button
@@ -1222,14 +1324,6 @@ function App() {
                             className="h-5 w-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                           />
                           <Label htmlFor="agreedToTerms" className="ml-3 text-base text-gray-700">
-                            {/* I agree to the{" "}
-                            <Link href="#" className="text-orange-600 hover:underline font-medium">
-                              Terms & Conditions
-                            </Link>{" "}
-                            and{" "}
-                            <Link href="#" className="text-orange-600 hover:underline font-medium">
-                              Privacy Policy
-                            </Link>{" "} */}
                             {t('agreeTerms')}
                             <span className="text-red-500">*</span>
                           </Label>
@@ -1322,4 +1416,4 @@ function App() {
   )
 }
 
-export default App
+export default App;

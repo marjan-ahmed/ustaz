@@ -63,11 +63,12 @@ export default async function RootLayout({
         dir={direction}
         // Apply all font variables to the html tag for Tailwind to pick them up
         className={`${arabicFont.variable} ${urduFont.variable} ${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable}`}
+        cz-shortcut-listen="true"
       >
         <body
           className={
             `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-atkinson"} antialiased`
-
+            
           }
         >
           <NextIntlClientProvider messages={messages}>
