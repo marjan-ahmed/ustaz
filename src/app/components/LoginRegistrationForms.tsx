@@ -33,7 +33,7 @@ const LoginRegisterForm: React.FC = () => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth/callback', // Or your desired callback URL
+          redirectTo: '/', // Or your desired callback URL
         },
       });
 

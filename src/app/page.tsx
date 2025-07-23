@@ -3,7 +3,7 @@
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import Services from "./components/Services";
@@ -13,6 +13,7 @@ import FAQ from "./components/Faq";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
 import { useTranslations } from "next-intl";
+import { supabase } from "../../client/supabaseClient";
 
 export default function Home() {
   const t = useTranslations('hero')
@@ -38,7 +39,23 @@ export default function Home() {
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const { isSignedIn } = useUser(); // ✅ Access Clerk user state
+   const { isSignedIn } = useUser();
+
+  // ✅ Handle Supabase OAuth redirect
+  useEffect(() => {
+    const handleOAuthRedirect = async () => {
+      if (typeof window !== "undefined" && window.location.hash.includes("access_token")) {
+        // If using PKCE flow, exchange code for session
+        const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (error) {
+          console.error("OAuth login error:", error.message);
+        }
+        window.history.replaceState({}, document.title, "/"); // ✅ Clean up URL
+      }
+    };
+
+    handleOAuthRedirect();
+  }, []);
 
   return (
     <>
