@@ -147,6 +147,33 @@
     "mobileOptionRequired": "Please select an option.",
     "termsRequired": "You must agree to the Terms & Conditions and Privacy Policy."
   }
-}
+},
+
+  "auth": {
+    "welcome": "Welcome Back",
+    "smallDesc": "Sign in to your account or create a new one to get started",
+    "ltitle": "Sign In",
+    "lsubtitle": "Welcome back! Sign in to your account.",
+    "continueGoogle": "Continue with Google",
+    "continueFacebook": "Continue with Facebook",
+    "ctitle": "Create Account",
+    "csubtitle": "Get started by creating your account.",
+    "name": "Full Name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "phone": "Phone Number",
+    "code": "Verification Code",
+    "sendCode": "Send Code",
+    "verify": "Verify & Create Account",
+    "differentNumber": "Use Different Number",
+    "create": "Create Account",
+    "creating": "Creating account...",
+    "processing": "Processing...",
+    "socialOr": "Or continue with",
+    "successEmail": "Account created! Check your email to verify.",
+    "successPhone": "Phone verification successful. Your account is ready.",
+    "otpSent": "OTP sent to your phone number."
+  }
 
 }

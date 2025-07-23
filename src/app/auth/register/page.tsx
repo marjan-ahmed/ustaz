@@ -4,8 +4,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { SignUpForm } from '@/app/components/SignUpForm';
+import { useTranslations } from 'use-intl';
 
 export default function SignUpPage() {
+  const t = useTranslations("auth")
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-md">
@@ -18,7 +20,7 @@ export default function SignUpPage() {
               href="/auth/login" 
               className="font-medium text-primary hover:text-primary/80 transition-colors"
             >
-              Sign in
+              {t('ltitle')}
             </Link>
           </p>
         </div>

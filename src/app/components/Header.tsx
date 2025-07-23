@@ -10,7 +10,6 @@ import { useTranslations } from "next-intl";
 import { supabase } from "../../../client/supabaseClient";
 import { User } from "@supabase/supabase-js";
 import { AuthContainer } from "./AuthContainer";
-import { SignInForm } from "./SignInForm";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 
 export default function Header() {
   const t = useTranslations("header");
+  const a = useTranslations("auth");
   const [open, setOpen] = useState(false);
   const [authSheetOpen, setAuthSheetOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -35,7 +35,6 @@ export default function Header() {
     const savedLang = localStorage.getItem("language");
     if (savedLang) setLanguage(savedLang);
 
-    // Get initial user
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
@@ -44,7 +43,6 @@ export default function Header() {
 
     getUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
@@ -77,8 +75,6 @@ export default function Header() {
     { label: t("contact"), href: "/contact" },
   ];
 
-  console.log("Supabase Log: ", user)
-  
   return (
     <header className="w-full bg-white shadow">
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6">
@@ -168,10 +164,10 @@ export default function Header() {
                 >
                   <SheetHeader className="pb-6 border-b border-gray-200">
                     <SheetTitle className="text-2xl font-bold text-gray-800">
-                      Welcome Back
+                      {a('welcome')}
                     </SheetTitle>
                     <SheetDescription className="text-gray-600">
-                      Sign in to your account or create a new one to get started.
+                      {a('smallDesc')}
                     </SheetDescription>
                   </SheetHeader>
                   <div className="flex-1 flex items-center justify-center py-8">
@@ -181,17 +177,18 @@ export default function Header() {
                   </div>
                 </SheetContent>
               </Sheet>
-              
-              <LanguageSwitcher />
 
               <Link
-                href="/auth/signup"
+                href="/auth/register"
                 className="ml-4 px-5 py-2 rounded bg-[#db4b0d] text-white font-semibold hover:bg-[#b53c0a] transition-colors"
               >
                 {t("getStarted")}
               </Link>
             </>
           )}
+
+          {/* ✅ Always visible LanguageSwitcher */}
+          <LanguageSwitcher />
         </div>
 
         <div className="md:hidden flex items-center">
@@ -213,6 +210,7 @@ export default function Header() {
                 </Link>
               ))}
 
+              {/* Already visible in mobile view */}
               <LanguageSwitcher className="z-50" />
 
               {isLoading ? (
@@ -220,9 +218,9 @@ export default function Header() {
               ) : user ? (
                 <div className="flex flex-col gap-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage 
-                        src={user.user_metadata?.avatar_url || "/default-avatar.jpg" } 
+                    <Avatar className=" border-2 border-gray-900 h-8 w-8">
+                      <AvatarImage className="border-2 border-gray-900"
+                        src={user.user_metadata?.avatar_url || "/default-avatar.jpg"}  
                         alt={getUserDisplayName(user)} 
                       />
                       <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
@@ -234,7 +232,7 @@ export default function Header() {
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                   </div>
-                  
+
                   <Link
                     href="/dashboard"
                     className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
@@ -242,7 +240,7 @@ export default function Header() {
                   >
                     Profile
                   </Link>
-                  
+
                   <Link
                     href="/settings"
                     className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
@@ -250,7 +248,7 @@ export default function Header() {
                   >
                     Settings
                   </Link>
-                  
+
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -288,19 +286,3 @@ export default function Header() {
     </header>
   );
 }
-// Smart, efficient model for everyday use Learn more
-
-// Artifacts
-
-// Authentication System with Supabase
-// Click to open code • 2 versions
-
-// Updated Header Component with Supabase Auth
-// Click to open code • 2 versions
-// Content
-
-// "use client"; import Image from "next/image"; import Link from "next/link"; import { RxHamburgerMenu } from "react-icons/rx"; import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"; import { useUser, UserButton, SignIn } from "@cle
-
-// pasted
-
-

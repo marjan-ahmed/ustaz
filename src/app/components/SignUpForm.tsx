@@ -19,8 +19,10 @@ import { signUpSchema, SignUpFormData, phoneSchema, PhoneFormData } from '@/lib/
 import { useAuth } from '@/hooks/useAuth';
 import { SocialAuthButtons } from './SocialAuthButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslations } from 'next-intl';
 
 export const SignUpForm: React.FC = () => {
+  const t = useTranslations('auth'); // ✅ 'signup' matches your JSON namespace
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -76,12 +78,10 @@ export const SignUpForm: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
+  <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Create Account</h1>
-        <p className="text-muted-foreground">
-          Get started by creating your account.
-        </p>
+        <h1 className="text-2xl font-bold">{t('ctitle')}</h1>
+        <p className="text-muted-foreground">{t('csubtitle')}</p>
       </div>
 
       {error && (
@@ -104,15 +104,15 @@ export const SignUpForm: React.FC = () => {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
+            {t('socialOr')}
           </span>
         </div>
       </div>
 
       <Tabs value={authMethod} onValueChange={(value) => setAuthMethod(value as 'email' | 'phone')}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="email">Email</TabsTrigger>
-          <TabsTrigger value="phone">Phone</TabsTrigger>
+          <TabsTrigger value="email">{t('email')}</TabsTrigger>
+          <TabsTrigger value="phone">{t('phone')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="email">
@@ -123,11 +123,10 @@ export const SignUpForm: React.FC = () => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t('name')}</FormLabel>
                     <FormControl>
                       <Input
                         type="text"
-                        placeholder="Enter your full name"
                         {...field}
                       />
                     </FormControl>
@@ -135,17 +134,15 @@ export const SignUpForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={emailForm.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('email')}</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="Enter your email"
                         {...field}
                       />
                     </FormControl>
@@ -153,17 +150,15 @@ export const SignUpForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={emailForm.control}
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('password')}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Create a password"
                         {...field}
                       />
                     </FormControl>
@@ -171,17 +166,15 @@ export const SignUpForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={emailForm.control}
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>{t('confirmPassword')}</FormLabel>
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Confirm your password"
                         {...field}
                       />
                     </FormControl>
@@ -189,9 +182,8 @@ export const SignUpForm: React.FC = () => {
                   </FormItem>
                 )}
               />
-
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating account...' : 'Create Account'}
+                {isLoading ? t('creating') : t('create')}
               </Button>
             </form>
           </Form>
@@ -205,11 +197,10 @@ export const SignUpForm: React.FC = () => {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>{t('phone')}</FormLabel>
                     <FormControl>
                       <Input
                         type="tel"
-                        placeholder="+1 (555) 123-4567"
                         disabled={showOtpInput}
                         {...field}
                       />
@@ -225,11 +216,11 @@ export const SignUpForm: React.FC = () => {
                   name="code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Verification Code</FormLabel>
+                      <FormLabel>{t('code')}</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
-                          placeholder="Enter 6-digit code"
+                          placeholder={t('code')}
                           maxLength={6}
                           {...field}
                         />
@@ -242,10 +233,10 @@ export const SignUpForm: React.FC = () => {
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading
-                  ? 'Processing...'
+                  ? t('processing')
                   : showOtpInput
-                    ? 'Verify & Create Account'
-                    : 'Send Code'}
+                  ? t('verify')
+                  : t('sendCode')}
               </Button>
 
               {showOtpInput && (
@@ -259,7 +250,7 @@ export const SignUpForm: React.FC = () => {
                     setSuccessMessage('');
                   }}
                 >
-                  Use Different Number
+                  {t('differentNumber')}
                 </Button>
               )}
             </form>
@@ -267,5 +258,6 @@ export const SignUpForm: React.FC = () => {
         </TabsContent>
       </Tabs>
     </div>
+
   );
 };

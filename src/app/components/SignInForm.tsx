@@ -20,8 +20,10 @@ import { signInSchema, SignInFormData, phoneSchema, PhoneFormData } from '@/lib/
 import { useAuth } from '@/hooks/useAuth';
 import { SocialAuthButtons } from './SocialAuthButtons';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslations } from 'next-intl';
 
 export const SignInForm: React.FC = () => {
+  const t = useTranslations('auth')
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -77,9 +79,9 @@ export const SignInForm: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl font-bold">Sign In</h1>
+        <h1 className="text-2xl font-bold">{t('ltitle')}</h1>
         <p className="text-muted-foreground">
-          Welcome back! Please sign in to your account.
+          {t('lsubtitle')}
         </p>
       </div>
 
@@ -103,15 +105,15 @@ export const SignInForm: React.FC = () => {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
+            {t('socialOr')}
           </span>
         </div>
       </div>
 
       <Tabs value={authMethod} onValueChange={(value) => setAuthMethod(value as 'email' | 'phone')}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="email">Email</TabsTrigger>
-          <TabsTrigger value="phone">Phone</TabsTrigger>
+          <TabsTrigger value="email">{t('email')}</TabsTrigger>
+          <TabsTrigger value="phone">{t('phone')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="email">
@@ -122,9 +124,9 @@ export const SignInForm: React.FC = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('email')}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} />
+                      <Input type="email"  {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -135,9 +137,9 @@ export const SignInForm: React.FC = () => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('password')}</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Enter your password" {...field} />
+                      <Input type="password"  {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -158,7 +160,7 @@ export const SignInForm: React.FC = () => {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>{t('phone')}</FormLabel>
                     <FormControl>
                       <Input
                         type="tel"
@@ -178,7 +180,7 @@ export const SignInForm: React.FC = () => {
                   name="code"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Verification Code</FormLabel>
+                      <FormLabel>{t('code')}</FormLabel>
                       <FormControl>
                         <Input type="text" placeholder="Enter 6-digit code" maxLength={6} {...field} />
                       </FormControl>
