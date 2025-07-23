@@ -3,9 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { SignInForm } from '@/app/components/SignInForm';
+import Header from '@/app/components/Header';
+import Footer from '@/app/components/Footer';
 
 export default function SignInPage() {
   return (
+    <>
+    <Header />
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-md">
         <SignInForm />
@@ -23,5 +27,7 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 }
