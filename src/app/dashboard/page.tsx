@@ -1,8 +1,8 @@
 "use client"
 export const dynamic = "force-dynamic";
 
-import React, { useState, useEffect, useCallback } from "react"
-import { supabase } from "../../../client/supabaseClient"
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { supabase } from "../../../client/supabaseClient";
 import {
   User,
   Settings,
@@ -18,17 +18,21 @@ import {
   X,
   Bell,
   LogOut,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Textarea } from "@/components/ui/textarea"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useSearchParams } from "next/navigation"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+  MailOpen, // Added for request details
+  Clock, // Added for request timestamp
+  MessageSquare,
+  Info, // Added for chat/message icon
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSearchParams } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sidebar,
   SidebarContent,
@@ -44,7 +48,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +56,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import {
   Breadcrumb,
@@ -61,7 +65,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from "@/components/ui/breadcrumb";
 import {
   Dialog,
   DialogContent,
@@ -70,40 +74,54 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 // Define TypeScript Interfaces
 interface IProviderData {
-  id: string
-  userId: string
-  firstName: string
-  lastName: string
-  email: string | null
-  cnic: string
-  country: string
-  city: string
-  phoneCountryCode: string
-  phoneNumber: string
-  heardFrom: string
-  service_type: string
-  hasExperience: boolean | null
-  experienceYears: number | null
-  experienceDetails: string | null
-  hasActiveMobile: boolean | null
-  avatarUrl: string | null
-  registrationDate: string
-  phone_verified: boolean
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  cnic: string;
+  country: string;
+  city: string;
+  phoneCountryCode: string;
+  phoneNumber: string;
+  heardFrom: string;
+  service_type: string;
+  hasExperience: boolean | null;
+  experienceYears: number | null;
+  experienceDetails: string | null;
+  hasActiveMobile: boolean | null;
+  avatarUrl: string | null;
+  registrationDate: string;
+  phone_verified: boolean;
 }
 
 interface ICountry {
   name: {
-    common: string
-  }
+    common: string;
+  };
   idd: {
-    root: string
-    suffixes?: string[]
-  }
-  capital?: string[]
+    root: string;
+    suffixes?: string[];
+  };
+  capital?: string[];
+}
+
+// New interface for Service Request
+interface IServiceRequest {
+  id: string;
+  user_id: string; // The user who made the request
+  service_type: string;
+  request_latitude: number;
+  request_longitude: number;
+  request_details: string | null;
+  status: 'pending_notification' | 'notified_multiple' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'no_ustaz_found';
+  created_at: string;
+  notified_providers?: string[]; // Array of provider IDs who were notified
+  accepted_by_provider_id?: string | null; // The provider who accepted
 }
 
 // Loading skeleton components
@@ -233,49 +251,52 @@ function DashboardSkeleton() {
         </div>
       </div>
     </SidebarProvider>
-  )
+  );
 }
 
-import { Suspense } from "react"
-
 function ProviderDashboardInner() {
-  const [providerData, setProviderData] = useState<IProviderData | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification">("profile")
+  const [providerData, setProviderData] = useState<IProviderData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  // Added 'request' tab
+  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request">("profile");
 
   // State for editing profile
-  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false)
-  const [editableFormData, setEditableFormData] = useState<IProviderData | null>(null)
-  const [editErrors, setEditErrors] = useState<Record<string, string>>({})
-  const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false)
+  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+  const [editableFormData, setEditableFormData] = useState<IProviderData | null>(null);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const [isSavingProfile, setIsSavingProfile] = useState<boolean>(false);
 
   // OTP States
-  const [otpSent, setOtpSent] = useState<boolean>(false)
-  const [otpInput, setOtpInput] = useState<string>("")
-  const [otpError, setOtpError] = useState<string>("")
-  const [otpSentMessage, setOtpSentMessage] = useState<string>("")
-  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false)
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false)
+  const [otpSent, setOtpSent] = useState<boolean>(false);
+  const [otpInput, setOtpInput] = useState<string>("");
+  const [otpError, setOtpError] = useState<string>("");
+  const [otpSentMessage, setOtpSentMessage] = useState<string>("");
+  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
 
   // Phone number change dialog states
-  const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState<boolean>(false)
+  const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState<boolean>(false);
   const [newPhoneData, setNewPhoneData] = useState({
     phoneCountryCode: "",
     phoneNumber: "",
-  })
-  const [phoneChangeErrors, setPhoneChangeErrors] = useState<Record<string, string>>({})
-  const [isSavingPhone, setIsSavingPhone] = useState<boolean>(false)
+  });
+  const [phoneChangeErrors, setPhoneChangeErrors] = useState<Record<string, string>>({});
+  const [isSavingPhone, setIsSavingPhone] = useState<boolean>(false);
 
-  const searchParams = useSearchParams()
-  const userIdFromUrl = searchParams.get("userId")
+  // New state for service requests
+  const [serviceRequests, setServiceRequests] = useState<IServiceRequest[]>([]);
+  const [unreadRequestCount, setUnreadRequestCount] = useState<number>(0); // For notification badge
 
-  // Dashboard menu items
+  const searchParams = useSearchParams();
+  const userIdFromUrl = searchParams.get("userId");
+
+  // Dashboard menu items - Added "Request"
   const dashboardMenuItems = [
-     {
-      title: "Request",
+    {
+      title: "Requests", // Changed to plural for multiple requests
       tab: "request",
-      icon: User,
+      icon: Bell, // Using Bell icon for requests/notifications
     },
     {
       title: "Profile",
@@ -292,10 +313,10 @@ function ProviderDashboardInner() {
       tab: "phone-verification",
       icon: Phone,
     },
-  ]
+  ];
 
   // Countries and cities data
-  const [countries, setCountries] = useState<ICountry[]>([])
+  const [countries, setCountries] = useState<ICountry[]>([]);
   const citiesByCountry: Record<string, string[]> = {
     Pakistan: [
       "Karachi",
@@ -357,21 +378,21 @@ function ProviderDashboardInner() {
       "Wollongong",
       "Hobart",
     ],
-  }
+  };
 
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const response = await fetch("https://restcountries.com/v3.1/all?fields=name,idd,capital")
+        const response = await fetch("https://restcountries.com/v3.1/all?fields=name,idd,capital");
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data: ICountry[] = await response.json()
+        const data: ICountry[] = await response.json();
         // Sort countries alphabetically for better UX
-        data.sort((a, b) => a.name.common.localeCompare(b.name.common))
-        setCountries(data)
+        data.sort((a, b) => a.name.common.localeCompare(b.name.common));
+        setCountries(data);
       } catch (error) {
-        console.error("Error fetching countries:", error)
+        console.error("Error fetching countries:", error);
         // Fallback to a predefined list if API fails
         setCountries([
           { name: { common: "Pakistan" }, idd: { root: "+92" } },
@@ -379,204 +400,270 @@ function ProviderDashboardInner() {
           { name: { common: "United Kingdom" }, idd: { root: "+44" } },
           { name: { common: "Canada" }, idd: { root: "+1" } },
           { name: { common: "Australia" }, idd: { root: "+61" } },
-        ])
+        ]);
       }
-    }
-    fetchCountries()
-  }, [])
+    };
+    fetchCountries();
+  }, []);
 
   // Fetch provider data
   const fetchProviderData = useCallback(async (currentUserId: string | null) => {
     if (!currentUserId) {
-      setLoading(false)
-      setError("User ID not found in URL. Please ensure you are registered and navigated correctly.")
-      setProviderData(null)
-      return
+      setLoading(false);
+      setError("User ID not found in URL. Please ensure you are registered and navigated correctly.");
+      setProviderData(null);
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const { data, error } = await supabase
         .from("ustaz_registrations")
         .select("*")
         .eq("userId", currentUserId)
-        .maybeSingle()
+        .maybeSingle();
 
       if (error) {
-        throw error
+        throw error;
       }
 
       if (data) {
-        setProviderData(data as IProviderData)
+        setProviderData(data as IProviderData);
       } else {
-        setProviderData(null)
+        setProviderData(null);
       }
     } catch (err: any) {
-      console.error("Error fetching provider data:", err.message)
-      setError(`Failed to load data: ${err.message}. Please ensure you are registered with this User ID.`)
+      console.error("Error fetching provider data:", err.message);
+      setError(`Failed to load data: ${err.message}. Please ensure you are registered with this User ID.`);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [])
+  }, []);
+
+  // New: Fetch service requests for this provider
+  const fetchServiceRequests = useCallback(async (providerId: string) => {
+    try {
+      // Fetch requests where this provider was notified OR accepted
+      const { data, error } = await supabase
+        .from('service_requests')
+        .select('*')
+        .or(`notified_providers.cs.{${providerId}},accepted_by_provider_id.eq.${providerId}`) // Check if providerId is in notified_providers array OR if they accepted
+        .order('created_at', { ascending: false }); // Show newest requests first
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setServiceRequests(data as IServiceRequest[]);
+        // Calculate unread requests (e.g., status is 'notified_multiple' and not yet accepted by this provider)
+        const unread = data.filter(req =>
+          req.status === 'notified_multiple' &&
+          req.notified_providers?.includes(providerId) && // Ensure this provider was notified
+          req.accepted_by_provider_id !== providerId // And this provider hasn't accepted it yet
+        ).length;
+        setUnreadRequestCount(unread);
+      }
+    } catch (err: any) {
+      console.error("Error fetching service requests:", err.message);
+      // Optionally set an error state for requests
+    }
+  }, []);
+
 
   useEffect(() => {
-    fetchProviderData(userIdFromUrl)
-  }, [fetchProviderData, userIdFromUrl])
+    fetchProviderData(userIdFromUrl);
+  }, [fetchProviderData, userIdFromUrl]);
+
+  // New: Realtime subscription for service requests for this provider
+  useEffect(() => {
+    if (!userIdFromUrl || !providerData?.phone_verified) return; // Only subscribe if user ID is available and phone is verified
+
+    // Initial fetch
+    fetchServiceRequests(userIdFromUrl);
+
+    // Set up Realtime listener
+    const channel = supabase
+      .channel(`provider_requests:${userIdFromUrl}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'service_requests',
+          // Filter to only get changes relevant to this provider
+          filter: `notified_providers.cs.{${userIdFromUrl}}` // If this provider was notified
+          // OR you might need a more complex filter or a backend webhook to trigger refreshes
+          // if a request is accepted by *another* provider.
+        },
+        (payload) => {
+          console.log("Realtime service_requests change:", payload);
+          // Re-fetch all requests to update the list and unread count
+          fetchServiceRequests(userIdFromUrl);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userIdFromUrl, providerData?.phone_verified, fetchServiceRequests]); // Re-subscribe if userId or phone_verified status changes
+
 
   // Handler for form changes
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    if (!editableFormData) return
-    const { name, value, type } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    let newValue: string | boolean | number = value
+    if (!editableFormData) return;
+    const { name, value, type } = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    let newValue: string | boolean | number = value;
 
     if (type === "radio") {
-      newValue = (e.target as HTMLInputElement).value === "true"
+      newValue = (e.target as HTMLInputElement).value === "true";
     } else if (name === "experienceYears") {
-      newValue = value === "" ? "" : Number(value)
+      newValue = value === "" ? "" : Number(value);
     }
 
     setEditableFormData((prev) => ({
       ...(prev as IProviderData),
       [name]: newValue,
-    }))
+    }));
 
     if (editErrors[name]) {
       setEditErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
-  }
+  };
 
   // Handler for select changes
   const handleSelectChange = (name: keyof IProviderData, value: string) => {
-    if (!editableFormData) return
+    if (!editableFormData) return;
     setEditableFormData((prev) => ({
       ...(prev as IProviderData),
       [name]: value,
-    }))
+    }));
 
     if (editErrors[name]) {
       setEditErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
-  }
+  };
 
   // Handle avatar file change
   const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onloadend = () => {
         setEditableFormData((prev) => ({
           ...(prev as IProviderData),
           avatarUrl: reader.result as string,
-        }))
-      }
-      reader.readAsDataURL(file)
+        }));
+      };
+      reader.readAsDataURL(file);
     } else {
       setEditableFormData((prev) => ({
         ...(prev as IProviderData),
         avatarUrl: null,
-      }))
+      }));
     }
-  }
+  };
 
   // Validation
   const validateEditableFields = (): boolean => {
-    const newErrors: Record<string, string> = {}
-    let isValid = true
+    const newErrors: Record<string, string> = {};
+    let isValid = true;
 
-    if (!editableFormData) return false
+    if (!editableFormData) return false;
 
     if (!(editableFormData.firstName || "").trim()) {
-      newErrors.firstName = "First name is required."
-      isValid = false
+      newErrors.firstName = "First name is required.";
+      isValid = false;
     }
 
     if (!(editableFormData.lastName || "").trim()) {
-      newErrors.lastName = "Last name is required."
-      isValid = false
+      newErrors.lastName = "Last name is required.";
+      isValid = false;
     }
 
     if (!(editableFormData.cnic || "").trim()) {
-      newErrors.cnic = "CNIC number is required."
-      isValid = false
+      newErrors.cnic = "CNIC number is required.";
+      isValid = false;
     } else if (!(editableFormData.cnic || "").startsWith("42201")) {
-      newErrors.cnic = "CNIC must start with 42201."
-      isValid = false
+      newErrors.cnic = "CNIC must start with 42201.";
+      isValid = false;
     } else if (!/^\d{13}$/.test(editableFormData.cnic || "")) {
-      newErrors.cnic = "CNIC must be 13 digits (e.g., 4220112345678)."
-      isValid = false
+      newErrors.cnic = "CNIC must be 13 digits (e.g., 4220112345678).";
+      isValid = false;
     }
 
     if (!(editableFormData.phoneNumber || "").trim()) {
-      newErrors.phoneNumber = "Phone number is required."
-      isValid = false
+      newErrors.phoneNumber = "Phone number is required.";
+      isValid = false;
     } else if (!/^\d{7,}$/.test(editableFormData.phoneNumber || "")) {
-      newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7)."
-      isValid = false
+      newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7).";
+      isValid = false;
     }
 
     if (!(editableFormData.country || "").trim()) {
-      newErrors.country = "Country is required."
-      isValid = false
+      newErrors.country = "Country is required.";
+      isValid = false;
     }
 
     if (!(editableFormData.city || "").trim()) {
-      newErrors.city = "City is required."
-      isValid = false
+      newErrors.city = "City is required.";
+      isValid = false;
     }
 
     if (!(editableFormData.service_type || "").trim()) {
-      newErrors.service_type = "Service type is required."
-      isValid = false
+      newErrors.service_type = "Service type is required.";
+      isValid = false;
     }
 
     if (editableFormData.hasExperience === null) {
-      newErrors.hasExperience = "Please select an option."
-      isValid = false
+      newErrors.hasExperience = "Please select an option.";
+      isValid = false;
     } else if (editableFormData.hasExperience) {
       if (editableFormData.experienceYears === null || editableFormData.experienceYears <= 0) {
-        newErrors.experienceYears = "Years of experience is required and must be a positive number."
-        isValid = false
+        newErrors.experienceYears = "Years of experience is required and must be a positive number.";
+        isValid = false;
       }
       if (!(editableFormData.experienceDetails || "").trim()) {
-        newErrors.experienceDetails = "Experience details are required."
-        isValid = false
+        newErrors.experienceDetails = "Experience details are required.";
+        isValid = false;
       }
     }
 
     if (editableFormData.hasActiveMobile === null) {
-      newErrors.hasActiveMobile = "Please select an option."
-      isValid = false
+      newErrors.hasActiveMobile = "Please select an option.";
+      isValid = false;
     }
 
-    setEditErrors(newErrors)
-    return isValid
-  }
+    setEditErrors(newErrors);
+    return isValid;
+  };
 
   // Handle save profile
   const handleSaveProfile = async () => {
-    if (!editableFormData || !userIdFromUrl) return
+    if (!editableFormData || !userIdFromUrl) return;
 
     if (!validateEditableFields()) {
-      return
+      return;
     }
 
-    setIsSavingProfile(true)
-    setError(null)
+    setIsSavingProfile(true);
+    setError(null);
 
     try {
       const phoneNumberChanged =
         providerData?.phoneNumber !== editableFormData.phoneNumber ||
-        providerData?.phoneCountryCode !== editableFormData.phoneCountryCode
+        providerData?.phoneCountryCode !== editableFormData.phoneCountryCode;
 
       const updatePayload = {
         firstName: (editableFormData.firstName || "").trim(),
@@ -597,107 +684,107 @@ function ProviderDashboardInner() {
         hasActiveMobile: editableFormData.hasActiveMobile,
         avatarUrl: (editableFormData.avatarUrl || "").trim() || null,
         phone_verified: phoneNumberChanged ? false : providerData?.phone_verified,
-      }
+      };
 
       const { data, error: updateError } = await supabase
         .from("ustaz_registrations")
         .update(updatePayload)
         .eq("userId", userIdFromUrl)
         .select()
-        .single()
+        .single();
 
       if (updateError) {
-        throw updateError
+        throw updateError;
       }
 
-      setProviderData(data as IProviderData)
-      setIsEditingProfile(false)
-      setEditErrors({})
-      setEditableFormData(null)
+      setProviderData(data as IProviderData);
+      setIsEditingProfile(false);
+      setEditErrors({});
+      setEditableFormData(null);
 
       if (phoneNumberChanged) {
-        setOtpSent(false)
-        setOtpInput("")
-        setOtpError("")
-        setOtpSentMessage("Phone number updated. Please re-verify your phone number.")
-        setActiveTab("phone-verification")
+        setOtpSent(false);
+        setOtpInput("");
+        setOtpError("");
+        setOtpSentMessage("Phone number updated. Please re-verify your phone number.");
+        setActiveTab("phone-verification");
       }
     } catch (err: any) {
-      console.error("Error saving profile:", err.message)
-      setError(`Failed to save profile: ${err.message}`)
+      console.error("Error saving profile:", err.message);
+      setError(`Failed to save profile: ${err.message}`);
     } finally {
-      setIsSavingProfile(false)
+      setIsSavingProfile(false);
     }
-  }
+  };
 
   // Handle cancel edit
   const handleCancelEdit = () => {
-    setIsEditingProfile(false)
-    setEditableFormData(null)
-    setEditErrors({})
-  }
+    setIsEditingProfile(false);
+    setEditableFormData(null);
+    setEditErrors({});
+  };
 
   // Handle phone number change
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setNewPhoneData((prev) => ({
       ...prev,
       [name]: value,
-    }))
+    }));
 
     // Clear error for the field being edited
     if (phoneChangeErrors[name]) {
       setPhoneChangeErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
-  }
+  };
 
   // Handle country code selection for phone change
   const handlePhoneCountryChange = (value: string) => {
-    const selectedCountry = countries.find((country) => country.name.common === value)
-    let countryCode = "+92" // Default fallback
+    const selectedCountry = countries.find((country) => country.name.common === value);
+    let countryCode = "+92"; // Default fallback
 
     if (selectedCountry?.idd?.root) {
-      countryCode = selectedCountry.idd.root
+      countryCode = selectedCountry.idd.root;
       // Add suffix if available (some countries have multiple suffixes, we'll use the first one)
       if (selectedCountry.idd.suffixes && selectedCountry.idd.suffixes.length > 0) {
-        countryCode += selectedCountry.idd.suffixes[0]
+        countryCode += selectedCountry.idd.suffixes[0];
       }
     }
 
     setNewPhoneData((prev) => ({
       ...prev,
       phoneCountryCode: countryCode,
-    }))
+    }));
 
     if (phoneChangeErrors.phoneCountryCode) {
       setPhoneChangeErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors.phoneCountryCode
-        return newErrors
-      })
+        const newErrors = { ...prev };
+        delete newErrors.phoneCountryCode;
+        return newErrors;
+      });
     }
-  }
+  };
 
   // Validate phone number change
   const validatePhoneChange = (): boolean => {
-    const newErrors: Record<string, string> = {}
-    let isValid = true
+    const newErrors: Record<string, string> = {};
+    let isValid = true;
 
     if (!newPhoneData.phoneCountryCode.trim()) {
-      newErrors.phoneCountryCode = "Country code is required."
-      isValid = false
+      newErrors.phoneCountryCode = "Country code is required.";
+      isValid = false;
     }
 
     if (!newPhoneData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required."
-      isValid = false
+      newErrors.phoneNumber = "Phone number is required.";
+      isValid = false;
     } else if (!/^\d{7,}$/.test(newPhoneData.phoneNumber)) {
-      newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7)."
-      isValid = false
+      newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7).";
+      isValid = false;
     }
 
     // Check if the new phone number is different from current
@@ -705,80 +792,80 @@ function ProviderDashboardInner() {
       newPhoneData.phoneCountryCode === providerData?.phoneCountryCode &&
       newPhoneData.phoneNumber === providerData?.phoneNumber
     ) {
-      newErrors.phoneNumber = "Please enter a different phone number."
-      isValid = false
+      newErrors.phoneNumber = "Please enter a different phone number.";
+      isValid = false;
     }
 
-    setPhoneChangeErrors(newErrors)
-    return isValid
-  }
+    setPhoneChangeErrors(newErrors);
+    return isValid;
+  };
 
   // Save phone number change
   const handleSavePhoneChange = async () => {
-    if (!userIdFromUrl || !validatePhoneChange()) return
+    if (!userIdFromUrl || !validatePhoneChange()) return;
 
-    setIsSavingPhone(true)
-    setError(null)
+    setIsSavingPhone(true);
+    setError(null);
 
     try {
       const updatePayload = {
         phoneCountryCode: newPhoneData.phoneCountryCode.trim(),
         phoneNumber: newPhoneData.phoneNumber.trim(),
         phone_verified: false, // Reset verification status
-      }
+      };
 
       const { data, error: updateError } = await supabase
         .from("ustaz_registrations")
         .update(updatePayload)
         .eq("userId", userIdFromUrl)
         .select()
-        .single()
+        .single();
 
       if (updateError) {
-        throw updateError
+        throw updateError;
       }
 
       // Update local state
-      setProviderData(data as IProviderData)
+      setProviderData(data as IProviderData);
 
       // Reset dialog state
-      setIsPhoneDialogOpen(false)
-      setNewPhoneData({ phoneCountryCode: "", phoneNumber: "" })
-      setPhoneChangeErrors({})
+      setIsPhoneDialogOpen(false);
+      setNewPhoneData({ phoneCountryCode: "", phoneNumber: "" });
+      setPhoneChangeErrors({});
 
       // Reset OTP states
-      setOtpSent(false)
-      setOtpInput("")
-      setOtpError("")
-      setOtpSentMessage("Phone number updated successfully. Please verify your new number.")
+      setOtpSent(false);
+      setOtpInput("");
+      setOtpError("");
+      setOtpSentMessage("Phone number updated successfully. Please verify your new number.");
     } catch (err: any) {
-      console.error("Error updating phone number:", err.message)
-      setError(`Failed to update phone number: ${err.message}`)
+      console.error("Error updating phone number:", err.message);
+      setError(`Failed to update phone number: ${err.message}`);
     } finally {
-      setIsSavingPhone(false)
+      setIsSavingPhone(false);
     }
-  }
+  };
 
   // Handle dialog open
   const handleOpenPhoneDialog = () => {
     setNewPhoneData({
       phoneCountryCode: providerData?.phoneCountryCode || "",
       phoneNumber: providerData?.phoneNumber || "",
-    })
-    setPhoneChangeErrors({})
-    setIsPhoneDialogOpen(true)
-  }
+    });
+    setPhoneChangeErrors({});
+    setIsPhoneDialogOpen(true);
+  };
 
   // Send OTP
   const sendOtp = async () => {
     if (!providerData?.phoneNumber || !providerData?.phoneCountryCode) {
-      setOtpError("Phone number not available for OTP. Please update your profile.")
-      return
+      setOtpError("Phone number not available for OTP. Please update your profile.");
+      return;
     }
 
-    setOtpError("")
-    setOtpSentMessage("")
-    setIsSendingOtp(true)
+    setOtpError("");
+    setOtpSentMessage("");
+    setIsSendingOtp(true);
 
     try {
       const response = await fetch("/api/send-otp", {
@@ -788,38 +875,38 @@ function ProviderDashboardInner() {
           phoneNumber: providerData.phoneNumber,
           phoneCountryCode: providerData.phoneCountryCode,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send OTP.")
+        throw new Error(data.error || "Failed to send OTP.");
       }
 
-      setOtpSent(true)
+      setOtpSent(true);
       setOtpSentMessage(
         `OTP has been sent to ${providerData.phoneCountryCode}${providerData.phoneNumber}. Please check your phone.`,
-      )
-      console.log("OTP send request successful:", data)
+      );
+      console.log("OTP send request successful:", data);
     } catch (error: any) {
-      console.error("Error sending OTP:", error.message)
-      setOtpError(`Failed to send OTP: ${error.message}. Please check your phone number and try again.`)
-      setOtpSent(false)
+      console.error("Error sending OTP:", error.message);
+      setOtpError(`Failed to send OTP: ${error.message}. Please check your phone number and try again.`);
+      setOtpSent(false);
     } finally {
-      setIsSendingOtp(false)
+      setIsSendingOtp(false);
     }
-  }
+  };
 
   // Verify OTP
   const verifyOtp = async () => {
     if (!providerData?.phoneNumber || !providerData?.phoneCountryCode || !userIdFromUrl) {
-      setOtpError("Phone number or User ID not available. Cannot verify.")
-      return
+      setOtpError("Phone number or User ID not available. Cannot verify.");
+      return;
     }
 
-    setOtpError("")
-    setOtpSentMessage("")
-    setIsVerifyingOtp(true)
+    setOtpError("");
+    setOtpSentMessage("");
+    setIsVerifyingOtp(true);
 
     try {
       const response = await fetch("/api/verify-otp", {
@@ -830,37 +917,102 @@ function ProviderDashboardInner() {
           phoneCountryCode: providerData.phoneCountryCode,
           otp: otpInput,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to verify OTP.")
+        throw new Error(data.error || "Failed to verify OTP.");
       }
 
       const { error: updateError } = await supabase
         .from("ustaz_registrations")
         .update({ phone_verified: true })
-        .eq("userId", userIdFromUrl)
+        .eq("userId", userIdFromUrl);
 
       if (updateError) {
-        throw updateError
+        throw updateError;
       }
 
-      setProviderData((prev) => (prev ? { ...prev, phone_verified: true } : null))
-      setOtpError("")
-      setOtpSentMessage("Phone number verified successfully!")
-      console.log("OTP verification successful:", data)
+      setProviderData((prev) => (prev ? { ...prev, phone_verified: true } : null));
+      setOtpError("");
+      setOtpSentMessage("Phone number verified successfully!");
+      console.log("OTP verification successful:", data);
     } catch (error: any) {
-      console.error("Error verifying OTP:", error.message)
-      setOtpError(`Invalid OTP: ${error.message}. Please try again.`)
+      console.error("Error verifying OTP:", error.message);
+      setOtpError(`Invalid OTP: ${error.message}. Please try again.`);
     } finally {
-      setIsVerifyingOtp(false)
+      setIsVerifyingOtp(false);
     }
-  }
+  };
+
+  // Handler for accepting a request
+  const handleAcceptRequest = useCallback(async (requestId: string) => {
+    if (!userIdFromUrl) return;
+
+    try {
+      // Update the service_requests table to mark this request as accepted by this provider
+      const { error } = await supabase
+        .from('service_requests')
+        .update({
+          status: 'accepted',
+          accepted_by_provider_id: userIdFromUrl,
+        })
+        .eq('id', requestId)
+        .eq('status', 'notified_multiple'); // Ensure only pending requests can be accepted
+
+      if (error) throw error;
+
+      // Update local state to reflect the change
+      setServiceRequests(prevRequests =>
+        prevRequests.map(req =>
+          req.id === requestId
+            ? { ...req, status: 'accepted', accepted_by_provider_id: userIdFromUrl }
+            : req
+        )
+      );
+      // You might want to navigate to a specific request details page or show a confirmation.
+      console.log(`Request ${requestId} accepted by ${userIdFromUrl}`);
+    } catch (err: any) {
+      console.error(`Error accepting request ${requestId}:`, err.message);
+      // Show an error message to the user
+    }
+  }, [userIdFromUrl]);
+
+  // Handler for rejecting a request
+  const handleRejectRequest = useCallback(async (requestId: string) => {
+    if (!userIdFromUrl) return;
+
+    try {
+      // Update the service_requests table to mark this request as rejected by this provider
+      // This is more complex if multiple providers are notified.
+      // For now, we'll just remove it from *this provider's* view or mark it locally as rejected.
+      // A more robust solution might involve a `rejected_by_provider_ids` array on the request
+      // and a backend function to manage the overall request status if all notified providers reject.
+
+      // For simplicity, let's just mark it as rejected for this provider's view
+      setServiceRequests(prevRequests =>
+        prevRequests.filter(req => req.id !== requestId) // Remove from list
+      );
+
+      // Optionally, you could update the `provider_notifications` table for this specific notification
+      // to 'rejected' if you have a way to identify that specific notification.
+      // Example:
+      // await supabase.from('provider_notifications')
+      //   .update({ status: 'rejected' })
+      //   .eq('request_id', requestId)
+      //   .eq('provider_id', userIdFromUrl);
+
+      console.log(`Request ${requestId} rejected by ${userIdFromUrl}`);
+    } catch (err: any) {
+      console.error(`Error rejecting request ${requestId}:`, err.message);
+      // Show an error message to the user
+    }
+  }, [userIdFromUrl]);
+
 
   if (loading) {
-    return <DashboardSkeleton />
+    return <DashboardSkeleton />;
   }
 
   if (error) {
@@ -881,7 +1033,7 @@ function ProviderDashboardInner() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (!providerData) {
@@ -902,7 +1054,7 @@ function ProviderDashboardInner() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -966,12 +1118,12 @@ function ProviderDashboardInner() {
               <SidebarGroupContent>
                 <SidebarMenu className="space-y-1">
                   {dashboardMenuItems.map((item) => {
-                    const Icon = item.icon
+                    const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.tab}>
                         <SidebarMenuButton
-                          onClick={() => setActiveTab(item.tab as "profile" | "settings" | "phone-verification")}
-                          className={`w-full justify-start px-3 py-2 rounded-lg transition-colors ${
+                          onClick={() => setActiveTab(item.tab as "profile" | "settings" | "phone-verification" | "request")}
+                          className={`w-full justify-start px-3 py-2 rounded-lg transition-colors relative ${
                             activeTab === item.tab
                               ? "bg-[#db4b0d] text-white hover:bg-[#c4420c]"
                               : "text-gray-700 hover:bg-gray-100"
@@ -979,9 +1131,14 @@ function ProviderDashboardInner() {
                         >
                           <Icon className="mr-3 h-4 w-4" />
                           {item.title}
+                          {item.tab === "request" && unreadRequestCount > 0 && (
+                            <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-red-500 text-white rounded-full px-2 py-0.5 text-xs">
+                              {unreadRequestCount}
+                            </Badge>
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                    )
+                    );
                   })}
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -1034,6 +1191,7 @@ function ProviderDashboardInner() {
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
                   <BreadcrumbPage className="font-medium">
+                    {activeTab === "request" && "Service Requests"}
                     {activeTab === "profile" && "Profile"}
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "phone-verification" && "Phone Verification"}
@@ -1044,6 +1202,117 @@ function ProviderDashboardInner() {
           </header>
 
           <main className="flex-1 p-6">
+            {activeTab === "request" && (
+              <div className="max-w-4xl mx-auto">
+                <Card className="shadow-sm border-gray-200">
+                  <CardHeader>
+                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                      <Bell className="mr-3 h-6 w-6 text-[#db4b0d]" />
+                      Incoming Service Requests
+                    </CardTitle>
+                    <CardDescription className="text-gray-600">
+                      View and manage service requests from users.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {serviceRequests.length === 0 ? (
+                      <div className="text-center py-12">
+                        <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No New Requests</h3>
+                        <p className="text-gray-600">
+                          You currently have no pending service requests. Check back later!
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {serviceRequests.map((request) => (
+                          <Card key={request.id} className="border-gray-200 shadow-sm">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                                  <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
+                                  {request.service_type}
+                                </h4>
+                                <Badge
+                                  className={`${
+                                    request.status === 'accepted'
+                                      ? 'bg-green-100 text-green-800'
+                                      : request.status === 'notified_multiple'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {request.status === 'notified_multiple' ? 'Pending Acceptance' : request.status.replace(/_/g, ' ')}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600 flex items-center mb-1">
+                                <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                                Requested: {new Date(request.created_at).toLocaleString()}
+                              </p>
+                              <p className="text-sm text-gray-600 flex items-center mb-3">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                                Location: Lat {request.request_latitude.toFixed(4)}, Lon {request.request_longitude.toFixed(4)}
+                              </p>
+                              {request.request_details && (
+                                <p className="text-sm text-gray-700 flex items-start mb-3">
+                                  <MailOpen className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                                  Details: {request.request_details}
+                                </p>
+                              )}
+
+                              {request.status === 'notified_multiple' && providerData.phone_verified && (
+                                <div className="flex gap-2 mt-4">
+                                  <Button
+                                    onClick={() => handleAcceptRequest(request.id)}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleRejectRequest(request.id)}
+                                    variant="outline"
+                                    className="flex-1 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                              {request.status === 'accepted' && request.accepted_by_provider_id === userIdFromUrl && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4 text-center">
+                                  <p className="text-sm font-medium text-green-800 flex items-center justify-center">
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    You have accepted this request.
+                                  </p>
+                                  {/* Add more details or a link to a chat/details page here */}
+                                </div>
+                              )}
+                              {request.status === 'accepted' && request.accepted_by_provider_id !== userIdFromUrl && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 text-center">
+                                  <p className="text-sm font-medium text-blue-800 flex items-center justify-center">
+                                    <Info className="h-4 w-4 mr-2" /> {/* Assuming Info icon from lucide-react */}
+                                    This request was accepted by another provider.
+                                  </p>
+                                </div>
+                              )}
+                              {!providerData.phone_verified && request.status === 'notified_multiple' && (
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+                                  <p className="text-sm text-orange-700">
+                                    Verify your phone number to accept this request.
+                                  </p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
             {activeTab === "profile" && (
               <div className="max-w-4xl mx-auto">
                 <Card className="shadow-sm border-gray-200">
@@ -1062,9 +1331,9 @@ function ProviderDashboardInner() {
                     {!isEditingProfile ? (
                       <Button
                         onClick={() => {
-                          setIsEditingProfile(true)
-                          setEditableFormData(providerData)
-                          setEditErrors({})
+                          setIsEditingProfile(true);
+                          setEditableFormData(providerData);
+                          setEditErrors({});
                         }}
                         className="bg-[#db4b0d] hover:bg-[#c4420c]"
                       >
@@ -1649,12 +1918,12 @@ function ProviderDashboardInner() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {countries.map((country) => {
-                                      const countryCode = country.idd?.root + (country.idd?.suffixes?.[0] || "")
+                                      const countryCode = country.idd?.root + (country.idd?.suffixes?.[0] || "");
                                       return (
                                         <SelectItem key={country.name.common} value={country.name.common}>
                                           {country.name.common} ({countryCode})
                                         </SelectItem>
-                                      )
+                                      );
                                     })}
                                   </SelectContent>
                                 </Select>
@@ -1812,10 +2081,10 @@ function ProviderDashboardInner() {
 
                             <Button
                               onClick={() => {
-                                setOtpSent(false)
-                                setOtpInput("")
-                                setOtpError("")
-                                setOtpSentMessage("")
+                                setOtpSent(false);
+                                setOtpInput("");
+                                setOtpError("");
+                                setOtpSentMessage("");
                               }}
                               variant="outline"
                               className="w-full"
@@ -1848,7 +2117,7 @@ function ProviderDashboardInner() {
         </SidebarInset>
       </div>
     </SidebarProvider>
-  )
+  );
 }
 
 function ProviderDashboard() {
@@ -1856,7 +2125,7 @@ function ProviderDashboard() {
     <Suspense fallback={<DashboardSkeleton />}>
       <ProviderDashboardInner />
     </Suspense>
-  )
+  );
 }
 
-export default ProviderDashboard
+export default ProviderDashboard;

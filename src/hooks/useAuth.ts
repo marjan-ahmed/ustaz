@@ -60,7 +60,7 @@ export const useAuth = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://ustaz-bice.vercel.app/',
+          redirectTo: '/',
         },
       });
       

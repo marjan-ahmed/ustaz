@@ -14,6 +14,7 @@ import Footer from "./components/Footer";
 import Header from "./components/Header";
 import { useTranslations } from "next-intl";
 import { supabase } from "../../client/supabaseClient";
+import ServiceSearchBar from "./components/ServicesSearchBar";
 
 export default function Home() {
   const t = useTranslations('hero')
@@ -107,12 +108,13 @@ export default function Home() {
               {banners[currentIndex].description}
             </p>
           
-            <Link
-              href={isSignedIn ? "/process" : "/auth/login"}
+            {/* <Link
+              href={"/process"}
               className="inline-block bg-white text-black px-4 py-2 sm:px-5 sm:py-3 rounded-md hover:bg-gray-200 transition"
             >
               {banners[currentIndex].button}
-            </Link>
+            </Link> */}
+            <ServiceSearchBar />
           </div>
         </div>
       </div>

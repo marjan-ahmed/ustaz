@@ -27,6 +27,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-google-maps/api": "^2.20.7",
     "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.51.0",
     "@types/negotiator": "^0.6.4",
     "axios": "^1.10.0",
