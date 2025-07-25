@@ -1,91 +1,128 @@
+'use client';
 import React from 'react';
 import Head from 'next/head';
-import { FaTools, FaBolt, FaWater, FaPhoneAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import Image from 'next/image';
-import Footer from '../components/Footer';
+import { useTranslations } from 'next-intl';
 import Header from '../components/Header';
-// import ProfileCard from '../components/ProfileCard';
+import Footer from '../components/Footer';
 
 function AboutUs() {
+  const t = useTranslations('about');
+
   return (
     <>
       <Head>
-        <title>About Us | Ustaz</title>
+        <title>{t('meta.title')}</title>
+        <meta name="description" content={t('meta.description')} />
+        <meta name="keywords" content={t('meta.keywords')} />
+        <meta name="author" content="Ustaz" />
       </Head>
+
       <Header />
 
-      <div className="min-h-screen bg-orange-50 text-gray-800">
-
-        {/* Hero/Header */}
-        <div className="bg-[#db4b0d] py-12 px-6 text-white text-center shadow-md">
-          <h1 className="text-4xl font-bold">About Ustaz</h1>
-          <p className="mt-2 text-lg">Your trusted home service provider</p>
-        </div>
-
-        {/* Who We Are */}
-        <section className="max-w-6xl mx-auto py-12 px-6 grid md:grid-cols-2 gap-10 items-center">
-          <Image
-            src="https://images.pexels.com/photos/6914343/pexels-photo-6914343.jpeg"
-            alt="Our Team"
-            width={500}
-            height={500}
-            className="rounded-xl shadow-lg w-full"
-          />
-          <div>
-            <h2 className="text-3xl font-semibold text-[#db4b0d] mb-4">Who We Are</h2>
-            <p className="text-lg leading-relaxed">
-              Ustaz is a trusted service provider offering a wide range of home services including plumbing, electrical, handyman, and more. 
-              We are committed to bringing reliability, affordability, and speed to every doorstep.
-            </p>  
-          </div>
+      <main className="bg-orange-50 text-gray-900 min-h-screen">
+        {/* Hero Section */}
+        <section className="bg-[#db4b0d] text-white py-20 px-6 text-center shadow-lg">
+          <h1 className="text-5xl font-bold leading-tight tracking-tight">{t('hero.title')}</h1>
+          <p className="mt-4 text-xl max-w-2xl mx-auto">{t('hero.subtitle')}</p>
         </section>
 
+        {/* Story Section */}
+        <section className="py-20 px-6 max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <h2 className="text-3xl font-semibold text-[#db4b0d]">{t('story.heading')}</h2>
+            <p className="text-sm sm: text-md md:text-lg leading-relaxed">{t('story.paragraph1')}</p>
+            <p className="text-sm sm: text-md md:text-lg leading-relaxed">{t('story.paragraph2')}</p>
+          </div>
+          <Image
+            src="https://images.pexels.com/photos/6914343/pexels-photo-6914343.jpeg"
+            alt="Ustaz team in action - delivering trusted home services"
+            width={600}
+            height={400}
+            className="rounded-2xl shadow-lg object-cover w-full"
+          />
+        </section>
 
-        {/* Mission, Vision, Values */}
-        <section className="bg-white py-12 px-6">
-          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6">
+        {/* Leadership Section */}
+        <section className="bg-white py-20 px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-[#db4b0d] mb-12">{t('leadership.heading')}</h2>
+            <p className="text-md sm:text-lg max-w-3xl mx-auto mb-10 text-gray-700">
+              {t('leadership.description')}
+            </p>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-center items-center gap-12 max-w-5xl mx-auto">
             {[
               {
-                title: "Our Mission",
-                desc: "To simplify home repairs by connecting you with skilled, verified service professionals.",
+                name: t('founder.name'),
+                role: t('founder.role'),
+                image: '/team/founder.jpg',
               },
               {
-                title: "Our Vision",
-                desc: "To become Pakistan's most reliable digital home service platform.",
+                name: t('ceo.name'),
+                role: t('ceo.role'),
+                image: '/team/marjan-ceo.jpg',
               },
               {
-                title: "Our Values",
-                desc: "Honesty, Punctuality, Skill, and Customer Satisfaction above all.",
+                name: t('hoo.name'),
+                role: t('hoo.role'),
+                image: '/team/sufyan-hoo.jpg',
               },
-            ].map((item, index) => (
+            ].map((person, idx) => (
               <div
-                key={index}
-                className="bg-orange-100 rounded-xl shadow-md p-6 hover:scale-105 transition"
+                key={idx}
+                className="text-center group w-[220px] hover:scale-105 transition-transform duration-300"
               >
-                <h3 className="text-xl font-bold text-[#db4b0d] mb-2">
-                  {item.title}
-                </h3>
-                <p>{item.desc}</p>
+                <div className="rounded-full overflow-hidden shadow-lg w-[220px] h-[220px] mx-auto mb-4">
+                  <Image
+                    src={person.image}
+                    alt={`${person.name} - ${person.role}`}
+                    width={220}
+                    height={220}
+                    className="object-cover"
+                  />
+                </div>
+                <h3 className="text-sm sm:text-md md:text-xl font-semibold text-gray-800">{person.name}</h3>
+                <p className="text-xs sm:text-sm mt-0.5 text-gray-500">{person.role}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Contact CTA */}
-        <section className="text-center py-10 bg-[#db4b0d] text-white px-6">
-          <h2 className="text-3xl font-bold mb-4">Need Immediate Help?</h2>
-          <p className="text-lg mb-6">Call or WhatsApp us anytime</p>
+        {/* Mission, Vision, Values */}
+        <section className="bg-orange-100 py-20 px-6">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 text-center">
+            <div>
+              <h3 className="text-xl font-bold text-[#db4b0d] mb-2">{t('missionVision.missionTitle')}</h3>
+              <p className="text-base text-gray-700">{t('missionVision.missionText')}</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#db4b0d] mb-2">{t('missionVision.visionTitle')}</h3>
+              <p className="text-base text-gray-700">{t('missionVision.visionText')}</p>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#db4b0d] mb-2">{t('missionVision.valuesTitle')}</h3>
+              <p className="text-base text-gray-700">{t('missionVision.valuesText')}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <section className="bg-[#db4b0d] text-white py-20 px-6 text-center">
+          <h2 className="text-3xl font-bold mb-4">{t('cta.title')}</h2>
+          <p className="text-lg mb-6">{t('cta.subtitle')}</p>
           <a
             href="https://wa.me/923051126649"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-white text-[#db4b0d] px-6 py-3 rounded-full font-semibold shadow hover:bg-orange-100 transition"
+            className="inline-block bg-white text-[#db4b0d] px-6 py-3 rounded-full font-semibold hover:bg-orange-100 transition"
           >
-            <FaPhoneAlt />
-            Chat on WhatsApp
+            {t('cta.button')}
           </a>
         </section>
-      </div>
+      </main>
+
       <Footer />
     </>
   );

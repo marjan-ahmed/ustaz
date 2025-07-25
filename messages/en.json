@@ -233,6 +233,51 @@
     "days": "{count} day",
     "days_other": "{count} days",
     "justNow": "Just now"
+  },
+  "about": {
+    "meta": {
+    "title": "About Ustaz | Trusted Home Services in Pakistan",
+    "description": "Discover Ustaz – Pakistan’s leading digital home services platform. Learn about our story, leadership, and how we’re transforming household solutions with reliable professionals.",
+    "keywords": "Home Services Pakistan, Plumbing, Electricians, Handyman, Ustaz, Home Repairs, Emergency Fix, Local Services Pakistan"
+  },
+  "hero": {
+    "title": "Ustaz — Your Home, Handled",
+    "subtitle": "Pakistan’s most trusted platform for fast, reliable, and verified home service solutions."
+  },
+  "story": {
+    "heading": "Who We Are",
+    "paragraph1": "Ustaz was founded with a single mission — to eliminate the frustration of unreliable household services in Pakistan. From urgent plumbing and electrical issues to routine maintenance, Ustaz connects you to vetted professionals at your convenience.",
+    "paragraph2": "More than just a service app, Ustaz is a promise of safety, reliability, and speed for your home. Every technician is background-checked, trained, and customer-reviewed to ensure peace of mind."
+  },
+  "leadership": {
+    "heading": "Meet Our Leadership",
+    "description": "The Ustaz leadership brings innovation, experience, and a relentless drive to revolutionize how home services work in Pakistan."
+  },
+  "founder": {
+    "name": "Masood Alam",
+    "role": "Founder"
+  },
+  "ceo": {
+    "name": "M. Marjan Ahmed",
+    "role": "CEO & CTO"
+  },
+  "hoo": {
+    "name": "M. Sufyan Ahmed",
+    "role": "Head of Operations"
+  },
+  "missionVision": {
+    "missionTitle": "Our Mission",
+    "missionText": "To deliver dependable, fast, and tech-enabled home services with verified local professionals.",
+    "visionTitle": "Our Vision",
+    "visionText": "To become the most trusted and efficient household service platform in South Asia.",
+    "valuesTitle": "Core Values",
+    "valuesText": "Integrity, accountability, skilled service, and customer satisfaction in every task."
+  },
+  "cta": {
+    "title": "Need Urgent Home Service?",
+    "subtitle": "Our verified experts are just a message away — ready to help across Pakistan.",
+    "button": "Chat on WhatsApp"
+  }
   }
 
 }
