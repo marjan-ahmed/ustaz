@@ -23,8 +23,8 @@ function AboutUs() {
       <main className="bg-orange-50 text-gray-900 min-h-screen">
         {/* Hero Section */}
         <section className="bg-[#db4b0d] text-white py-20 px-6 text-center shadow-lg">
-          <h1 className="text-5xl font-bold leading-tight tracking-tight">{t('hero.title')}</h1>
-          <p className="mt-4 text-xl max-w-2xl mx-auto">{t('hero.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight tracking-tight">{t('hero.title')}</h1>
+          <p className="mt-4 text-sm sm:text-xl max-w-2xl mx-auto">{t('hero.subtitle')}</p>
         </section>
 
         {/* Story Section */}
@@ -95,15 +95,15 @@ function AboutUs() {
           <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 text-center">
             <div>
               <h3 className="text-xl font-bold text-[#db4b0d] mb-2">{t('missionVision.missionTitle')}</h3>
-              <p className="text-base text-gray-700">{t('missionVision.missionText')}</p>
+              <p className="text-sm sm:text-md text-gray-700">{t('missionVision.missionText')}</p>
             </div>
             <div>
               <h3 className="text-xl font-bold text-[#db4b0d] mb-2">{t('missionVision.visionTitle')}</h3>
-              <p className="text-base text-gray-700">{t('missionVision.visionText')}</p>
+              <p className="text-sm sm:text-md text-gray-700">{t('missionVision.visionText')}</p>
             </div>
             <div>
               <h3 className="text-xl font-bold text-[#db4b0d] mb-2">{t('missionVision.valuesTitle')}</h3>
-              <p className="text-base text-gray-700">{t('missionVision.valuesText')}</p>
+              <p className="text-sm sm:text-md text-gray-700">{t('missionVision.valuesText')}</p>
             </div>
           </div>
         </section>
