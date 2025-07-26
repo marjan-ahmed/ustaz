@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
-import { supabase } from '../../../client/supabaseClient';
+import { useTranslations } from 'next-intl'; // For multi-language support
+import { supabase } from '../../../client/supabaseClient'; // Client-side Supabase instance
 import {
   MapPin, Briefcase, Search, Loader2, LocateFixed, XCircle, CheckCircle, Phone, MessageSquare, Route, Clock, User as UserIcon, MailOpen
 } from 'lucide-react';
@@ -12,24 +12,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import { HomeModernIcon } from '@heroicons/react/24/solid';
+import { HomeModernIcon } from '@heroicons/react/24/solid'; // Assuming this is correct for Home icon
 import Link from 'next/link';
-import { useSupabaseUser } from '@/hooks/useSupabaseUser';
+import { useSupabaseUser } from '@/hooks/useSupabaseUser'; // Using your custom Supabase user hook
 import { useServiceContext } from '../context/ServiceContext';
-// Removed: import { Loader } from '@googlemaps/js-api-loader'; // Loader is now in GoogleAutocomplete
-import GoogleAutocomplete from '../components/GoogleAutocomplete'; // Import the new GoogleAutocomplete component
+// Removed Loader import as Google Maps API is no longer directly integrated here
 
+
+// Define types for service request status and provider info
+// Updated RequestStatus to include 'notified_multiple' from backend
 type RequestStatus = 'idle' | 'finding_provider' | 'notified' | 'notified_multiple' | 'no_ustaz_found' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'pending_notification';
 
+
 interface ProviderInfo {
-  user_id: string;
+  user_id: string; // Supabase auth.uid
   firstName: string;
   lastName: string;
   phoneNumber: string;
   phoneCountryCode: string;
   email?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number; // Added for displaying on map or filtering
+  longitude?: number; // Added for displaying on map or filtering
 }
 
 interface LiveLocation {
@@ -38,13 +41,15 @@ interface LiveLocation {
   updated_at: string;
 }
 
+// Global declaration for Leaflet (L)
 declare global {
   interface Window {
-    L: any;
-    google: any; 
+    L: any; // Declare L for Leaflet
+    // Removed google declaration as it's not used for direct API calls in this component anymore
   }
 }
 
+// Utility function to format time ago
 const timeAgo = (dateString: string, t: ReturnType<typeof useTranslations>) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -63,32 +68,34 @@ const timeAgo = (dateString: string, t: ReturnType<typeof useTranslations>) => {
 };
 
 function ProcessPage() {
-  const t = useTranslations('process');
-  const { user, isSignedIn, isLoaded } = useSupabaseUser();
-  const { address, setAddress, service, setService } = useServiceContext();
+  const t = useTranslations('process'); // Translations for this page
+  const { user, isSignedIn, isLoaded } = useSupabaseUser(); // Using your custom Supabase user hook
+  // Destructure address and service from context, and their setters
+  const { address, setAddress, service, setService} = useServiceContext();
 
   const [userLatitude, setUserLatitude] = useState<number | null>(null);
   const [userLongitude, setUserLongitude] = useState<number | null>(null);
-  const [manualPostalCode, setManualPostalCode] = useState<string>('');
+  // Removed local state manualAddress and selectedServiceType as they are now managed by context
+  const [manualPostalCode, setManualPostalCode] = useState<string>(''); // manualPostalCode remains local
   const [requestStatus, setRequestStatus] = useState<RequestStatus>('idle');
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [acceptedProvider, setAcceptedProvider] = useState<ProviderInfo | null>(null);
   const [providerLiveLocation, setProviderLiveLocation] = useState<LiveLocation | null>(null);
-  const [mapInitialized, setMapInitialized] = useState(false);
-  // Removed: const [googleMapsLoaded, setGoogleMapsLoaded] = useState(false); // State is now in GoogleAutocomplete
+  const [mapInitialized, setMapInitialized] = useState(false); // State to track map initialization
+  const mapRef = useRef<any>(null); // Ref for the Leaflet map instance
+  const mapContainerRef = useRef<HTMLDivElement>(null); // Ref for the map container div
+  const userMarkerRef = useRef<any>(null); // Ref for user's map marker
+  const providerMarkerRef = useRef<any>(null); // Ref for provider's map marker
+  const requestSubscriptionRef = useRef<any>(null); // Ref for service_requests subscription
+  const liveLocationSubscriptionRef = useRef<any>(null); // Ref for live_locations subscription
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for retry timeout
 
-  const mapRef = useRef<any>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const userMarkerRef = useRef<any>(null);
-  const providerMarkerRef = useRef<any>(null);
-  const requestSubscriptionRef = useRef<any>(null);
-  const liveLocationSubscriptionRef = useRef<any>(null);
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // New states for provider selection
+  const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]); // Providers to display for selection
+  const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]); // User selected provider IDs
+  const [showProviderList, setShowProviderList] = useState<boolean>(false); // To conditionally render provider list UI
 
-  const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]);
-  const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]);
-  const [showProviderList, setShowProviderList] = useState<boolean>(false);
 
   const service_types = [
     "Electrician Service",
@@ -98,47 +105,28 @@ function ProcessPage() {
     "Solar Technician",
   ];
 
-  // Removed: Effect to load Google Maps API (now handled by GoogleAutocomplete component)
-
-  // Callback for GoogleAutocomplete to update address and coordinates
-  const handlePlaceSelect = useCallback((
-    selectedAddress: string,
-    lat: number | null,
-    lng: number | null
-  ) => {
-    setAddress(selectedAddress);
-    setUserLatitude(lat);
-    setUserLongitude(lng);
-    setSearchMessage(null);
-    setShowProviderList(false);
-    setAvailableProviders([]);
-    setSelectedProviderIds([]);
-    setManualPostalCode(''); // Clear manual postal code if a place is selected via autocomplete
-  }, [setAddress, setUserLatitude, setUserLongitude, setSearchMessage, setShowProviderList, setAvailableProviders, setSelectedProviderIds]);
-
+  // Function to get current location using browser's Geolocation API
   const getCurrentLocation = useCallback(async () => {
     if (navigator.geolocation) {
-      setRequestStatus('finding_provider');
+      setRequestStatus('finding_provider'); // Use a more general status for location finding
       setSearchMessage(t('gettingLocation'));
-      setAddress(''); // Clear context address, which will clear the GoogleAutocomplete input
+      setAddress(''); // Clear address in context
+      setService(''); // Clear service in context
       setManualPostalCode('');
-      setService('');
-      setUserLatitude(null);
+      setUserLatitude(null); // Clear previous GPS coords
       setUserLongitude(null);
-      setShowProviderList(false);
-      setAvailableProviders([]);
-      setSelectedProviderIds([]);
+      setShowProviderList(false); // Hide provider list when getting new location
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLatitude(position.coords.latitude);
           setUserLongitude(position.coords.longitude);
           setSearchMessage(t('locationDetected'));
-          setRequestStatus('idle');
+          setRequestStatus('idle'); // Back to idle after getting location, ready for search
         },
         (error) => {
           console.error("Error getting location:", error);
-          setRequestStatus('error');
+          setRequestStatus('error'); // Set error status
           let errorMessage = t('locationErrorGeneric');
           switch (error.code) {
             case error.PERMISSION_DENIED:
@@ -150,9 +138,6 @@ function ProcessPage() {
             case error.TIMEOUT:
               errorMessage = t('locationTimeout');
               break;
-            default:
-              errorMessage = t('locationErrorGeneric');
-              break;
           }
           setSearchMessage(errorMessage);
         },
@@ -162,10 +147,11 @@ function ProcessPage() {
       setRequestStatus('error');
       setSearchMessage(t('geolocationNotSupported'));
     }
-  }, [t, setAddress, setService, setUserLatitude, setUserLongitude, setSearchMessage, setShowProviderList, setAvailableProviders, setSelectedProviderIds]);
+  }, [t, setAddress, setService]); // Added setService to dependencies
 
-  const geocodeAddress = useCallback(async (addressToGeocode: string, postalCode: string): Promise<{ lat: number; lng: number } | null> => {
-    const query = `${addressToGeocode}, ${postalCode}`;
+  // Function to geocode a manual address using OpenStreetMap Nominatim API
+  const geocodeAddress = useCallback(async (address: string, postalCode: string): Promise<{ lat: number; lng: number } | null> => {
+    const query = `${address}, ${postalCode}`;
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`
@@ -187,8 +173,11 @@ function ProcessPage() {
     }
   }, []);
 
+  // Fetch accepted provider's details (moved up for declaration order)
   const fetchAcceptedProviderDetails = useCallback(async (providerId: string) => {
     try {
+      // Note: This fetch directly from Supabase client assumes RLS allows authenticated users
+      // to read ustaz_registrations. If RLS is stricter, you might need an API route.
       const { data, error } = await supabase
         .from('ustaz_registrations')
         .select('userId, firstName, lastName, phoneNumber, phoneCountryCode, email')
@@ -210,6 +199,7 @@ function ProcessPage() {
     }
   }, []);
 
+  // Supabase Realtime Subscription for Provider Live Location (moved up for declaration order)
   const subscribeToProviderLiveLocation = useCallback((requestId: string) => {
     if (liveLocationSubscriptionRef.current) {
       supabase.removeChannel(liveLocationSubscriptionRef.current);
@@ -236,66 +226,62 @@ function ProcessPage() {
     liveLocationSubscriptionRef.current = channel;
   }, []);
 
-  const cleanupRequestState = useCallback(() => {
-    if (requestSubscriptionRef.current) {
-      supabase.removeChannel(requestSubscriptionRef.current);
-      requestSubscriptionRef.current = null;
-    }
-    if (liveLocationSubscriptionRef.current) {
-      supabase.removeChannel(liveLocationSubscriptionRef.current);
-      liveLocationSubscriptionRef.current = null;
-    }
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
-    setCurrentRequestId(null);
-    setAcceptedProvider(null);
-    setProviderLiveLocation(null);
-    setAvailableProviders([]);
-    setSelectedProviderIds([]);
-    setShowProviderList(false);
-    if (mapRef.current && window.L) {
-      if (userMarkerRef.current) {
-        mapRef.current.removeLayer(userMarkerRef.current);
-        userMarkerRef.current = null;
-      }
-      if (providerMarkerRef.current) {
-        mapRef.current.removeLayer(providerMarkerRef.current);
-        providerMarkerRef.current = null;
-      }
-    }
-    setRequestStatus('idle');
-  }, []);
-
+  // Function to cancel the current service request (MOVED UP)
   const cancelServiceRequest = useCallback(async () => {
-    if (!currentRequestId || !user || !user.id) {
-      setSearchMessage(t('noActiveRequestToCancel'));
-      return;
-    }
+    if (!currentRequestId || !user || !user.id) return;
 
     setRequestStatus('cancelled');
     setSearchMessage(t('requestCancelled'));
 
     try {
+      // Update the request status in Supabase directly from client (RLS must allow this)
       const { error } = await supabase
         .from('service_requests')
         .update({ status: 'cancelled' })
         .eq('id', currentRequestId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id); // Ensure only the owner can cancel
 
       if (error) throw error;
 
-      cleanupRequestState();
-      setSearchMessage(t('requestCancelledSuccessfully'));
+      // Clean up subscriptions and state
+      if (requestSubscriptionRef.current) {
+        supabase.removeChannel(requestSubscriptionRef.current);
+        requestSubscriptionRef.current = null;
+      }
+      if (liveLocationSubscriptionRef.current) {
+        supabase.removeChannel(liveLocationSubscriptionRef.current);
+        liveLocationSubscriptionRef.current = null;
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+
+      setCurrentRequestId(null);
+      setAcceptedProvider(null);
+      setProviderLiveLocation(null);
+      setAvailableProviders([]); // Clear providers list
+      setSelectedProviderIds([]); // Clear selected providers
+      setShowProviderList(false); // Hide provider list
+      // Reset map markers
+      if (userMarkerRef.current && window.L) {
+        mapRef.current.removeLayer(userMarkerRef.current);
+        userMarkerRef.current = null;
+      }
+      if (providerMarkerRef.current && window.L) {
+        mapRef.current.removeLayer(providerMarkerRef.current);
+        providerMarkerRef.current = null;
+      }
 
     } catch (error: any) {
       console.error('Error cancelling request:', error.message);
-      setSearchMessage(`${t('errorCancellingRequest')}: ${error.message}`);
-      setRequestStatus('error');
+      setSearchMessage(`Error cancelling request: ${error.message}`);
+      setRequestStatus('error'); // Revert status if cancellation fails
     }
-  }, [currentRequestId, user, t, cleanupRequestState]);
+  }, [currentRequestId, user, t]);
 
+
+  // Supabase Realtime Subscription for Service Request Status (Moved up for declaration order)
   const subscribeToServiceRequest = useCallback((requestId: string) => {
     if (requestSubscriptionRef.current) {
       supabase.removeChannel(requestSubscriptionRef.current);
@@ -316,234 +302,248 @@ function ProcessPage() {
           const acceptedByProviderId = (payload.new as any).accepted_by_provider_id;
           console.log('Service Request Update received:', payload.new);
 
-          setRequestStatus(newStatus);
+          setRequestStatus(newStatus); // Update local state with new status
 
           if (newStatus === 'accepted' && acceptedByProviderId) {
+            // Fetch provider details and start live location tracking
             fetchAcceptedProviderDetails(acceptedByProviderId);
             subscribeToProviderLiveLocation(requestId);
-            setSearchMessage(t('requestAccepted'));
           } else if (newStatus === 'rejected') {
+            // If one provider rejected, we don't auto-retry here as multiple were notified
+            // The backend should manage if *all* notified providers reject or timeout.
             setSearchMessage(t('rejected'));
-          } else if (newStatus === 'no_ustaz_found') {
+            // No auto-retry here. User will wait for another acceptance or 'no_ustaz_found' from backend.
+          } else if (newStatus === 'no_ustaz_found' || newStatus === 'error_finding_ustaz') {
             setSearchMessage(payload.new.message || t('noProvidersFound'));
-            setShowProviderList(false);
-            setAvailableProviders([]);
-            setSelectedProviderIds([]);
-          } else if (newStatus === 'error_finding_ustaz') {
-            setSearchMessage(payload.new.message || t('errorFindingProviders'));
-            setShowProviderList(false);
-            setAvailableProviders([]);
-            setSelectedProviderIds([]);
+            // Optionally, show a retry button or allow manual retry
           } else if (newStatus === 'cancelled' || newStatus === 'completed') {
-            setSearchMessage(t(newStatus));
-            cleanupRequestState();
+            // Request finished, clean up
+            cancelServiceRequest(); // This will clear state and subscriptions
           }
         }
       )
       .subscribe();
 
     requestSubscriptionRef.current = channel;
-  }, [t, cleanupRequestState, fetchAcceptedProviderDetails, subscribeToProviderLiveLocation]);
+  }, [t, cancelServiceRequest, fetchAcceptedProviderDetails, subscribeToProviderLiveLocation]);
 
+
+  // New function to fetch available providers based on service type and location
   const fetchAvailableProviders = useCallback(async () => {
     console.log("Attempting to fetch available providers...");
     console.log("Current user state:", { user, isSignedIn, isLoaded });
-    console.log("Service from context:", service);
+    console.log("Service from context:", service); // Use service from context
 
     if (!user || !user.id) {
-      setSearchMessage(t("pleaseSignInToViewProviders"));
-      setRequestStatus('error');
-      console.error("Authentication failed: User or user ID is null.");
-      return;
+        setSearchMessage(t("pleaseSignInToViewProviders"));
+        setRequestStatus('error');
+        console.error("Authentication failed: User or user ID is null.");
+        return;
     }
-    if (!service) {
-      setSearchMessage(t('pleaseSelectService'));
-      setRequestStatus('error');
-      console.error("Service type not selected.");
-      return;
+    if (!service) { // Use service from context
+        setSearchMessage(t('pleaseSelectService'));
+        setRequestStatus('error');
+        console.error("Service type not selected.");
+        return;
     }
 
     let finalLatitude = userLatitude;
     let finalLongitude = userLongitude;
 
-    if ((finalLatitude === null || finalLongitude === null) && address.trim() && manualPostalCode.trim()) {
-      setSearchMessage(t('geocodingAddress'));
-      const geocoded = await geocodeAddress(address, manualPostalCode);
-      if (geocoded) {
-        finalLatitude = geocoded.lat;
-        finalLongitude = geocoded.lng;
-        setUserLatitude(geocoded.lat);
-        setUserLongitude(geocoded.lng);
-        setSearchMessage(t('addressGeocoded'));
-      } else {
-        setSearchMessage(t('geocodingFailed'));
-        setRequestStatus('error');
-        return;
-      }
+    // Use existing geocoding logic if manual address is used
+    if ((finalLatitude === null || finalLongitude === null) && address.trim() && manualPostalCode.trim()) { // Use address from context
+        setSearchMessage(t('geocodingAddress'));
+        const geocoded = await geocodeAddress(address, manualPostalCode); // Use address from context
+        if (geocoded) {
+            finalLatitude = geocoded.lat;
+            finalLongitude = geocoded.lng;
+            setSearchMessage(t('addressGeocoded'));
+        } else {
+            setSearchMessage(t('geocodingFailed'));
+            setRequestStatus('error');
+            return;
+        }
     }
 
     if (finalLatitude === null || finalLongitude === null) {
-      setSearchMessage(t('noValidLocation'));
-      setRequestStatus('error');
-      return;
+        setSearchMessage(t('noValidLocation'));
+        setRequestStatus('error');
+        return;
     }
 
-    setRequestStatus('finding_provider');
+    setRequestStatus('finding_provider'); // Temporary status
     setSearchMessage(t('fetchingProvidersList'));
-    setAvailableProviders([]);
-    setSelectedProviderIds([]);
-    setShowProviderList(false);
+    setAvailableProviders([]); // Clear previous list
+    setSelectedProviderIds([]); // Clear previous selections
+    setShowProviderList(false); // Hide the list until fetched
 
     try {
-      const response = await fetch('/api/get-available-providers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          serviceType: service,
-          userLat: finalLatitude,
-          userLon: finalLongitude,
-        }),
-      });
+        // Call a new API route to get available providers for the selected service type
+        // This API route will query ustaz_registrations based on serviceType and availability
+        const response = await fetch('/api/get-available-providers', { // You need to create this new API route
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: user.id, // Pass user ID
+                serviceType: service, // Use service from context
+                userLat: finalLatitude, // Pass user location for potential future proximity filtering in backend
+                userLon: finalLongitude,
+            }),
+        });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch available providers.');
-      }
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to fetch available providers.');
+        }
 
-      setAvailableProviders(data.providers);
-      setShowProviderList(true);
-      setRequestStatus('idle');
-      setSearchMessage(data.providers.length > 0 ? t('selectProvidersToNotify') : t('noProvidersForService'));
+        setAvailableProviders(data.providers); // Assuming data.providers is an array of ProviderInfo
+        setShowProviderList(true); // Show the provider selection UI
+        setRequestStatus('idle'); // Back to idle after fetching list
+        setSearchMessage(data.providers.length > 0 ? t('selectProvidersToNotify') : t('noProvidersForService'));
 
     } catch (error: any) {
-      console.error('Error fetching available providers:', error);
-      setRequestStatus('error');
-      setSearchMessage(`Error: ${error.message}`);
-    }
-  }, [user, service, userLatitude, userLongitude, address, manualPostalCode, geocodeAddress, t, isSignedIn, isLoaded]);
-
-  const sendRequestToSelectedProviders = useCallback(async () => {
-    if (selectedProviderIds.length === 0) {
-      setSearchMessage(t('pleaseSelectAtLeastOneProvider'));
-      setRequestStatus('error');
-      return;
-    }
-    if (!user || !user.id) {
-      setSearchMessage(t("pleaseSignInToRequestService"));
-      setRequestStatus('error');
-      return;
-    }
-
-    let finalLatitude = userLatitude;
-    let finalLongitude = userLongitude;
-
-    if ((finalLatitude === null || finalLongitude === null) && address.trim() && manualPostalCode.trim()) {
-      setSearchMessage(t('geocodingAddress'));
-      const geocoded = await geocodeAddress(address, manualPostalCode);
-      if (geocoded) {
-        finalLatitude = geocoded.lat;
-        finalLongitude = geocoded.lng;
-        setUserLatitude(geocoded.lat);
-        setUserLongitude(geocoded.lng);
-        setSearchMessage(t('addressGeocoded'));
-      } else {
-        setSearchMessage(t('geocodingFailed'));
+        console.error('Error fetching available providers:', error);
         setRequestStatus('error');
-        return;
+        setSearchMessage(`Error: ${error.message}`);
+    }
+  }, [user, service, userLatitude, userLongitude, address, manualPostalCode, geocodeAddress, t, isSignedIn, isLoaded]); // Updated dependencies
+
+  // New function to send request to *selected* providers
+  const sendRequestToSelectedProviders = useCallback(async () => {
+      if (selectedProviderIds.length === 0) {
+          setSearchMessage(t('pleaseSelectAtLeastOneProvider'));
+          setRequestStatus('error');
+          return;
       }
-    }
+      if (!user || !user.id) {
+          setSearchMessage("Please sign in to request a service.");
+          setRequestStatus('error');
+          return;
+      }
+      // Re-verify location or use stored ones
+      const finalLatitude = userLatitude;
+      const finalLongitude = userLongitude;
 
-    if (finalLatitude === null || finalLongitude === null) {
-      setSearchMessage(t('noValidLocation'));
-      setRequestStatus('error');
-      return;
-    }
-
-    setRequestStatus('finding_provider');
-    setSearchMessage(t('notifyingSelectedProviders'));
-
-    try {
-      const response = await fetch('/api/request-service', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id,
-          serviceType: service,
-          userLat: finalLatitude,
-          userLon: finalLongitude,
-          requestDetails: "User needs service at their location.",
-          selectedProviderIds: selectedProviderIds,
-          requestId: currentRequestId,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to initiate service request.');
+      if (finalLatitude === null || finalLongitude === null) {
+          setSearchMessage(t('noValidLocation'));
+          setRequestStatus('error');
+          return;
       }
 
-      setCurrentRequestId(data.requestId);
-      setRequestStatus(data.status);
-      setSearchMessage(data.message);
+      setRequestStatus('finding_provider'); // Status for sending request
+      setSearchMessage(t('notifyingSelectedProviders'));
 
-      if (data.status === 'notified_multiple' || data.status === 'notified') {
-        subscribeToServiceRequest(data.requestId);
-        setShowProviderList(false);
-      } else if (data.status === 'no_ustaz_found' || data.status === 'error_finding_ustaz') {
-        console.log("No Ustaz found or error with selected ones. User can retry manually.");
-        setShowProviderList(false);
+      try {
+          const response = await fetch('/api/request-service', { // This API will now accept multiple provider IDs
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                  user_id: user.id,
+                  serviceType: service, // Use service from context
+                  userLat: finalLatitude,
+                  userLon: finalLongitude,
+                  requestDetails: "User needs service at their location.",
+                  // NEW: Pass the array of selected provider IDs
+                  selectedProviderIds: selectedProviderIds,
+                  requestId: currentRequestId, // Pass existing requestId if re-notifying
+              }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+              throw new Error(data.message || 'Failed to initiate service request.');
+          }
+
+          setCurrentRequestId(data.requestId);
+          setRequestStatus(data.status); // Expect 'notified_multiple' or 'no_ustaz_found'
+          setSearchMessage(data.message);
+
+          // If status is 'notified_multiple', start listening for changes to this request
+          if (data.status === 'notified_multiple') {
+              subscribeToServiceRequest(data.requestId);
+          } else if (data.status === 'no_ustaz_found' || data.status === 'error_finding_ustaz') {
+              console.log("No Ustaz found or error with selected ones. User can retry manually.");
+          }
+
+      } catch (error: any) {
+          console.error('Error initiating service request to selected providers:', error);
+          setRequestStatus('error');
+          setSearchMessage(`Error: ${error.message}`);
       }
+  }, [user, service, userLatitude, userLongitude, selectedProviderIds, currentRequestId, subscribeToServiceRequest, t]); // Updated dependencies
 
-    } catch (error: any) {
-      console.error('Error initiating service request to selected providers:', error);
-      setRequestStatus('error');
-      setSearchMessage(`Error: ${error.message}`);
-      setShowProviderList(false);
-    }
-  }, [user, service, userLatitude, userLongitude, selectedProviderIds, currentRequestId, subscribeToServiceRequest, t, address, manualPostalCode, geocodeAddress]);
 
+  // Initialize Map (Leaflet)
   useEffect(() => {
+    // Only load Leaflet client-side and if mapContainerRef.current is available
     if (typeof window === 'undefined' || !mapContainerRef.current) {
-      return;
+      return; // Exit if not client-side or container not ready
     }
 
+    // Capture the current ref value for use inside the promise callback
     const currentMapContainer = mapContainerRef.current;
 
+    // Dynamically import Leaflet to ensure it's only loaded client-side
     import('leaflet').then((L) => {
+      // Only initialize the map if it hasn't been initialized already
+      // And ensure the container is still valid (in case component unmounted quickly)
       if (mapRef.current || !currentMapContainer) {
         return;
       }
 
-      mapRef.current = L.map(currentMapContainer).setView([24.8607, 67.0011], 13);
+      // Initialize map on the ref's current DOM element
+      mapRef.current = L.map(currentMapContainer).setView([24.8607, 67.0011], 13); // Default to Karachi, Pakistan
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapRef.current);
 
+      // Add default marker for Karachi if no user location initially
       if (userLatitude === null || userLongitude === null) {
+        // Corrected: Use L.icon for custom marker if desired, otherwise default Leaflet marker.
+        // The provided image path '/marker-icon-2x.png' is relative and might not be available.
+        // For a robust solution, consider using a public CDN or inline SVG/base64 for icons.
+        // For now, I'll remove the custom icon attempt to ensure a default marker appears.
         userMarkerRef.current = window.L.marker([24.8607, 67.0011]).addTo(mapRef.current)
           .bindPopup(t('defaultMapLocation')).openPopup();
       }
 
-      setMapInitialized(true);
+      setMapInitialized(true); // Set map as initialized after successful creation
 
     }).catch(error => console.error("Failed to load Leaflet:", error));
 
+    // Cleanup function for map
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
-        setMapInitialized(false);
+        setMapInitialized(false); // Reset mapInitialized on unmount
       }
-      cleanupRequestState();
+      // Clean up subscriptions on unmount
+      if (requestSubscriptionRef.current) {
+        supabase.removeChannel(requestSubscriptionRef.current);
+        requestSubscriptionRef.current = null;
+      }
+      if (liveLocationSubscriptionRef.current) {
+        supabase.removeChannel(liveLocationSubscriptionRef.current);
+        liveLocationSubscriptionRef.current = null;
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     };
-  }, [mapContainerRef.current, userLatitude, userLongitude, t, cleanupRequestState]);
+  }, [mapContainerRef.current, userLatitude, userLongitude, t]); // Removed mapInitialized from dependencies
 
+  // Removed Google Maps Autocomplete useEffect as it is no longer desired for manual address input.
+
+  // Update map view and markers when user/provider location changes
   useEffect(() => {
-    if (mapRef.current && window.L && mapInitialized) {
+    // Only proceed if the map is initialized and Leaflet is loaded
+    if (mapRef.current && window.L && mapInitialized) { // Ensure mapInitialized is true
+      // Update user marker
       if (userLatitude !== null && userLongitude !== null) {
         const userLatLng = [userLatitude, userLongitude];
         if (!userMarkerRef.current) {
@@ -552,25 +552,28 @@ function ProcessPage() {
         } else {
           userMarkerRef.current.setLatLng(userLatLng);
         }
+        // Center map on user, maintain zoom if high, otherwise set to 13
         mapRef.current.setView(userLatLng, mapRef.current.getZoom() > 10 ? mapRef.current.getZoom() : 13);
       } else if (userMarkerRef.current) {
+        // Remove user marker if coordinates are cleared
         mapRef.current.removeLayer(userMarkerRef.current);
         userMarkerRef.current = null;
       }
 
+      // Update provider marker
       if (providerLiveLocation && acceptedProvider) {
         const providerLatLng = [providerLiveLocation.latitude, providerLiveLocation.longitude];
         if (!providerMarkerRef.current) {
           const providerIcon = window.L.divIcon({
-            className: 'custom-provider-icon',
-            html: `<div class="flex items-center justify-center bg-[#db4b0d] text-white rounded-full p-2 shadow-lg">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucuce-truck">
-                       <path d="M5 17H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/><path d="M18 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1"/><path d="M10 17H7"/><path d="M6 21v-4"/><path d="M19 21v-4"/><circle cx="6" cy="17" r="2"/><circle cx="19" cy="17" r="2"/>
-                     </svg>
-                   </div>`,
-            iconSize: [40, 40],
-            iconAnchor: [20, 40]
-          });
+              className: 'custom-provider-icon',
+              html: `<div class="flex items-center justify-center bg-[#db4b0d] text-white rounded-full p-2 shadow-lg">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucuce-truck">
+                         <path d="M5 17H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/><path d="M18 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1"/><path d="M10 17H7"/><path d="M6 21v-4"/><path d="M19 21v-4"/><circle cx="6" cy="17" r="2"/><circle cx="19" cy="17" r="2"/>
+                       </svg>
+                     </div>`,
+              iconSize: [40, 40],
+              iconAnchor: [20, 40]
+            });
           providerMarkerRef.current = window.L.marker(providerLatLng, { icon: providerIcon }).addTo(mapRef.current)
             .bindPopup(`<b>${acceptedProvider.firstName} ${acceptedProvider.lastName}</b><br>${t('providerLocation')}`)
             .openPopup();
@@ -578,9 +581,10 @@ function ProcessPage() {
           providerMarkerRef.current.setLatLng(providerLatLng);
           providerMarkerRef.current.getPopup().setContent(`<b>${acceptedProvider.firstName} ${acceptedProvider.lastName}</b><br>${t('providerLocation')}<br>${timeAgo(providerLiveLocation.updated_at, t)}`);
         }
+        // Adjust map bounds to include both markers if both exist
         if (userLatitude !== null && userLongitude !== null) {
           const group = new window.L.featureGroup([userMarkerRef.current, providerMarkerRef.current]);
-          mapRef.current.fitBounds(group.getBounds().pad(0.5));
+          mapRef.current.fitBounds(group.getBounds().pad(0.5)); // pad ensures markers are not on the edge
         } else {
           mapRef.current.setView(providerLatLng, mapRef.current.getZoom() > 10 ? mapRef.current.getZoom() : 13);
         }
@@ -591,22 +595,33 @@ function ProcessPage() {
     }
   }, [userLatitude, userLongitude, providerLiveLocation, acceptedProvider, t, mapInitialized]);
 
-  useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      setSearchMessage(t("pleaseSignInToAccessPage"));
-    }
-  }, [isLoaded, isSignedIn, t]);
 
-  const canSearch = service && (
+  // Redirect if not signed in
+  useEffect(() => {
+    // Only redirect if isLoaded is true (meaning auth state has been checked)
+    // and the user is not signed in.
+    // It's better to use useRouter for navigation in Next.js
+    // import { useRouter } from 'next/navigation';
+    // const router = useRouter();
+    // router.push('/auth/login'); // Redirect to your Supabase login page
+    if (isLoaded && !isSignedIn) {
+      setSearchMessage("Please sign in to access this page.");
+    }
+  }, [isLoaded, isSignedIn]);
+
+
+  // Determine if the "Find Providers" button should be enabled
+  const canSearch = service && ( // Use service from context
     (userLatitude !== null && userLongitude !== null) ||
-    (address.trim() !== "" && manualPostalCode.trim() !== "")
+    (address.trim() !== "" && manualPostalCode.trim() !== "") // Use address from context
   );
 
-  const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'finding_provider' || requestStatus === 'accepted' || requestStatus === 'pending_notification');
+  // Determine if the "Cancel Request" button should be enabled
+  const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'finding_provider' || requestStatus === 'accepted');
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <Loader2 className="h-10 w-10 animate-spin text-[#db4b0d]" />
         <span className="ml-4 text-gray-700">Loading user data...</span>
       </div>
@@ -627,13 +642,16 @@ function ProcessPage() {
     );
   }
 
+
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-white flex flex-col items-center py-8">
-        <div className="max-w-3xl sm:max-w-7xl w-full flex flex-col lg:flex-row items-start justify-center gap-x-6">
-          {/* Main Content Section */}
-          <div className="w-full lg:w-1/2 xl:w-2/5 p-8 md:p-10 mb-8 lg:mb-0rounded-3xl">
+      {/* Main container: Full screen height, flex column */}
+      <div className="min-h-screen bg-white flex flex-col">
+        {/* This div will be the main scroll container for the input section, and the sticky parent for the map */}
+        <div className="flex-1 flex flex-col lg:flex-row w-full max-w-7xl mx-auto px-4 py-8">
+          {/* Input Section - This will be the scrollable part */}
+          <div className="w-full lg:w-1/2 xl:w-2/5 p-8 md:p-10 mb-8 lg:mb-0 lg:overflow-y-auto lg:max-h-[calc(100vh - 100px)]"> {/* Adjusted max-height */}
             <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 bg-clip-text bg-gradient-to-r from-gray-800 to-[#db4b0d] mb-3">
                 Find Providers
@@ -713,18 +731,28 @@ function ProcessPage() {
                   <span className="bg-gray-50 px-2 text-gray-500">{t('orEnterManually')}</span>
                 </div>
 
-                {/* Manual Address Input - Using GoogleAutocomplete Component */}
+                {/* Manual Address Input - Reverted to standard Input */}
                 <div>
                   <Label htmlFor="manual_address" className="text-sm font-semibold text-gray-700 mb-2 block">
                     <HomeModernIcon className="inline-block w-4 h-4 mr-2 text-[#db4b0d]" />
                     {t('streetAddress')}
                   </Label>
-                  {/* GoogleAutocomplete now handles its own loading state */}
-                  <GoogleAutocomplete
-                    onPlaceSelect={handlePlaceSelect}
-                    value={address}
-                    disabled={requestStatus !== 'idle' && requestStatus !== 'error' && requestStatus !== 'no_ustaz_found'}
+                  <Input
+                    id="manual_address"
+                    type="text"
+                    value={address} // Directly using address from context
+                    onChange={(e) => {
+                      setAddress(e.target.value); // Update address in context
+                      setUserLatitude(null); // Clear GPS coords if user starts typing manually
+                      setUserLongitude(null);
+                      setSearchMessage(null); // Clear location status message
+                      setShowProviderList(false); // Hide provider list on manual input
+                      setAvailableProviders([]); // Clear available providers
+                      setSelectedProviderIds([]); // Clear selected providers
+                    }}
+                    placeholder={t('enterStreetAddress')}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm transition focus:outline-none focus:ring-0 focus:border-[#db4b0d] bg-white text-gray-800 placeholder:text-gray-500"
+                    disabled={requestStatus !== 'idle' && requestStatus !== 'error' && requestStatus !== 'no_ustaz_found'}
                   />
                 </div>
                 <div className="mt-4">
@@ -738,13 +766,12 @@ function ProcessPage() {
                     value={manualPostalCode}
                     onChange={(e) => {
                       setManualPostalCode(e.target.value);
-                      setUserLatitude(null);
+                      setUserLatitude(null); // Clear GPS coords if user starts typing manually
                       setUserLongitude(null);
-                      setAddress(''); // Clear address if user starts typing manually
-                      setSearchMessage(null);
-                      setShowProviderList(false);
-                      setAvailableProviders([]);
-                      setSelectedProviderIds([]);
+                      setSearchMessage(null); // Clear location status message
+                      setShowProviderList(false); // Hide provider list on manual input
+                      setAvailableProviders([]); // Clear available providers
+                      setSelectedProviderIds([]); // Clear selected providers
                     }}
                     placeholder={t('enterPostalCode')}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm transition focus:outline-none focus:ring-0 focus:border-[#db4b0d] bg-white text-gray-800 placeholder:text-gray-500"
@@ -771,7 +798,6 @@ function ProcessPage() {
                   ) : (
                     <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
                   )}
-                  {/* {t('findAvailableProviders')} */}
                   Find Available Providers
                 </Button>
 
@@ -869,18 +895,25 @@ function ProcessPage() {
                   )}
                 </div>
               )}
+              {/* Display message when providers are being listed for selection */}
+              {requestStatus === 'idle' && showProviderList && availableProviders.length > 0 && (
+                  <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm text-center">
+                      <h3 className="text-xl font-bold text-[#db4b0d] mb-3">{t('selectProvidersToNotify')}</h3>
+                      <p className="text-gray-600">{searchMessage}</p>
+                  </div>
+              )}
             </div>
           </div>
 
-          {/* Map Section */}
-          <div className="w-full lg:w-1/2 xl:w-3/5">
+          {/* Map Section - This will be sticky */}
+          <div className="w-full lg:w-1/2 xl:w-3/5 lg:sticky lg:top-8 lg:self-start"> {/* top-8 for some spacing from the top */}
             <h3 className="text-2xl font-bold text-gray-800 p-3 text-center mb-6">
               {t('providerLocation')}
             </h3>
-            <div ref={mapContainerRef} className="w-full h-[400px] border-gray-900 rounded-xl shadow-xl">
+            <div ref={mapContainerRef} className="w-full h-[400px] lg:h-[calc(100vh - 150px)] border-gray-900 rounded-xl shadow-xl"> {/* Adjusted height for map */}
             </div>
             {providerLiveLocation && acceptedProvider && (
-              <p className="text-sm text-gray-600 text-center mt-4">
+              <p className="text-sm text-gray-700 text-center mt-4">
                 {t('providerLocation')}: Updated {timeAgo(providerLiveLocation.updated_at, t)}
               </p>
             )}
