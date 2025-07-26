@@ -14,6 +14,7 @@ import Header from "./components/Header";
 import { useTranslations } from "next-intl";
 import { supabase } from "../../client/supabaseClient";
 import ServiceSearchBar from "./components/ServicesSearchBar";
+import FindServiceBtn from "./components/FindServiceBtn";
 
 export default function Home() {
   const t = useTranslations('hero')
@@ -113,7 +114,16 @@ export default function Home() {
             >
               {banners[currentIndex].button}
             </Link> */}
-            <ServiceSearchBar />
+             
+             {/* Show on mobile only */}
+      <div className="flex justify-center md:hidden">
+        <FindServiceBtn />
+      </div>
+
+      {/* Show on desktop only */}
+      <div className="hidden md:block">
+        <ServiceSearchBar />
+      </div>
           </div>
         </div>
       </div>

@@ -108,7 +108,7 @@ export default function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="bg-gray-300 h-8 w-8">
                     <AvatarImage 
                       src={user.user_metadata?.avatar_url || "/default-avatar.jpg"}  
                       alt={getUserDisplayName(user)} 
@@ -219,7 +219,7 @@ export default function Header() {
               ) : user ? (
                 <div className="flex flex-col gap-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-3">
-                    <Avatar className=" border-2 border-gray-900 h-8 w-8">
+                    <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={user.user_metadata?.avatar_url || "/default-avatar.jpg"}  
                         alt={getUserDisplayName(user)} 

@@ -188,7 +188,7 @@ const ServiceSearchBar = () => {
 
   return (
   <div className="w-full max-w-sm px-4">
-    <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-4 rounded-2xl shadow-lg border border-gray-200">
+    <div className="flex flex-col sm:flex-row items-center gap-3 backdrop-blur-2xl p-4 rounded-2xl shadow-md shadow-[#b75024]">
       
       {/* Location Input (Google Autocomplete)
       <div className="rounded-xl px-3 py-2 w-full sm:flex-1">
@@ -212,7 +212,7 @@ const ServiceSearchBar = () => {
           }}
           value={selectedService}
         >
-          <SelectTrigger className="w-full text-black bg-gray-100 text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-orange-400 h-[45px]">
+          <SelectTrigger className="w-full text-black bg-gray-100 text-sm  h-[45px]">
             <SelectValue placeholder="Select service" />
           </SelectTrigger>
           <SelectContent>
