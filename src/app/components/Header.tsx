@@ -70,6 +70,7 @@ export default function Header() {
 
   const navItems = [
     { label: t("home"), href: "/" },
+    { label: t('findprovider'), href: "/process" },
     { label: t("becomeUstaz"), href: "/become-ustaz" },
     { label: t("about"), href: "/about" },
     { label: t("contact"), href: "/contact" },
@@ -203,7 +204,7 @@ export default function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                  className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -219,7 +220,7 @@ export default function Header() {
                 <div className="flex flex-col gap-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-3">
                     <Avatar className=" border-2 border-gray-900 h-8 w-8">
-                      <AvatarImage className="border-2 border-gray-900"
+                      <AvatarImage
                         src={user.user_metadata?.avatar_url || "/default-avatar.jpg"}  
                         alt={getUserDisplayName(user)} 
                       />
@@ -235,7 +236,7 @@ export default function Header() {
 
                   <Link
                     href="/dashboard"
-                    className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
                     onClick={() => setOpen(false)}
                   >
                     Profile
@@ -243,7 +244,7 @@ export default function Header() {
 
                   <Link
                     href="/settings"
-                    className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
                     onClick={() => setOpen(false)}
                   >
                     Settings
@@ -265,7 +266,7 @@ export default function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    className="text-lg text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
+                    className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
                     onClick={() => setOpen(false)}
                   >
                     {t("login")}

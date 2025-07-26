@@ -1,11 +1,12 @@
 {
     "header": {
     "home": "ہوم",
+    "findprovider": "فراہم کنندہ تلاش کریں۔",
     "becomeUstaz": "استاد بنیے",
     "about": "ہمارے بارے میں",
     "contact": "رابطہ کریں",
     "login": "لاگ ان",
-     "lang": "زبان",
+    "lang": "زبان",
     "getStarted": "شروع کریں"
   },
 

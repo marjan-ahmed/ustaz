@@ -41,7 +41,7 @@ interface LiveLocation {
 declare global {
   interface Window {
     L: any;
-    google: any; // Ensure google is declared globally for the Loader to attach to
+    google: any; 
   }
 }
 
@@ -631,14 +631,14 @@ function ProcessPage() {
     <>
       <Header />
       <div className="min-h-screen bg-white flex flex-col items-center py-8">
-        <div className="max-w-7xl mx-auto px-6 w-full flex flex-col lg:flex-row items-start justify-center gap-x-12">
+        <div className="max-w-3xl sm:max-w-7xl w-full flex flex-col lg:flex-row items-start justify-center gap-x-6">
           {/* Main Content Section */}
           <div className="w-full lg:w-1/2 xl:w-2/5 p-8 md:p-10 mb-8 lg:mb-0rounded-3xl">
             <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-gray-800 bg-clip-text bg-gradient-to-r from-gray-800 to-[#db4b0d] mb-3">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 bg-clip-text bg-gradient-to-r from-gray-800 to-[#db4b0d] mb-3">
                 Find Providers
               </h2>
-              <p className="text-gray-600 text-lg">
+              <p className="text-gray-600 text-sm sm:text-md">
                 {t('selectServiceAndLocation')}
               </p>
             </div>
@@ -877,7 +877,7 @@ function ProcessPage() {
             <h3 className="text-2xl font-bold text-gray-800 text-center mb-6">
               {t('providerLocation')}
             </h3>
-            <div ref={mapContainerRef} className="w-full h-[400px] rouned-xl shadow-xl">
+            <div ref={mapContainerRef} className="w-full h-[400px] border-gray-900 rounded-xl shadow-xl">
             </div>
             {providerLiveLocation && acceptedProvider && (
               <p className="text-sm text-gray-600 text-center mt-4">
