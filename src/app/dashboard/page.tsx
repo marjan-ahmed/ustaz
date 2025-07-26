@@ -75,6 +75,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import LocationTracker from "../components/LocationTracker";
 
 // Define TypeScript Interfaces
 interface IProviderData {
@@ -575,6 +576,7 @@ function ProviderDashboardInner() {
     }
   };
 
+
   // Validation
   const validateEditableFields = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -1014,6 +1016,7 @@ function ProviderDashboardInner() {
   if (loading) {
     return <DashboardSkeleton />;
   }
+  
 
   if (error) {
     return (
@@ -1767,6 +1770,7 @@ function ProviderDashboardInner() {
                             </div>
                           </div>
                         </div>
+                        <LocationTracker/>
 
                         {/* Service Information */}
                         <div>

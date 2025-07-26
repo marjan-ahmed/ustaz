@@ -1,13 +1,32 @@
-import { clerkMiddleware } from '@clerk/nextjs/server'
+// middleware.ts
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
 
-export default clerkMiddleware()
+  const supabase = createMiddlewareClient({ req, res });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
+  const pathname = req.nextUrl.pathname;
+
+  // If user is logged in and trying to access "/", redirect to "/dashboard"
+  if (user && pathname === '/') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
+  }
+
+  return res;
+}
+
+// Make sure this applies to all pages you want to protect
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    '/', // homepage
+    // optionally add other public routes here if needed
   ],
-}
+};

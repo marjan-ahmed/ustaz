@@ -269,35 +269,6 @@ function App() {
     }
   };
 
-  // NEW: Function to get current location using browser's Geolocation API
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      setIsLoading(true); // Indicate loading for location fetching
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          handleLocationSelect(position.coords.latitude, position.coords.longitude);
-          setIsLoading(false);
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setErrors(prev => ({
-            ...prev,
-            latitude: t("errors.locationPermissionDenied") // New translation key
-          }));
-          setIsLoading(false);
-          alert(t("errors.locationFetchFailed")); // New translation key
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      setErrors(prev => ({
-        ...prev,
-        latitude: t("errors.geolocationNotSupported") // New translation key
-      }));
-      alert(t("errors.geolocationNotSupported"));
-    }
-  };
-
   // Handle file uploads for avatar with image editor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -860,47 +831,7 @@ function App() {
                     )}
                   </div>
 
-                  {/* Service Location Section (Updated for GPS button) */}
-                  <div className="mt-6 bg-gradient-to-br from-red-50 to-pink-50 p-6 md:p-8 rounded-2xl border border-red-100 shadow-sm">
-                    <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-6">
-                      <MapPin className="w-5 h-5 mr-2 text-red-500" />
-                      {t('serviceLocation')} <span className="text-red-500 ml-1">*</span>
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      {t('locationInstructionsGP')}
-                    </p>
-                    <div className="flex justify-center mb-4">
-                      <Button
-                        onClick={getCurrentLocation}
-                        disabled={isLoading}
-                        className="group bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
-                      >
-                        {isLoading ? (
-                          <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        ) : (
-                          <MapPin className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
-                        )}
-                        {t('getCurrentLocationButton')}
-                      </Button>
-                    </div>
-                    {formData.latitude !== null && formData.longitude !== null ? (
-                      <p className="text-sm text-gray-700 mt-3 text-center">
-                        {t('selectedLocation')}: Lat {formData.latitude.toFixed(4)}, Lng {formData.longitude.toFixed(4)}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-gray-700 mt-3 text-center">
-                        {t('noLocationSelected')}
-                      </p>
-                    )}
-                    {(errors.latitude || errors.longitude) && (
-                      <p className="text-red-500 text-sm mt-1 animate-fade-in text-center">{errors.latitude}</p>
-                    )}
-                  </div>
-                  {/* End Service Location Section */}
-
+          
                   {/* Navigation */}
                   <div className="flex justify-end pt-6">
                     <Button

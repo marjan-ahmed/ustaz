@@ -4,6 +4,10 @@ const withNextIntl = createNextIntlPlugin();
 
 export const nextConfig: NextConfig = {
   /* config options here */
+ allowedDevOrigins: [
+    'http://192.168.0.105:3000',
+    'http://localhost:3000',
+  ],
   images: {
     remotePatterns: [
       {
