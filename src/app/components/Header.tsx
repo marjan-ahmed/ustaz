@@ -119,10 +119,10 @@ export default function Header() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
+                    <p className="text-md font-medium leading-none">
                       {getUserDisplayName(user)}
                     </p>
-                    <p className="text-xs leading-none text-muted-foreground">
+                    <p className="text-sm leading-none text-muted-foreground">
                       {user.email}
                     </p>
                   </div>
@@ -203,7 +203,7 @@ export default function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm text-gray-700 hover:text-[#db4b0d] transition-colors"
+                  className="text-md text-gray-700 hover:text-[#db4b0d] transition-colors"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -227,7 +227,7 @@ export default function Header() {
                       <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm text-gray-900">
+                      <p className="text-md text-gray-900">
                         {getUserDisplayName(user)}
                       </p>
                       <p className="text-xs text-gray-500">{user.email}</p>
@@ -236,7 +236,7 @@ export default function Header() {
 
                   <Link
                     href="/dashboard"
-                    className="text-sm text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-md text-gray-700 hover:text-[#db4b0d] transition-colors"
                     onClick={() => setOpen(false)}
                   >
                     Profile
@@ -244,7 +244,7 @@ export default function Header() {
 
                   <Link
                     href="/settings"
-                    className="text-sm text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-md text-gray-700 hover:text-[#db4b0d] transition-colors"
                     onClick={() => setOpen(false)}
                   >
                     Settings
@@ -266,14 +266,14 @@ export default function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    className="text-sm  text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
+                    className="text-md  text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
                     onClick={() => setOpen(false)}
                   >
                     {t("login")}
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="px-5 py-2 rounded bg-[#db4b0d] text-sm text-white font-semibold hover:bg-[#b53c0a] transition-colors text-center"
+                    className="px-5 py-2 rounded bg-[#db4b0d] text-md text-white font-semibold hover:bg-[#b53c0a] transition-colors text-center"
                     onClick={() => setOpen(false)}
                   >
                     {t("getStarted")}
