@@ -16,6 +16,7 @@ import { HomeModernIcon } from '@heroicons/react/24/solid'; // Assuming this is 
 import Link from 'next/link';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser'; // Using your custom Supabase user hook
 import { useServiceContext } from '../context/ServiceContext';
+import GoogleAutocomplete from '../components/GoogleAutocomplete';
 // Removed Loader import as Google Maps API is no longer directly integrated here
 
 
@@ -104,6 +105,21 @@ function ProcessPage() {
     "AC Maintenance",
     "Solar Technician",
   ];
+
+  const handlePlaceSelect = useCallback((
+    selectedAddress: string,
+    lat: number | null,
+    lng: number | null
+  ) => {
+    setAddress(selectedAddress);
+    setUserLatitude(lat);
+    setUserLongitude(lng);
+    setSearchMessage(null);
+    setShowProviderList(false);
+    setAvailableProviders([]);
+    setSelectedProviderIds([]);
+    setManualPostalCode(''); // Clear manual postal code if a place is selected via autocomplete
+  }, [setAddress, setUserLatitude, setUserLongitude, setSearchMessage, setShowProviderList, setAvailableProviders, setSelectedProviderIds]);
 
   // Function to get current location using browser's Geolocation API
   const getCurrentLocation = useCallback(async () => {
@@ -652,7 +668,7 @@ function ProcessPage() {
         {/* This div will be the main scroll container for the input section, and the sticky parent for the map */}
         <div className="flex-1 flex flex-col lg:flex-row w-full max-w-7xl mx-auto px-4 py-8">
           {/* Input Section - This will be the scrollable part */}
-          <div className="w-full lg:w-1/2 xl:w-2/5 p-8 md:p-10 mb-8 lg:mb-0 lg:overflow-y-auto lg:max-h-[calc(100vh - 100px)]"> {/* Adjusted max-height */}
+          <div className="w-full lg:w-1/2 xl:w-2/5 md:p-10 mb-8 lg:mb-0 lg:overflow-y-auto lg:max-h-[calc(100vh - 100px)]"> {/* Adjusted max-height */}
             <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 bg-clip-text bg-gradient-to-r from-gray-800 to-[#db4b0d] mb-3">
                 Find Providers
@@ -738,22 +754,11 @@ function ProcessPage() {
                     <HomeModernIcon className="inline-block w-4 h-4 mr-2 text-[#db4b0d]" />
                     {t('streetAddress')}
                   </Label>
-                  <Input
-                    id="manual_address"
-                    type="text"
-                    value={address} // Directly using address from context
-                    onChange={(e) => {
-                      setAddress(e.target.value); // Update address in context
-                      setUserLatitude(null); // Clear GPS coords if user starts typing manually
-                      setUserLongitude(null);
-                      setSearchMessage(null); // Clear location status message
-                      setShowProviderList(false); // Hide provider list on manual input
-                      setAvailableProviders([]); // Clear available providers
-                      setSelectedProviderIds([]); // Clear selected providers
-                    }}
-                    placeholder={t('enterStreetAddress')}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm transition focus:outline-none focus:ring-0 focus:border-[#db4b0d] bg-white text-gray-800 placeholder:text-gray-500"
+                    <GoogleAutocomplete
+                    onPlaceSelect={handlePlaceSelect}
+                    value={address}
                     disabled={requestStatus !== 'idle' && requestStatus !== 'error' && requestStatus !== 'no_ustaz_found'}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm transition focus:outline-none focus:ring-0 focus:border-[#db4b0d] bg-white text-gray-800 placeholder:text-gray-500"
                   />
                 </div>
                 <div className="mt-4">
