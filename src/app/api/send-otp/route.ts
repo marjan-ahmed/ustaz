@@ -1,33 +1,37 @@
-// app/api/send-otp/route.js
+// /app/api/send-otp/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import twilio from 'twilio';
 
-// Initialize Twilio client with environment variables
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
+const accountSid = process.env.TWILIO_ACCOUNT_SID!;
+const authToken = process.env.TWILIO_AUTH_TOKEN!;
+const verifySid = process.env.TWILIO_SERVICE_SID!;
 
 const client = twilio(accountSid, authToken);
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const { phoneNumber, phoneCountryCode } = await request.json();
-    const fullPhoneNumber = `${phoneCountryCode}${phoneNumber}`;
+    const { phoneNumber, phoneCountryCode } = await req.json();
 
-    if (!fullPhoneNumber) {
-      return NextResponse.json({ success: false, error: 'Phone number is required.' }, { status: 400 });
+    console.log("📞 Sending OTP to:", phoneCountryCode, phoneNumber);
+
+    if (!phoneNumber || !phoneCountryCode) {
+      return NextResponse.json({ error: "Phone number and country code required." }, { status: 400 });
     }
 
-    const verification = await client.verify.v2.services(verifyServiceSid as string)
-      .verifications
-      .create({ to: fullPhoneNumber, channel: 'sms' });
+    const fullPhone = `${phoneCountryCode}${phoneNumber}`;
 
-    console.log(`OTP send request received for ${fullPhoneNumber}. Status: ${verification.status}`);
-    return NextResponse.json({ success: true, message: 'OTP sent successfully!' }, { status: 200 });
+    const verification = await client.verify.v2
+      .services(verifySid)
+      .verifications.create({
+        to: fullPhone,
+        channel: 'sms',
+      });
 
+    console.log("✅ Twilio response:", verification);
+
+    return NextResponse.json({ success: true, status: verification.status });
   } catch (error: any) {
-    console.error('Error sending OTP:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Failed to send OTP.' }, { status: 500 });
+    console.error("❌ Twilio error:", error.message, error.code);
+    return NextResponse.json({ error: error.message || "Failed to send OTP." }, { status: 500 });
   }
 }
-

@@ -116,25 +116,26 @@ export const useAuth = () => {
   };
 
   const verifyOtp = async (phone: string, token: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        phone: phone,
-        token: token,
-        type: 'sms',
-      });
-      
-      if (error) throw error;
-      return { success: true };
-    } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms',
+    });
+
+    if (error) throw error;
+    return { success: true, user: data.user }; // ← return user data too
+  } catch (err: any) {
+    setError(err.message);
+    return { success: false, error: err.message };
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return {
     isLoading,

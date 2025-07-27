@@ -19,6 +19,15 @@ const config: Config = {
         'geist-mono': ['var(--font-geist-mono)', 'monospace'],
       },
       // ... other theme extensions
+      keyframes: {
+        borderSpin: {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+      },
+      animation: {
+        'border-spin': 'borderSpin 4s linear infinite',
+      },
     },
   },
   plugins: [

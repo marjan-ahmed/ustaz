@@ -16,6 +16,7 @@ import {
   Calendar,
   Briefcase,
   Edit3,
+  // Removed LocateFixed as it's no longer needed for geolocation
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -27,7 +28,6 @@ import { ImageCropEditor } from "../components/image-crop-editor"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import { useTranslations } from "next-intl"
-// Removed: dynamic import for LocationPickerMap
 
 // Define TypeScript Interfaces
 interface IFormData {
@@ -49,8 +49,8 @@ interface IFormData {
   avatarUrl: string
   agreedToTerms: boolean
   wantsUpdates: boolean
-  latitude: number | null;
-  longitude: number | null;
+  // Removed latitude: number | null
+  // Removed longitude: number | null
 }
 
 interface ICountry {
@@ -66,15 +66,15 @@ interface ICountry {
 
 function generateUUID(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+    return crypto.randomUUID()
   }
   // Fallback for environments where crypto.randomUUID is not available
   // This is a simple UUID v4 approximation, not cryptographically strong
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
 }
 
 function App() {
@@ -100,8 +100,8 @@ function App() {
     avatarUrl: "",
     agreedToTerms: false,
     wantsUpdates: false,
-    latitude: null,
-    longitude: null,
+    // Removed latitude: null,
+    // Removed longitude: null,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -155,6 +155,8 @@ function App() {
     }
     fetchCountries()
   }, [])
+
+  // Removed useEffect that called getCurrentLocation
 
   // Simulated city data
   const citiesByCountry: Record<string, string[]> = {
@@ -251,23 +253,8 @@ function App() {
     }
   }
 
-  // Handle location selection (now also used by getCurrentLocation)
-  const handleLocationSelect = (lat: number, lng: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-    }));
-    // Clear location errors once selected
-    if (errors.latitude || errors.longitude) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.latitude;
-        delete newErrors.longitude;
-        return newErrors;
-      });
-    }
-  };
+  // Removed handleLocationSelect function
+  // Removed getCurrentLocation function
 
   // Handle file uploads for avatar with image editor
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,12 +324,7 @@ function App() {
       newErrors.city = t("errors.cityRequired")
       isValid = false
     }
-    // Validation for latitude and longitude
-    if (formData.latitude === null || formData.longitude === null) {
-      newErrors.latitude = t("errors.locationRequired");
-      newErrors.longitude = t("errors.locationRequired");
-      isValid = false;
-    }
+    // Removed validation for latitude and longitude
   } else if (currentStep === 2) {
     if (!formData.heardFrom.trim()) {
       newErrors.heardFrom = t("errors.heardFromRequired")
@@ -503,8 +485,8 @@ function App() {
         registrationDate: new Date().toISOString(),
         userId: userId,
         phone_verified: isPhoneVerified,
-        latitude: data.latitude,
-        longitude: data.longitude,
+        // Removed latitude: data.latitude,
+        // Removed longitude: data.longitude,
       }
       const { data: supabaseData, error } = await supabase.from("ustaz_registrations").insert([dataToSave])
       if (error) {
@@ -801,6 +783,8 @@ function App() {
                         {errors.city && <p className="text-red-500 text-xs mt-1 animate-fade-in">{errors.city}</p>}
                       </div>
                     </div>
+
+                    {/* Removed Geolocation Section */}
                   </div>
                   {/* Phone Number */}
                   <div className="group">

@@ -381,6 +381,8 @@ function ProviderDashboardInner() {
     ],
   };
 
+  
+
   useEffect(() => {
     const fetchCountries = async () => {
       try {
@@ -1770,7 +1772,7 @@ function ProviderDashboardInner() {
                             </div>
                           </div>
                         </div>
-                        <LocationTracker/>
+                        <LocationTracker userId={providerData.userId} />
 
                         {/* Service Information */}
                         <div>

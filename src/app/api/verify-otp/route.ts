@@ -1,40 +1,33 @@
-// app/api/verify-otp/route.js
+// /app/api/verify-otp/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import twilio from 'twilio';
 
-// Initialize Twilio client with environment variables
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const verifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
-
+const accountSid = process.env.TWILIO_ACCOUNT_SID!;
+const authToken = process.env.TWILIO_AUTH_TOKEN!;
+const verifySid = process.env.TWILIO_SERVICE_SID!;
 const client = twilio(accountSid, authToken);
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
+  const { phoneNumber, phoneCountryCode, otp } = await req.json();
+
+  if (!phoneNumber || !phoneCountryCode || !otp) {
+    return NextResponse.json({ error: "Phone number, country code, and OTP are required." }, { status: 400 });
+  }
+
+  const fullPhone = `${phoneCountryCode}${phoneNumber}`;
+
   try {
-    const { phoneNumber, phoneCountryCode, otp } = await request.json();
-    const fullPhoneNumber = `${phoneCountryCode}${phoneNumber}`;
-
-    if (!fullPhoneNumber || !otp) {
-      return NextResponse.json({ success: false, error: 'Phone number and OTP are required.' }, { status: 400 });
-    }
-
-    if (!verifyServiceSid) {
-      return NextResponse.json({ success: false, error: 'Twilio Verify Service SID is not configured.' }, { status: 500 });
-    }
-    const verificationCheck = await client.verify.v2.services(verifyServiceSid as string)
-      .verificationChecks
-      .create({ to: fullPhoneNumber, code: otp });
+    const verificationCheck = await client.verify.v2
+      .services(verifySid)
+      .verificationChecks.create({ to: fullPhone, code: otp });
 
     if (verificationCheck.status === 'approved') {
-      console.log(`OTP verified successfully for ${fullPhoneNumber}.`);
-      return NextResponse.json({ success: true, message: 'Phone number verified successfully!' }, { status: 200 });
+      return NextResponse.json({ success: true, message: 'OTP verified successfully.' });
     } else {
-      console.warn(`OTP verification failed for ${fullPhoneNumber}. Status: ${verificationCheck.status}`);
-      return NextResponse.json({ success: false, error: 'Invalid OTP. Please try again.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Invalid OTP.' }, { status: 400 });
     }
-
   } catch (error: any) {
-    console.error('Error verifying OTP:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Failed to verify OTP.' }, { status: 500 });
+    console.error("Verify OTP error:", error.message);
+    return NextResponse.json({ error: "OTP verification failed." }, { status: 500 });
   }
 }

@@ -173,6 +173,7 @@ function ProcessPage() {
     }
   }, []);
 
+
   // Fetch accepted provider's details (moved up for declaration order)
   const fetchAcceptedProviderDetails = useCallback(async (providerId: string) => {
     try {

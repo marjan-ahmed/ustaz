@@ -91,7 +91,7 @@ export default function Header() {
           </Link>
         </div>
 
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-5">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -107,15 +107,14 @@ export default function Header() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="bg-gray-300 h-8 w-8">
+                  <Avatar className="h-8 w-8 rounded-full">
                     <AvatarImage 
                       src={user.user_metadata?.avatar_url || "/default-avatar.jpg"}  
                       alt={getUserDisplayName(user)} 
+                      className="rounded-full"
                     />
                     <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                   </Avatar>
-                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
@@ -199,12 +198,12 @@ export default function Header() {
                 <RxHamburgerMenu />
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="flex flex-col gap-6 p-6">
+            <SheetContent side="right" className="flex flex-col gap-4 p-6">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                  className="text-sm text-gray-700 hover:text-[#db4b0d] transition-colors"
                   onClick={() => setOpen(false)}
                 >
                   {item.label}
@@ -219,24 +218,25 @@ export default function Header() {
               ) : user ? (
                 <div className="flex flex-col gap-4 pt-4 border-t border-gray-200">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 rounded-full">
                       <AvatarImage
                         src={user.user_metadata?.avatar_url || "/default-avatar.jpg"}  
                         alt={getUserDisplayName(user)} 
+                        className="rounded-full"
                       />
                       <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="text-sm text-gray-900">
                         {getUserDisplayName(user)}
                       </p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                   </div>
 
                   <Link
                     href="/dashboard"
-                    className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-sm text-gray-700 hover:text-[#db4b0d] transition-colors"
                     onClick={() => setOpen(false)}
                   >
                     Profile
@@ -244,7 +244,7 @@ export default function Header() {
 
                   <Link
                     href="/settings"
-                    className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors"
+                    className="text-sm text-gray-700 hover:text-[#db4b0d] transition-colors"
                     onClick={() => setOpen(false)}
                   >
                     Settings
@@ -266,14 +266,14 @@ export default function Header() {
                 <>
                   <Link
                     href="/auth/login"
-                    className="text-sm sm:text-md md:text-lg text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
+                    className="text-sm  text-gray-700 hover:text-[#db4b0d] transition-colors w-full text-left"
                     onClick={() => setOpen(false)}
                   >
                     {t("login")}
                   </Link>
                   <Link
                     href="/auth/register"
-                    className="px-5 py-2 rounded bg-[#db4b0d] text-white font-semibold hover:bg-[#b53c0a] transition-colors text-center"
+                    className="px-5 py-2 rounded bg-[#db4b0d] text-sm text-white font-semibold hover:bg-[#b53c0a] transition-colors text-center"
                     onClick={() => setOpen(false)}
                   >
                     {t("getStarted")}

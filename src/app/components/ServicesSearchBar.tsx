@@ -240,7 +240,7 @@ const ServiceSearchBar = () => {
         <Sheet open={authSheetOpen} onOpenChange={setAuthSheetOpen}>
           <SheetTrigger asChild>
             <button className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-xl transition w-full sm:w-auto text-sm">
-              Login <ArrowRight />
+              Find <ArrowRight />
             </button>
           </SheetTrigger>
           <SheetContent
