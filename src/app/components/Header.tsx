@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User as UserIcon, Settings } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const t = useTranslations("header");
@@ -30,6 +31,7 @@ export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [language, setLanguage] = useState("en");
+  const pathname = usePathname();
 
   useEffect(() => {
     const savedLang = localStorage.getItem("language");
@@ -92,13 +94,17 @@ export default function Header() {
         </div>
 
         <div className="hidden md:flex items-center gap-5">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-gray-700 hover:text-[#db4b0d] transition-colors"
-            >
-              {item.label}
+         {navItems.map((item) => (
+  <Link
+    key={item.href}
+    href={item.href}
+    className={`transition-colors ${
+      pathname === item.href
+        ? "text-[#db4b0d]"
+        : "text-gray-700 hover:text-[#db4b0d]"
+    }`}
+  >
+    {item.label}
             </Link>
           ))}
 
@@ -199,14 +205,18 @@ export default function Header() {
               </button>
             </SheetTrigger>
             <SheetContent side="right" className="flex flex-col gap-4 p-6">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-md text-gray-700 hover:text-[#db4b0d] transition-colors"
-                  onClick={() => setOpen(false)}
-                >
-                  {item.label}
+             {navItems.map((item) => (
+  <Link
+    key={item.href}
+    href={item.href}
+    className={`text-md transition-colors ${
+      pathname === item.href
+        ? "text-[#db4b0d] font-semibold underline"
+        : "text-gray-700 hover:text-[#db4b0d]"
+    }`}
+    onClick={() => setOpen(false)}
+  >
+    {item.label}
                 </Link>
               ))}
 
