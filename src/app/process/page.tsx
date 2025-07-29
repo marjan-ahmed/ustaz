@@ -17,6 +17,8 @@ import Link from 'next/link';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser'; // Using your custom Supabase user hook
 import { useServiceContext } from '../context/ServiceContext';
 import GoogleAutocomplete from '../components/GoogleAutocomplete';
+import { toast } from 'sonner';
+import MapComponent from '../components/MapComponent';
 // Removed Loader import as Google Maps API is no longer directly integrated here
 
 
@@ -92,6 +94,7 @@ function ProcessPage() {
   const liveLocationSubscriptionRef = useRef<any>(null); // Ref for live_locations subscription
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for retry timeout
 
+
   // New states for provider selection
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]); // Providers to display for selection
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]); // User selected provider IDs
@@ -105,6 +108,50 @@ function ProcessPage() {
     "AC Maintenance",
     "Solar Technician",
   ];
+
+
+  const handleFindProviders = async () => {
+  if (!user || !isLoaded) {
+    toast.error("User not authenticated");
+    return;
+  }
+
+  if (!userLatitude || !userLongitude || !service || !address) {
+    toast.error("Please complete your location and service selection.");
+    return;
+  }
+
+  try {
+    const { data: nearbyProviders, error } = await supabase.rpc('find_providers_nearby', {
+      lat_input: userLatitude,
+      lng_input: userLongitude,
+      radius_mm: 5000,
+      type_input: service
+    });
+
+    if (error) throw error;
+    if (!nearbyProviders || nearbyProviders.length === 0) {
+      toast.info("No providers found nearby.");
+      return;
+    }
+
+    // Send notification to each provider
+    for (const provider of nearbyProviders) {
+      await supabase.from('notifications').insert({
+        provider_id: provider.id, // adjust based on your table
+        message: `${user.user_metadata?.name || "A user"} needs ${service} at ${address}`,
+        user_id: user.id,
+        type: "service_request"
+      });
+    }
+
+    toast.success("Providers notified!");
+  } catch (err) {
+    console.error("Error in findProviders:", err);
+    toast.error("Something went wrong while finding providers.");
+  }
+};
+
 
   const handlePlaceSelect = useCallback((
     selectedAddress: string,
@@ -166,28 +213,32 @@ function ProcessPage() {
   }, [t, setAddress, setService]); // Added setService to dependencies
 
   // Function to geocode a manual address using OpenStreetMap Nominatim API
-  const geocodeAddress = useCallback(async (address: string, postalCode: string): Promise<{ lat: number; lng: number } | null> => {
-    const query = `${address}, ${postalCode}`;
+ const geocodeAddress = useCallback(
+  async (address: string, postalCode: string): Promise<{ lat: number; lng: number } | null> => {
+    const fullAddress = `${address}, ${postalCode}`;
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
       );
       if (!response.ok) {
-        console.error(`Nominatim HTTP error: ${response.status}`);
+        console.error(`Google Maps Geocoding error: ${response.status}`);
         return null;
       }
       const data = await response.json();
-      if (data && data.length > 0) {
-        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+      if (data.status === "OK" && data.results.length > 0) {
+        const location = data.results[0].geometry.location;
+        return { lat: location.lat, lng: location.lng };
       } else {
         console.warn("No geocoding results found for the given address.");
         return null;
       }
     } catch (error) {
-      console.error("Error during geocoding with Nominatim:", error);
+      console.error("Error during geocoding with Google Maps API:", error);
       return null;
     }
-  }, []);
+  },
+  []
+);
 
 
   // Fetch accepted provider's details (moved up for declaration order)
@@ -492,125 +543,6 @@ function ProcessPage() {
   }, [user, service, userLatitude, userLongitude, selectedProviderIds, currentRequestId, subscribeToServiceRequest, t]); // Updated dependencies
 
 
-  // Initialize Map (Leaflet)
-  useEffect(() => {
-    // Only load Leaflet client-side and if mapContainerRef.current is available
-    if (typeof window === 'undefined' || !mapContainerRef.current) {
-      return; // Exit if not client-side or container not ready
-    }
-
-    // Capture the current ref value for use inside the promise callback
-    const currentMapContainer = mapContainerRef.current;
-
-    // Dynamically import Leaflet to ensure it's only loaded client-side
-    import('leaflet').then((L) => {
-      // Only initialize the map if it hasn't been initialized already
-      // And ensure the container is still valid (in case component unmounted quickly)
-      if (mapRef.current || !currentMapContainer) {
-        return;
-      }
-
-      // Initialize map on the ref's current DOM element
-      mapRef.current = L.map(currentMapContainer).setView([24.8607, 67.0011], 13); // Default to Karachi, Pakistan
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(mapRef.current);
-
-      // Add default marker for Karachi if no user location initially
-      if (userLatitude === null || userLongitude === null) {
-        // Corrected: Use L.icon for custom marker if desired, otherwise default Leaflet marker.
-        // The provided image path '/marker-icon-2x.png' is relative and might not be available.
-        // For a robust solution, consider using a public CDN or inline SVG/base64 for icons.
-        // For now, I'll remove the custom icon attempt to ensure a default marker appears.
-        userMarkerRef.current = window.L.marker([24.8607, 67.0011]).addTo(mapRef.current)
-          .bindPopup(t('defaultMapLocation')).openPopup();
-      }
-
-      setMapInitialized(true); // Set map as initialized after successful creation
-
-    }).catch(error => console.error("Failed to load Leaflet:", error));
-
-    // Cleanup function for map
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        setMapInitialized(false); // Reset mapInitialized on unmount
-      }
-      // Clean up subscriptions on unmount
-      if (requestSubscriptionRef.current) {
-        supabase.removeChannel(requestSubscriptionRef.current);
-        requestSubscriptionRef.current = null;
-      }
-      if (liveLocationSubscriptionRef.current) {
-        supabase.removeChannel(liveLocationSubscriptionRef.current);
-        liveLocationSubscriptionRef.current = null;
-      }
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current);
-        retryTimeoutRef.current = null;
-      }
-    };
-  }, [mapContainerRef.current, userLatitude, userLongitude, t]); // Removed mapInitialized from dependencies
-
-  // Removed Google Maps Autocomplete useEffect as it is no longer desired for manual address input.
-
-  // Update map view and markers when user/provider location changes
-  useEffect(() => {
-    // Only proceed if the map is initialized and Leaflet is loaded
-    if (mapRef.current && window.L && mapInitialized) { // Ensure mapInitialized is true
-      // Update user marker
-      if (userLatitude !== null && userLongitude !== null) {
-        const userLatLng = [userLatitude, userLongitude];
-        if (!userMarkerRef.current) {
-          userMarkerRef.current = window.L.marker(userLatLng).addTo(mapRef.current)
-            .bindPopup(t('yourLocation')).openPopup();
-        } else {
-          userMarkerRef.current.setLatLng(userLatLng);
-        }
-        // Center map on user, maintain zoom if high, otherwise set to 13
-        mapRef.current.setView(userLatLng, mapRef.current.getZoom() > 10 ? mapRef.current.getZoom() : 13);
-      } else if (userMarkerRef.current) {
-        // Remove user marker if coordinates are cleared
-        mapRef.current.removeLayer(userMarkerRef.current);
-        userMarkerRef.current = null;
-      }
-
-      // Update provider marker
-      if (providerLiveLocation && acceptedProvider) {
-        const providerLatLng = [providerLiveLocation.latitude, providerLiveLocation.longitude];
-        if (!providerMarkerRef.current) {
-          const providerIcon = window.L.divIcon({
-              className: 'custom-provider-icon',
-              html: `<div class="flex items-center justify-center bg-[#db4b0d] text-white rounded-full p-2 shadow-lg">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucuce-truck">
-                         <path d="M5 17H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/><path d="M18 17h2a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-1"/><path d="M10 17H7"/><path d="M6 21v-4"/><path d="M19 21v-4"/><circle cx="6" cy="17" r="2"/><circle cx="19" cy="17" r="2"/>
-                       </svg>
-                     </div>`,
-              iconSize: [40, 40],
-              iconAnchor: [20, 40]
-            });
-          providerMarkerRef.current = window.L.marker(providerLatLng, { icon: providerIcon }).addTo(mapRef.current)
-            .bindPopup(`<b>${acceptedProvider.firstName} ${acceptedProvider.lastName}</b><br>${t('providerLocation')}`)
-            .openPopup();
-        } else {
-          providerMarkerRef.current.setLatLng(providerLatLng);
-          providerMarkerRef.current.getPopup().setContent(`<b>${acceptedProvider.firstName} ${acceptedProvider.lastName}</b><br>${t('providerLocation')}<br>${timeAgo(providerLiveLocation.updated_at, t)}`);
-        }
-        // Adjust map bounds to include both markers if both exist
-        if (userLatitude !== null && userLongitude !== null) {
-          const group = new window.L.featureGroup([userMarkerRef.current, providerMarkerRef.current]);
-          mapRef.current.fitBounds(group.getBounds().pad(0.5)); // pad ensures markers are not on the edge
-        } else {
-          mapRef.current.setView(providerLatLng, mapRef.current.getZoom() > 10 ? mapRef.current.getZoom() : 13);
-        }
-      } else if (providerMarkerRef.current) {
-        mapRef.current.removeLayer(providerMarkerRef.current);
-        providerMarkerRef.current = null;
-      }
-    }
-  }, [userLatitude, userLongitude, providerLiveLocation, acceptedProvider, t, mapInitialized]);
 
 
   // Redirect if not signed in
@@ -785,17 +717,17 @@ function ProcessPage() {
                   />
                 </div>
 
-                {searchMessage && (
-                  <p className={`text-sm text-center mt-4 ${requestStatus === 'error' ? "text-red-500" : "text-gray-600"}`}>
-                    {searchMessage}
-                  </p>
-                )}
+             {requestStatus === 'error' && (
+  <div className="text-red-500 mt-2">
+    {searchMessage || 'An unexpected error occurred. Please try again.'}
+  </div>
+)}
               </div>
 
               {/* Action Buttons - Modified to fetch providers first */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6">
                 <Button
-                  onClick={fetchAvailableProviders}
+                  onClick={handleFindProviders}
                   disabled={!canSearch || requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
                   className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
                 >
@@ -912,18 +844,31 @@ function ProcessPage() {
           </div>
 
           {/* Map Section - This will be sticky */}
-          <div className="w-full lg:w-1/2 xl:w-3/5 lg:sticky lg:top-8 lg:self-start"> {/* top-8 for some spacing from the top */}
-            <h3 className="text-2xl font-bold text-gray-800 p-3 text-center mb-6">
-              {t('providerLocation')}
-            </h3>
-            <div ref={mapContainerRef} className="w-full h-[400px] lg:h-[calc(100vh - 150px)] border-gray-900 rounded-xl shadow-xl"> {/* Adjusted height for map */}
-            </div>
-            {providerLiveLocation && acceptedProvider && (
-              <p className="text-sm text-gray-700 text-center mt-4">
-                {t('providerLocation')}: Updated {timeAgo(providerLiveLocation.updated_at, t)}
-              </p>
-            )}
-          </div>
+          <div className="w-full lg:w-1/2 xl:w-3/5 lg:sticky lg:top-8 lg:self-start">
+  {/* Heading */}
+  <h3 className="text-2xl font-bold text-gray-800 p-3 text-center mb-6">
+    {t('providerLocation')}
+  </h3>
+
+  {/* Google Maps Component */}
+  <div className="w-full h-[400px] lg:h-[calc(100vh - 150px)] border-gray-900 rounded-xl shadow-xl overflow-hidden">
+    <MapComponent
+      userLat={userLatitude ?? undefined}
+      userLng={userLongitude ?? undefined}
+      providerLat={providerLiveLocation?.latitude ?? undefined}
+      providerLng={providerLiveLocation?.longitude ?? undefined}
+      providerInfo={acceptedProvider}
+    />
+  </div>
+
+  {/* Last updated info */}
+  {providerLiveLocation && acceptedProvider && (
+    <p className="text-sm text-gray-700 text-center mt-4">
+      {t('providerLocation')}: Updated {timeAgo(providerLiveLocation.updated_at, t)}
+    </p>
+  )}
+</div>
+
         </div>
       </div>
       <Footer />
