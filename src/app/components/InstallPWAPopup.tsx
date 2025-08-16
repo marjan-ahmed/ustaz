@@ -9,7 +9,7 @@ export default function InstallPrompt() {
     const handler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setTimeout(() => setShowButton(true), 5000); // show after 5s
+      setTimeout(() => setShowButton(true), 1000); // show after 5s
     };
 
     window.addEventListener("beforeinstallprompt", handler);
