@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { supabase } from "../../client/supabaseClient";
 import ServiceSearchBar from "./components/ServicesSearchBar";
 import FindServiceBtn from "./components/FindServiceBtn";
+import InstallPWAPopup from "./components/InstallPWAPopup";
 
 export default function Home() {
   const t = useTranslations('hero')
@@ -61,6 +62,7 @@ export default function Home() {
   return (
     <>
     <Header />
+  <InstallPWAPopup />
     <section dir="ltr" className="w-full h-[300px] md:h-screen relative">
       <Carousel
         autoPlay
@@ -127,6 +129,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+
           </section>
           <Services />
           <HowItWorks />

@@ -381,24 +381,6 @@ function ProviderDashboardInner() {
     ],
   };
 
-useEffect(() => {
-  const getNotifications = async () => {
-    if (!editableFormData?.userId) return;
-
-    const { data: notifications, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('provider_id', editableFormData.userId)
-      .eq('status', 'unread')
-      .order('created_at', { ascending: false });
-
-    if (error) console.error(error);
-    else console.log(notifications);
-  };
-
-  getNotifications();
-}, [editableFormData]);
-
   
 
   useEffect(() => {
@@ -462,16 +444,6 @@ useEffect(() => {
       setLoading(false);
     }
   }, []);
-
-  const handleAccept = async (requestId: string) => {
-  // Call Supabase or your API to mark as accepted
-  console.log("Accepted:", requestId);
-};
-
-const handleReject = async (requestId: string) => {
-  // Call Supabase or your API to mark as rejected
-  console.log("Rejected:", requestId);
-};
 
   // New: Fetch service requests for this provider
   const fetchServiceRequests = useCallback(async (providerId: string) => {
@@ -1257,65 +1229,93 @@ const handleReject = async (requestId: string) => {
                         </p>
                       </div>
                     ) : (
-                     <div className="space-y-4">
-            {serviceRequests.map((request) => (
-              <Card key={request.id} className="border-gray-200 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-lg font-semibold text-gray-900 flex items-center">
-                      <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
-                      {request.service_type}
-                    </h4>
-                    <Badge
-                      className={`${
-                        request.status === 'accepted'
-                          ? 'bg-green-100 text-green-800'
-                          : request.status === 'notified_multiple'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {request.status === 'notified_multiple' ? 'Pending Acceptance' : request.status.replace(/_/g, ' ')}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 flex items-center mb-1">
-                    <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                    Requested: {new Date(request.created_at).toLocaleString()}
-                  </p>
-                  <p className="text-sm text-gray-600 flex items-center mb-3">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                    Location: Lat {request.request_latitude.toFixed(4)}, Lon {request.request_longitude.toFixed(4)}
-                  </p>
-                  {request.request_details && (
-                    <p className="text-sm text-gray-700 flex items-start mb-3">
-                      <MailOpen className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
-                      Details: {request.request_details}
-                    </p>
-                  )}
+                      <div className="space-y-4">
+                        {serviceRequests.map((request) => (
+                          <Card key={request.id} className="border-gray-200 shadow-sm">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                                  <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
+                                  {request.service_type}
+                                </h4>
+                                <Badge
+                                  className={`${
+                                    request.status === 'accepted'
+                                      ? 'bg-green-100 text-green-800'
+                                      : request.status === 'notified_multiple'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {request.status === 'notified_multiple' ? 'Pending Acceptance' : request.status.replace(/_/g, ' ')}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-gray-600 flex items-center mb-1">
+                                <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                                Requested: {new Date(request.created_at).toLocaleString()}
+                              </p>
+                              <p className="text-sm text-gray-600 flex items-center mb-3">
+                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                                Location: Lat {request.request_latitude.toFixed(4)}, Lon {request.request_longitude.toFixed(4)}
+                              </p>
+                              {request.request_details && (
+                                <p className="text-sm text-gray-700 flex items-start mb-3">
+                                  <MailOpen className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                                  Details: {request.request_details}
+                                </p>
+                              )}
 
-                  {/* Accept/Reject Buttons */}
-                  <div className="flex gap-4 mt-4">
-                    <button
-                      onClick={() => handleAccept(request.id)}
-                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => handleReject(request.id)}
-                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  </div>
+                              {request.status === 'notified_multiple' && providerData.phone_verified && (
+                                <div className="flex gap-2 mt-4">
+                                  <Button
+                                    onClick={() => handleAcceptRequest(request.id)}
+                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Accept
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleRejectRequest(request.id)}
+                                    variant="outline"
+                                    className="flex-1 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              )}
+                              {request.status === 'accepted' && request.accepted_by_provider_id === userIdFromUrl && (
+                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4 text-center">
+                                  <p className="text-sm font-medium text-green-800 flex items-center justify-center">
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    You have accepted this request.
+                                  </p>
+                                  {/* Add more details or a link to a chat/details page here */}
+                                </div>
+                              )}
+                              {request.status === 'accepted' && request.accepted_by_provider_id !== userIdFromUrl && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 text-center">
+                                  <p className="text-sm font-medium text-blue-800 flex items-center justify-center">
+                                    <Info className="h-4 w-4 mr-2" /> {/* Assuming Info icon from lucide-react */}
+                                    This request was accepted by another provider.
+                                  </p>
+                                </div>
+                              )}
+                              {!providerData.phone_verified && request.status === 'notified_multiple' && (
+                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+                                  <p className="text-sm text-orange-700">
+                                    Verify your phone number to accept this request.
+                                  </p>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             )}
 
             {activeTab === "profile" && (

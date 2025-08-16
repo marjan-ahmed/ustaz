@@ -9,6 +9,7 @@ import {getLocale, getMessages} from 'next-intl/server';
 import { ServiceProvider } from "./context/ServiceContext";
 import { Toaster } from "@/components/ui/sonner";
 
+
 const urduFont = Gulzar({
   subsets: ["arabic"],
   weight: ["400"], // Ensure this weight is available on Google Fonts
@@ -67,12 +68,17 @@ export default async function RootLayout({
         className={`${arabicFont.variable} ${urduFont.variable} ${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable}`}
         // cz-shortcut-listen="true"
       >
+        <head>
+          <link rel="manifest" href="/manifest.json" />
+          <meta name="theme-color" content="#000000" />
+        </head>
+
         <body
           className={
             `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-atkinson"} antialiased`
             
           }
-        >
+        > 
           <NextIntlClientProvider messages={messages}>
             {/* Header and Footer might need specific font classes if they are in a different language than the main content */}
             {/* For example, if Header is always LTR with Atkinson font */}

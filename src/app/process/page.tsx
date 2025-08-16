@@ -77,6 +77,7 @@ function ProcessPage() {
   const { address, setAddress, service, setService} = useServiceContext();
 
   const [userLatitude, setUserLatitude] = useState<number | null>(null);
+
   const [userLongitude, setUserLongitude] = useState<number | null>(null);
   // Removed local state manualAddress and selectedServiceType as they are now managed by context
   const [manualPostalCode, setManualPostalCode] = useState<string>(''); // manualPostalCode remains local
@@ -93,7 +94,6 @@ function ProcessPage() {
   const requestSubscriptionRef = useRef<any>(null); // Ref for service_requests subscription
   const liveLocationSubscriptionRef = useRef<any>(null); // Ref for live_locations subscription
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for retry timeout
-
 
   // New states for provider selection
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]); // Providers to display for selection
@@ -151,6 +151,32 @@ function ProcessPage() {
     toast.error("Something went wrong while finding providers.");
   }
 };
+
+async function sendServiceRequest(
+  userId: string,
+  selectedService: string,
+  userName: string
+) {
+  const { data: providers, error } = await supabase
+    .from("ustaz_registrations")
+    .select("userId, location") // include location here
+    .eq("service_type", selectedService);
+
+  if (error) {
+    console.error("Error fetching providers:", error);
+    return;
+  }
+
+  for (const provider of providers || []) {
+    await supabase.from("notifications").insert({
+      recipient_user_id: provider.userId,
+      sender_user_id: userId,
+      service_type: selectedService,
+      message: `${userName} is requesting ${selectedService}`,
+      location: provider.location, // include location in insert
+    });
+  }
+}
 
 
   const handlePlaceSelect = useCallback((
@@ -591,7 +617,6 @@ function ProcessPage() {
     );
   }
 
-
   return (
     <>
       <Header />
@@ -727,8 +752,9 @@ function ProcessPage() {
               {/* Action Buttons - Modified to fetch providers first */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6">
                 <Button
-                  onClick={handleFindProviders}
-                  disabled={!canSearch || requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
+ onClick={() =>
+    sendServiceRequest(user?.user_metadata.id, service, user?.user_metadata.name)
+  }                  disabled={!canSearch || requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
                   className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
                 >
                   {(requestStatus === 'finding_provider' && searchMessage === t('fetchingProvidersList')) ? (
