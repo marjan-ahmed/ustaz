@@ -110,47 +110,47 @@ function ProcessPage() {
   ];
 
 
-  const handleFindProviders = async () => {
-  if (!user || !isLoaded) {
-    toast.error("User not authenticated");
-    return;
-  }
+//   const handleFindProviders = async () => {
+//   if (!user || !isLoaded) {
+//     toast.error("User not authenticated");
+//     return;
+//   }
 
-  if (!userLatitude || !userLongitude || !service || !address) {
-    toast.error("Please complete your location and service selection.");
-    return;
-  }
+//   if (!userLatitude || !userLongitude || !service || !address) {
+//     toast.error("Please complete your location and service selection.");
+//     return;
+//   }
 
-  try {
-    const { data: nearbyProviders, error } = await supabase.rpc('find_providers_nearby', {
-      lat_input: userLatitude,
-      lng_input: userLongitude,
-      radius_mm: 5000,
-      type_input: service
-    });
+//   try {
+//     const { data: nearbyProviders, error } = await supabase.rpc('find_providers_nearby', {
+//       lat_input: userLatitude,
+//       lng_input: userLongitude,
+//       radius_mm: 5000,
+//       type_input: service
+//     });
 
-    if (error) throw error;
-    if (!nearbyProviders || nearbyProviders.length === 0) {
-      toast.info("No providers found nearby.");
-      return;
-    }
+//     if (error) throw error;
+//     if (!nearbyProviders || nearbyProviders.length === 0) {
+//       toast.info("No providers found nearby.");
+//       return;
+//     }
 
-    // Send notification to each provider
-    for (const provider of nearbyProviders) {
-      await supabase.from('notifications').insert({
-        provider_id: provider.id, // adjust based on your table
-        message: `${user.user_metadata?.name || "A user"} needs ${service} at ${address}`,
-        user_id: user.id,
-        type: "service_request"
-      });
-    }
+//     // Send notification to each provider
+//     for (const provider of nearbyProviders) {
+//       await supabase.from('notifications').insert({
+//         provider_id: provider.id, // adjust based on your table
+//         message: `${user.user_metadata?.name || "A user"} needs ${service} at ${address}`,
+//         user_id: user.id,
+//         type: "service_request"
+//       });
+//     }
 
-    toast.success("Providers notified!");
-  } catch (err) {
-    console.error("Error in findProviders:", err);
-    toast.error("Something went wrong while finding providers.");
-  }
-};
+//     toast.success("Providers notified!");
+//   } catch (err) {
+//     console.error("Error in findProviders:", err);
+//     toast.error("Something went wrong while finding providers.");
+//   }
+// };
 
 async function sendServiceRequest(
   userId: string,
@@ -159,7 +159,7 @@ async function sendServiceRequest(
 ) {
   const { data: providers, error } = await supabase
     .from("ustaz_registrations")
-    .select("userId, location") // include location here
+    .select("userId, location")
     .eq("service_type", selectedService);
 
   if (error) {
@@ -167,16 +167,19 @@ async function sendServiceRequest(
     return;
   }
 
-  for (const provider of providers || []) {
-    await supabase.from("notifications").insert({
-      recipient_user_id: provider.userId,
-      sender_user_id: userId,
-      service_type: selectedService,
-      message: `${userName} is requesting ${selectedService}`,
-      location: provider.location, // include location in insert
-    });
-  }
+for (const provider of providers) {
+   await supabase.from("notifications").insert({
+    recipient_user_id: provider.userId,
+    sender_user_id: userId,
+    service_type: service,
+    username: userName,  // 👈 now works
+    address: address,    // 👈 user’s address
+    message: `${userName} wants ${service} at ${address}`, // optional quick summary
+    status: "pending"
+  });
 }
+}
+
 
 
   const handlePlaceSelect = useCallback((
@@ -751,19 +754,32 @@ async function sendServiceRequest(
 
               {/* Action Buttons - Modified to fetch providers first */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                <Button
- onClick={() =>
-    sendServiceRequest(user?.user_metadata.id, service, user?.user_metadata.name)
-  }                  disabled={!canSearch || requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
-                  className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
-                >
-                  {(requestStatus === 'finding_provider' && searchMessage === t('fetchingProvidersList')) ? (
-                    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                  ) : (
-                    <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
-                  )}
-                  Find Available Providers
-                </Button>
+               <Button
+  onClick={() =>
+    sendServiceRequest(
+      user?.id || user?.user_metadata.id, // 👈 use correct user id
+      service,
+      user?.user_metadata.name || "User"
+    )
+  }
+  disabled={
+    !canSearch ||
+    requestStatus === "finding_provider" ||
+    requestStatus === "notified_multiple" ||
+    requestStatus === "accepted"
+  }
+  className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
+>
+  {requestStatus === "finding_provider" ? (
+    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+  ) : (
+    <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+  )}
+  {requestStatus === "finding_provider"
+    ? "Finding Providers..."
+    : "Find Available Providers"}
+</Button>
+
 
                 <Button
                   onClick={cancelServiceRequest}

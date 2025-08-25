@@ -76,6 +76,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import LocationTracker from "../components/LocationTracker";
+import { toast } from "sonner";
 
 // Define TypeScript Interfaces
 interface IProviderData {
@@ -124,6 +125,17 @@ interface IServiceRequest {
   notified_providers?: string[]; // Array of provider IDs who were notified
   accepted_by_provider_id?: string | null; // The provider who accepted
 }
+
+interface Notification {
+  id: string;
+  message: string;
+  service_type: string;
+  address: string;
+  created_at: string;
+  sender_user_id: string;
+}
+
+
 
 // Loading skeleton components
 function DashboardSkeleton() {
@@ -259,6 +271,7 @@ function ProviderDashboardInner() {
   const [providerData, setProviderData] = useState<IProviderData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   // Added 'request' tab
   const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request">("profile");
 
@@ -408,6 +421,60 @@ function ProviderDashboardInner() {
     };
     fetchCountries();
   }, []);
+
+    useEffect(() => {
+    const loadInitial = async () => {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (data) setNotifications(data as Notification[]);
+      if (error) console.error(error);
+    };
+    loadInitial();
+
+    // realtime subscription
+    const channel = supabase
+      .channel("provider_notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+        },
+        async (payload) => {
+          const notif = payload.new as Notification;
+          setNotifications((prev) => [notif, ...prev]);
+
+          // ✅ optional toast popup
+          toast.success(notif.message, {
+            description: `Address: ${notif.address}`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  async function handleAcceptRequest(id: string) {
+  await supabase
+    .from("notifications")
+    .update({ status: "accepted", provider_id: userIdFromUrl })
+    .eq("id", id);
+}
+
+async function handleRejectRequest(id: string) {
+  await supabase
+    .from("notifications")
+    .update({ status: "rejected" })
+    .eq("id", id);
+}
+
 
   // Fetch provider data
   const fetchProviderData = useCallback(async (currentUserId: string | null) => {
@@ -951,69 +1018,6 @@ function ProviderDashboardInner() {
   };
 
   // Handler for accepting a request
-  const handleAcceptRequest = useCallback(async (requestId: string) => {
-    if (!userIdFromUrl) return;
-
-    try {
-      // Update the service_requests table to mark this request as accepted by this provider
-      const { error } = await supabase
-        .from('service_requests')
-        .update({
-          status: 'accepted',
-          accepted_by_provider_id: userIdFromUrl,
-        })
-        .eq('id', requestId)
-        .eq('status', 'notified_multiple'); // Ensure only pending requests can be accepted
-
-      if (error) throw error;
-
-      // Update local state to reflect the change
-      setServiceRequests(prevRequests =>
-        prevRequests.map(req =>
-          req.id === requestId
-            ? { ...req, status: 'accepted', accepted_by_provider_id: userIdFromUrl }
-            : req
-        )
-      );
-      // You might want to navigate to a specific request details page or show a confirmation.
-      console.log(`Request ${requestId} accepted by ${userIdFromUrl}`);
-    } catch (err: any) {
-      console.error(`Error accepting request ${requestId}:`, err.message);
-      // Show an error message to the user
-    }
-  }, [userIdFromUrl]);
-
-  // Handler for rejecting a request
-  const handleRejectRequest = useCallback(async (requestId: string) => {
-    if (!userIdFromUrl) return;
-
-    try {
-      // Update the service_requests table to mark this request as rejected by this provider
-      // This is more complex if multiple providers are notified.
-      // For now, we'll just remove it from *this provider's* view or mark it locally as rejected.
-      // A more robust solution might involve a `rejected_by_provider_ids` array on the request
-      // and a backend function to manage the overall request status if all notified providers reject.
-
-      // For simplicity, let's just mark it as rejected for this provider's view
-      setServiceRequests(prevRequests =>
-        prevRequests.filter(req => req.id !== requestId) // Remove from list
-      );
-
-      // Optionally, you could update the `provider_notifications` table for this specific notification
-      // to 'rejected' if you have a way to identify that specific notification.
-      // Example:
-      // await supabase.from('provider_notifications')
-      //   .update({ status: 'rejected' })
-      //   .eq('request_id', requestId)
-      //   .eq('provider_id', userIdFromUrl);
-
-      console.log(`Request ${requestId} rejected by ${userIdFromUrl}`);
-    } catch (err: any) {
-      console.error(`Error rejecting request ${requestId}:`, err.message);
-      // Show an error message to the user
-    }
-  }, [userIdFromUrl]);
-
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -1127,7 +1131,7 @@ function ProviderDashboardInner() {
                     return (
                       <SidebarMenuItem key={item.tab}>
                         <SidebarMenuButton
-                          onClick={() => setActiveTab(item.tab as "profile" | "settings" | "phone-verification" | "request")}
+                          onClick={() => setActiveTab(item.tab as "request" | "settings" | "phone-verification" | "profile")}
                           className={`w-full justify-start px-3 py-2 rounded-lg transition-colors relative ${
                             activeTab === item.tab
                               ? "bg-[#db4b0d] text-white hover:bg-[#c4420c]"
@@ -1208,115 +1212,124 @@ function ProviderDashboardInner() {
 
           <main className="flex-1 p-6">
             {activeTab === "request" && (
-              <div className="max-w-4xl mx-auto">
-                <Card className="shadow-sm border-gray-200">
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-                      <Bell className="mr-3 h-6 w-6 text-[#db4b0d]" />
-                      Incoming Service Requests
-                    </CardTitle>
-                    <CardDescription className="text-gray-600">
-                      View and manage service requests from users.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {serviceRequests.length === 0 ? (
-                      <div className="text-center py-12">
-                        <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No New Requests</h3>
-                        <p className="text-gray-600">
-                          You currently have no pending service requests. Check back later!
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {serviceRequests.map((request) => (
-                          <Card key={request.id} className="border-gray-200 shadow-sm">
-                            <CardContent className="p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-lg font-semibold text-gray-900 flex items-center">
-                                  <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
-                                  {request.service_type}
-                                </h4>
-                                <Badge
-                                  className={`${
-                                    request.status === 'accepted'
-                                      ? 'bg-green-100 text-green-800'
-                                      : request.status === 'notified_multiple'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}
-                                >
-                                  {request.status === 'notified_multiple' ? 'Pending Acceptance' : request.status.replace(/_/g, ' ')}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-gray-600 flex items-center mb-1">
-                                <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                                Requested: {new Date(request.created_at).toLocaleString()}
-                              </p>
-                              <p className="text-sm text-gray-600 flex items-center mb-3">
-                                <MapPin className="h-4 w-4 mr-2 text-gray-500" />
-                                Location: Lat {request.request_latitude.toFixed(4)}, Lon {request.request_longitude.toFixed(4)}
-                              </p>
-                              {request.request_details && (
-                                <p className="text-sm text-gray-700 flex items-start mb-3">
-                                  <MailOpen className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
-                                  Details: {request.request_details}
-                                </p>
-                              )}
+  <div className="max-w-4xl mx-auto">
+    <Card className="shadow-sm border-gray-200">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+          <Bell className="mr-3 h-6 w-6 text-[#db4b0d]" />
+          Incoming Service Requests
+        </CardTitle>
+        <CardDescription className="text-gray-600">
+          View and manage service requests from users.
+        </CardDescription>
+      </CardHeader>
 
-                              {request.status === 'notified_multiple' && providerData.phone_verified && (
-                                <div className="flex gap-2 mt-4">
-                                  <Button
-                                    onClick={() => handleAcceptRequest(request.id)}
-                                    className="flex-1 bg-green-600 hover:bg-green-700"
-                                  >
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Accept
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleRejectRequest(request.id)}
-                                    variant="outline"
-                                    className="flex-1 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
-                                  >
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
-                                  </Button>
-                                </div>
-                              )}
-                              {request.status === 'accepted' && request.accepted_by_provider_id === userIdFromUrl && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4 text-center">
-                                  <p className="text-sm font-medium text-green-800 flex items-center justify-center">
-                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                    You have accepted this request.
-                                  </p>
-                                  {/* Add more details or a link to a chat/details page here */}
-                                </div>
-                              )}
-                              {request.status === 'accepted' && request.accepted_by_provider_id !== userIdFromUrl && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 text-center">
-                                  <p className="text-sm font-medium text-blue-800 flex items-center justify-center">
-                                    <Info className="h-4 w-4 mr-2" /> {/* Assuming Info icon from lucide-react */}
-                                    This request was accepted by another provider.
-                                  </p>
-                                </div>
-                              )}
-                              {!providerData.phone_verified && request.status === 'notified_multiple' && (
-                                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
-                                  <p className="text-sm text-orange-700">
-                                    Verify your phone number to accept this request.
-                                  </p>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+      <CardContent className="space-y-4">
+        {notifications.length === 0 ? (
+          <div className="text-center py-12">
+            <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No New Requests</h3>
+            <p className="text-gray-600">
+              You currently have no pending service requests. Check back later!
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {notifications.map((request: any) => (
+              <Card key={request.id} className="border-gray-200 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
+                      {request.service_type}
+                    </h4>
+                    <Badge
+                      className={`${
+                        request.status === "accepted"
+                          ? "bg-green-100 text-green-800"
+                          : request.status === "rejected"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    </Badge>
+                  </div>
+
+                  <p className="text-sm text-gray-700 flex items-start mb-3">
+                    <MailOpen className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
+                    {request.message}
+                  </p>
+
+                  <p className="text-sm text-gray-600 flex items-center mb-1">
+                    <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                    Requested At: {new Date(request.created_at).toLocaleString()}
+                  </p>
+
+                  {/* ✅ Buttons and States */}
+                  {request.status === "pending" && providerData.phone_verified && (
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => handleAcceptRequest(request.id)}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Accept
+                      </Button>
+                      <Button
+                        onClick={() => handleRejectRequest(request.id)}
+                        variant="outline"
+                        className="flex-1 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Reject
+                      </Button>
+                    </div>
+                  )}
+
+                  {request.status === "accepted" && request.provider_id === userIdFromUrl && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4 text-center">
+                      <p className="text-sm font-medium text-green-800 flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        You have accepted this request.
+                      </p>
+                    </div>
+                  )}
+
+                  {request.status === "accepted" && request.provider_id !== userIdFromUrl && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 text-center">
+                      <p className="text-sm font-medium text-blue-800 flex items-center justify-center">
+                        <Info className="h-4 w-4 mr-2" />
+                        This request was accepted by another provider.
+                      </p>
+                    </div>
+                  )}
+
+                  {request.status === "rejected" && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-4 text-center">
+                      <p className="text-sm font-medium text-red-800 flex items-center justify-center">
+                        <XCircle className="h-4 w-4 mr-2" />
+                        You rejected this request.
+                      </p>
+                    </div>
+                  )}
+
+                  {!providerData.phone_verified && request.status === "pending" && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+                      <p className="text-sm text-orange-700">
+                        Verify your phone number to accept this request.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+)}
 
             {activeTab === "profile" && (
               <div className="max-w-4xl mx-auto">
