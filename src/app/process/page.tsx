@@ -76,6 +76,8 @@ function ProcessPage() {
   // Destructure address and service from context, and their setters
   const { address, setAddress, service, setService} = useServiceContext();
 
+
+
   const [userLatitude, setUserLatitude] = useState<number | null>(null);
 
   const [userLongitude, setUserLongitude] = useState<number | null>(null);
@@ -94,12 +96,13 @@ function ProcessPage() {
   const requestSubscriptionRef = useRef<any>(null); // Ref for service_requests subscription
   const liveLocationSubscriptionRef = useRef<any>(null); // Ref for live_locations subscription
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for retry timeout
+  const [noProvider, setNoProvider] = useState(false); // 👈 NEW state
+
 
   // New states for provider selection
   const [availableProviders, setAvailableProviders] = useState<ProviderInfo[]>([]); // Providers to display for selection
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]); // User selected provider IDs
   const [showProviderList, setShowProviderList] = useState<boolean>(false); // To conditionally render provider list UI
-
 
   const service_types = [
     "Electrician Service",
@@ -152,37 +155,64 @@ function ProcessPage() {
 //   }
 // };
 
+const [isSending, setIsSending] = useState(false);
+const [isSent, setIsSent] = useState(false);
+
 async function sendServiceRequest(
   userId: string,
   selectedService: string,
   userName: string
 ) {
-  const { data: providers, error } = await supabase
-    .from("ustaz_registrations")
-    .select("userId, location")
-    .eq("service_type", selectedService);
+  try {
+    setIsSending(true);
+    setIsSent(false);
+    setNoProvider(false);
 
-  if (error) {
-    console.error("Error fetching providers:", error);
-    return;
+    // 👉 Fetch providers that match selected service type
+    const { data: providers, error } = await supabase
+      .from("ustaz_registrations")
+      .select("userId, service_type")
+      .eq("service_type", selectedService);
+
+    if (error) {
+      console.error("Error fetching providers:", error);
+      return;
+    }
+
+    // 👉 If no providers found
+    if (!providers || providers.length === 0) {
+      setNoProvider(true);   // 👈 update state
+      return;
+    }
+
+    // 👉 Insert notification for each provider that matches
+    for (const provider of providers) {
+      if (provider.service_type === selectedService) {
+        await supabase.from("notifications").insert({
+          recipient_user_id: provider.userId,
+          sender_user_id: userId,
+          service_type: selectedService,
+          username: userName,
+          address: address,
+          message: `${userName} wants ${selectedService} at ${address}`,
+          status: "pending",
+        });
+      }
+    }
+
+    setIsSent(true);
+  } catch (err) {
+    console.error("Error sending request:", err);
+  } finally {
+    setIsSending(false);
+    setTimeout(() => {
+      setIsSent(false);
+      setNoProvider(false);
+    }, 3000);
   }
-
-for (const provider of providers) {
-   await supabase.from("notifications").insert({
-    recipient_user_id: provider.userId,
-    sender_user_id: userId,
-    service_type: service,
-    username: userName,  // 👈 now works
-    address: address,    // 👈 user’s address
-    message: `${userName} wants ${service} at ${address}`, // optional quick summary
-    status: "pending"
-  });
-}
 }
 
-
-
-  const handlePlaceSelect = useCallback((
+const handlePlaceSelect = useCallback((
     selectedAddress: string,
     lat: number | null,
     lng: number | null
@@ -506,73 +536,6 @@ for (const provider of providers) {
   }, [user, service, userLatitude, userLongitude, address, manualPostalCode, geocodeAddress, t, isSignedIn, isLoaded]); // Updated dependencies
 
   // New function to send request to *selected* providers
-  const sendRequestToSelectedProviders = useCallback(async () => {
-      if (selectedProviderIds.length === 0) {
-          setSearchMessage(t('pleaseSelectAtLeastOneProvider'));
-          setRequestStatus('error');
-          return;
-      }
-      if (!user || !user.id) {
-          setSearchMessage("Please sign in to request a service.");
-          setRequestStatus('error');
-          return;
-      }
-      // Re-verify location or use stored ones
-      const finalLatitude = userLatitude;
-      const finalLongitude = userLongitude;
-
-      if (finalLatitude === null || finalLongitude === null) {
-          setSearchMessage(t('noValidLocation'));
-          setRequestStatus('error');
-          return;
-      }
-
-      setRequestStatus('finding_provider'); // Status for sending request
-      setSearchMessage(t('notifyingSelectedProviders'));
-
-      try {
-          const response = await fetch('/api/request-service', { // This API will now accept multiple provider IDs
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                  user_id: user.id,
-                  serviceType: service, // Use service from context
-                  userLat: finalLatitude,
-                  userLon: finalLongitude,
-                  requestDetails: "User needs service at their location.",
-                  // NEW: Pass the array of selected provider IDs
-                  selectedProviderIds: selectedProviderIds,
-                  requestId: currentRequestId, // Pass existing requestId if re-notifying
-              }),
-          });
-
-          const data = await response.json();
-          if (!response.ok) {
-              throw new Error(data.message || 'Failed to initiate service request.');
-          }
-
-          setCurrentRequestId(data.requestId);
-          setRequestStatus(data.status); // Expect 'notified_multiple' or 'no_ustaz_found'
-          setSearchMessage(data.message);
-
-          // If status is 'notified_multiple', start listening for changes to this request
-          if (data.status === 'notified_multiple') {
-              subscribeToServiceRequest(data.requestId);
-          } else if (data.status === 'no_ustaz_found' || data.status === 'error_finding_ustaz') {
-              console.log("No Ustaz found or error with selected ones. User can retry manually.");
-          }
-
-      } catch (error: any) {
-          console.error('Error initiating service request to selected providers:', error);
-          setRequestStatus('error');
-          setSearchMessage(`Error: ${error.message}`);
-      }
-  }, [user, service, userLatitude, userLongitude, selectedProviderIds, currentRequestId, subscribeToServiceRequest, t]); // Updated dependencies
-
-
-
 
   // Redirect if not signed in
   useEffect(() => {
@@ -754,30 +717,38 @@ for (const provider of providers) {
 
               {/* Action Buttons - Modified to fetch providers first */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6">
-               <Button
+             <Button
   onClick={() =>
     sendServiceRequest(
-      user?.id || user?.user_metadata.id, // 👈 use correct user id
+      user?.id || user?.user_metadata.id,
       service,
       user?.user_metadata.name || "User"
     )
   }
-  disabled={
-    !canSearch ||
-    requestStatus === "finding_provider" ||
-    requestStatus === "notified_multiple" ||
-    requestStatus === "accepted"
-  }
+  disabled={isSending}
   className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
 >
-  {requestStatus === "finding_provider" ? (
-    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+  {isSending ? (
+    <>
+      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+      Sending Request...
+    </>
+  ) : noProvider ? (
+    <>
+      <XCircle className="h-5 w-5 mr-2 text-red-400" />
+      No Provider Found
+    </>
+  ) : isSent ? (
+    <>
+      <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
+      Sent!
+    </>
   ) : (
-    <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+    <>
+      <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+      Find Available Providers
+    </>
   )}
-  {requestStatus === "finding_provider"
-    ? "Finding Providers..."
-    : "Find Available Providers"}
 </Button>
 
 
