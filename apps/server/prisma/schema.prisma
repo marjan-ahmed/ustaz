@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role-based access control for users
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+// Status of a complaint lifecycle
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  fullName      String
+  passwordHash  String
+  role          Role        @default(STUDENT)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  complaints    Complaint[] @relation("ComplaintsByStudent")
+  assignments   Complaint[] @relation("ComplaintsAssignedTo")
+  comments      Comment[]
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  complaints  Complaint[]
+}
+
+model Complaint {
+  id            String          @id @default(cuid())
+  title         String
+  description   String
+  isAnonymous   Boolean         @default(false)
+  isPublic      Boolean         @default(true)
+  status        ComplaintStatus @default(OPEN)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  studentId     String
+  student       User            @relation("ComplaintsByStudent", fields: [studentId], references: [id])
+
+  assignedToId  String?
+  assignedTo    User?           @relation("ComplaintsAssignedTo", fields: [assignedToId], references: [id])
+
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id])
+
+  comments      Comment[]
+
+  @@index([status])
+  @@index([studentId])
+  @@index([assignedToId])
+  @@index([categoryId])
+}
+
+model Comment {
+  id           String     @id @default(cuid())
+  body         String
+  isInternal   Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  complaintId  String
+  complaint    Complaint  @relation(fields: [complaintId], references: [id])
+
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id])
+
+  @@index([complaintId])
+  @@index([authorId])
+}
