@@ -17,9 +17,13 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'ustaz-app'
+          'User-Agent': 'ustaz-app',
+          // Add GitHub token if available for higher rate limits
+          ...(process.env.GITHUB_TOKEN && { 
+            'Authorization': `token ${process.env.GITHUB_TOKEN}` 
+          })
         },
-        cache: 'force-cache' as RequestCache
+        next: { revalidate: 3600 } // Revalidate every hour
       }
     );
 

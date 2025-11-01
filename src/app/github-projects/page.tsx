@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -103,10 +104,12 @@ export default function GitHubProjects() {
                     <div className="p-6">
                       {/* Owner Info */}
                       <div className="flex items-center mb-4">
-                        <img
+                        <Image
                           src={project.owner.avatar}
                           alt={project.owner.login}
-                          className="w-10 h-10 rounded-full mr-3"
+                          width={40}
+                          height={40}
+                          className="rounded-full mr-3"
                         />
                         <div>
                           <p className="text-sm text-gray-600">{project.owner.login}</p>
