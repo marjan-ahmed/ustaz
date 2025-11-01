@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Features
+
+### GitHub Projects Discovery
+This application includes a feature to discover open-source Python projects on GitHub that are accepting new contributors. Visit `/github-projects` to:
+- Find Python repositories with over 100 stars
+- Filter for projects with "good first issue" or "help wanted" labels
+- Browse projects in a responsive, user-friendly interface
+
+See [GITHUB_PROJECTS_FEATURE.md](./GITHUB_PROJECTS_FEATURE.md) for more details.
+
+## Development
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
