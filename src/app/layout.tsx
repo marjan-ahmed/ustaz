@@ -7,7 +7,6 @@ import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
 import { ServiceProvider } from "./context/ServiceContext";
 import { Toaster } from "@/components/ui/sonner";
-import { ClerkProvider } from "@clerk/nextjs";
 
 
 const urduFont = Gulzar({
