@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__supabase__apply_migration",
+      "Bash(powershell -Command \"Stop-Process -Id 28836 -Force\")",
+      "Bash(npx next build)",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\HPPROB~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\E--nextjs-projects-ustaz\\\\tasks\\\\bc9023d.output''\")",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Users\\\\HPPROB~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\E--nextjs-projects-ustaz\\\\tasks\\\\be4ddcd.output''\")",
+      "mcp__supabase__list_extensions",
+      "Bash(supabase functions list)",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_tables"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

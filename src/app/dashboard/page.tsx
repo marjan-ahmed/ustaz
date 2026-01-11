@@ -1,7 +1,10 @@
+// This file has been restored to its original state before the redesign
+// We'll put back the original implementation
+
 "use client"
 export const dynamic = "force-dynamic";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { supabase } from "../../../client/supabaseClient";
 import {
   User,
@@ -76,6 +79,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import LocationTracker from "../components/LocationTracker";
+import ProviderRequestNotification from "../components/ProviderRequestNotification";
 import { toast } from "sonner";
 
 // Define TypeScript Interfaces
@@ -134,8 +138,6 @@ interface Notification {
   created_at: string;
   sender_user_id: string;
 }
-
-
 
 // Loading skeleton components
 function DashboardSkeleton() {
@@ -272,8 +274,8 @@ function ProviderDashboardInner() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  // Added 'request' tab
-  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request">("profile");
+  // Added 'request' and 'chat' tabs
+  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request" | "chat">("profile");
 
   // State for editing profile
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
@@ -302,15 +304,31 @@ function ProviderDashboardInner() {
   const [serviceRequests, setServiceRequests] = useState<IServiceRequest[]>([]);
   const [unreadRequestCount, setUnreadRequestCount] = useState<number>(0); // For notification badge
 
+  // Ref to keep track of current service requests to avoid stale closures in useEffect
+  const serviceRequestsRef = useRef<IServiceRequest[]>([]);
+  useEffect(() => {
+    serviceRequestsRef.current = serviceRequests;
+  }, [serviceRequests]);
+
+  // New state for chat functionality
+  const [conversations, setConversations] = useState<Array<{userId: string, userName: string, lastMessage: string, lastMessageTime: string, unread: number}>>([]);
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+
   const searchParams = useSearchParams();
   const userIdFromUrl = searchParams.get("userId");
 
-  // Dashboard menu items - Added "Request"
+  // Dashboard menu items - Added "Request" and "Chat"
   const dashboardMenuItems = [
     {
       title: "Requests", // Changed to plural for multiple requests
       tab: "request",
       icon: Bell, // Using Bell icon for requests/notifications
+    },
+    {
+      title: "Chat",
+      tab: "chat",
+      icon: MessageSquare, // Using MessageSquare icon for chat
     },
     {
       title: "Profile",
@@ -394,7 +412,6 @@ function ProviderDashboardInner() {
     ],
   };
 
-  
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -422,7 +439,7 @@ function ProviderDashboardInner() {
     fetchCountries();
   }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const loadInitial = async () => {
       const { data, error } = await supabase
         .from("notifications")
@@ -444,7 +461,7 @@ function ProviderDashboardInner() {
           schema: "public",
           table: "notifications",
         },
-        async (payload) => {
+        (payload) => {
           const notif = payload.new as Notification;
           setNotifications((prev) => [notif, ...prev]);
 
@@ -461,19 +478,62 @@ function ProviderDashboardInner() {
     };
   }, []);
 
-  async function handleAcceptRequest(id: string) {
-  await supabase
-    .from("notifications")
-    .update({ status: "accepted", provider_id: userIdFromUrl })
-    .eq("id", id);
-}
+  async function handleAcceptRequest(requestId: string) {
+    try {
+      const response = await fetch('/api/handle-service-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          providerId: userIdFromUrl,
+          requestId: requestId,
+          action: 'accept'
+        })
+      });
 
-async function handleRejectRequest(id: string) {
-  await supabase
-    .from("notifications")
-    .update({ status: "rejected" })
-    .eq("id", id);
-}
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to accept request');
+      }
+
+      // Update provider status to busy since they accepted a request
+      if (userIdFromUrl) {
+        updateProviderAvailability(userIdFromUrl, 'busy');
+      }
+
+      // The notification status will be updated via real-time subscription
+      toast.success('Service request accepted successfully!');
+    } catch (error: any) {
+      console.error('Error accepting request:', error);
+      toast.error(error.message || 'Failed to accept request');
+    }
+  }
+
+  async function handleRejectRequest(requestId: string) {
+    try {
+      const response = await fetch('/api/handle-service-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          providerId: userIdFromUrl,
+          requestId: requestId,
+          action: 'reject'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to reject request');
+      }
+
+      // The notification status will be updated via real-time subscription
+      toast.success('Service request rejected');
+    } catch (error: any) {
+      console.error('Error rejecting request:', error);
+      toast.error(error.message || 'Failed to reject request');
+    }
+  }
 
 
   // Fetch provider data
@@ -542,10 +602,249 @@ async function handleRejectRequest(id: string) {
     }
   }, []);
 
-
   useEffect(() => {
     fetchProviderData(userIdFromUrl);
-  }, [fetchProviderData, userIdFromUrl]);
+
+    // Update provider status to online and available when dashboard loads
+    if (userIdFromUrl) {
+      updateProviderStatus(userIdFromUrl, true);
+      updateProviderAvailability(userIdFromUrl, 'available');
+    }
+
+    // Clean up: set provider status to offline when leaving the page
+    return () => {
+      if (userIdFromUrl) {
+        updateProviderAvailability(userIdFromUrl, 'offline');
+      }
+    };
+  }, [userIdFromUrl]);
+
+  // Function to update provider online status
+  const updateProviderStatus = async (providerId: string, online: boolean) => {
+    try {
+      const response = await fetch('/api/provider-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          providerId,
+          online
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update provider status');
+      }
+    } catch (error: any) {
+      console.error('Error updating provider status:', error);
+    }
+  };
+
+  // Function to update provider availability status (available, busy, offline)
+  const updateProviderAvailability = async (providerId: string, status: 'available' | 'busy' | 'offline') => {
+    try {
+      const { error } = await supabase
+        .from('ustaz_registrations')
+        .update({
+          provider_status: status,
+          last_seen_at: new Date().toISOString()
+        })
+        .eq('userId', providerId);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('Error updating provider availability:', error);
+    }
+  };
+
+  // Effect to load conversations for the chat tab
+  useEffect(() => {
+    if (activeTab !== 'chat' || !userIdFromUrl) return;
+
+    const fetchConversations = async () => {
+      try {
+        // First, get all messages where this provider is the recipient
+        const { data: receivedMessages, error: receivedError } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('recipient_id', userIdFromUrl)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (receivedError) throw receivedError;
+
+        // Then, get messages where this provider is the sender
+        const { data: sentMessages, error: sentError } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('sender_id', userIdFromUrl)
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        if (sentError) throw sentError;
+
+        // Combine both sets of messages
+        const allMessages = [...receivedMessages, ...sentMessages];
+
+        // Group by the other participant's ID to create conversations
+        const uniqueConversations = new Map();
+
+        for (const msg of allMessages) {
+          // Determine the other participant (not the current provider)
+          const otherUserId = msg.sender_id === userIdFromUrl ? msg.recipient_id : msg.sender_id;
+
+          if (!uniqueConversations.has(otherUserId)) {
+            // Get user info for the other participant
+            let userName = 'User';
+
+            // Try to get from profiles table first (for consumers)
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', otherUserId)
+              .single();
+
+            if (profileData && !profileError) {
+              userName = profileData.full_name || 'User';
+            } else {
+              // If not in profiles, try ustaz_registrations (for other providers)
+              const { data: providerData, error: providerError } = await supabase
+                .from('ustaz_registrations')
+                .select('firstName, lastName')
+                .eq('userId', otherUserId)
+                .single();
+
+              if (providerData && !providerError) {
+                userName = `${providerData.firstName} ${providerData.lastName}`;
+              }
+            }
+
+            uniqueConversations.set(otherUserId, {
+              userId: otherUserId,
+              userName: userName,
+              lastMessage: msg.message,
+              lastMessageTime: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              unread: 0 // Could calculate unread messages
+            });
+          }
+        }
+
+        setConversations(Array.from(uniqueConversations.values()));
+      } catch (error) {
+        console.error('Error fetching conversations:', error);
+      }
+    };
+
+    fetchConversations();
+
+    // Set up real-time subscription for new messages to update conversations list
+    const channel = supabase
+      .channel(`conversations-${userIdFromUrl}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `or(sender_id.eq.${userIdFromUrl},recipient_id.eq.${userIdFromUrl})`, // Listen for messages where this user is involved
+        },
+        (payload) => {
+          // Update the conversations list with the new message
+          const newMessage = payload.new;
+          const otherUserId = newMessage.sender_id === userIdFromUrl ? newMessage.recipient_id : newMessage.sender_id;
+          const isCurrentUserSender = newMessage.sender_id === userIdFromUrl;
+
+          setConversations(prevConversations => {
+            // Check if this conversation already exists
+            const existingConvIndex = prevConversations.findIndex(conv => conv.userId === otherUserId);
+
+            if (existingConvIndex >= 0) {
+              // Update existing conversation
+              const updatedConversations = [...prevConversations];
+
+              // Only update the last message if this is a received message (for the conversation list)
+              if (!isCurrentUserSender) {
+                updatedConversations[existingConvIndex] = {
+                  ...updatedConversations[existingConvIndex],
+                  lastMessage: newMessage.message,
+                  lastMessageTime: new Date(newMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                  // Increment unread count for received messages
+                  unread: updatedConversations[existingConvIndex].unread + 1
+                };
+              } else {
+                // If current user sent the message, update the last message but don't increment unread
+                updatedConversations[existingConvIndex] = {
+                  ...updatedConversations[existingConvIndex],
+                  lastMessage: newMessage.message,
+                  lastMessageTime: new Date(newMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+              }
+
+              return updatedConversations;
+            } else {
+              // Add new conversation if it doesn't exist
+              // In this case, we need to fetch user info for the new participant
+              return prevConversations; // For now, just return existing conversations
+            }
+          });
+        }
+      )
+      .subscribe();
+
+    // Cleanup function to unsubscribe from real-time updates
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTab, userIdFromUrl]);
+
+  // Effect to load messages when a conversation is selected
+  useEffect(() => {
+    if (!selectedConversation || !userIdFromUrl) return;
+
+    const fetchMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .or(
+            `and(sender_id.eq.${selectedConversation},recipient_id.eq.${userIdFromUrl}),` +
+            `and(sender_id.eq.${userIdFromUrl},recipient_id.eq.${selectedConversation})`
+          )
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        setChatMessages(data || []);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+
+    // Set up real-time subscription for new messages
+    const channel = supabase
+      .channel(`chat-${[selectedConversation, userIdFromUrl].sort().join('-')}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `and(or(sender_id.eq.${selectedConversation},recipient_id.eq.${userIdFromUrl}),or(sender_id.eq.${userIdFromUrl},recipient_id.eq.${selectedConversation}))`,
+        },
+        (payload) => {
+          setChatMessages(prev => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation, userIdFromUrl]);
 
   // New: Realtime subscription for service requests for this provider
   useEffect(() => {
@@ -560,18 +859,47 @@ async function handleRejectRequest(id: string) {
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen for INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'service_requests',
-          // Filter to only get changes relevant to this provider
-          filter: `notified_providers.cs.{${userIdFromUrl}}` // If this provider was notified
-          // OR you might need a more complex filter or a backend webhook to trigger refreshes
-          // if a request is accepted by *another* provider.
+          filter: `notified_providers.cs.{${userIdFromUrl}}` // Strict filtration maintained
         },
         (payload) => {
           console.log("Realtime service_requests change:", payload);
-          // Re-fetch all requests to update the list and unread count
-          fetchServiceRequests(userIdFromUrl);
+
+          // Efficiently update the state with the new data instead of refetching
+          setServiceRequests(prev => {
+            const newRequest = payload.new as IServiceRequest;
+
+            // If it's a DELETE event, remove the request
+            if (payload.eventType === 'DELETE') {
+              return prev.filter(req => req.id !== newRequest.id);
+            }
+
+            // For INSERT/UPDATE, check if request already exists
+            const existingIndex = prev.findIndex(req => req.id === newRequest.id);
+
+            if (existingIndex >= 0) {
+              // Update existing request
+              const updatedRequests = [...prev];
+              updatedRequests[existingIndex] = newRequest;
+              return updatedRequests;
+            } else {
+              // Add new request to the beginning of the list
+              return [newRequest, ...prev];
+            }
+          });
+
+          // Recalculate unread count based on the current requests list using ref to avoid stale closure
+          setUnreadRequestCount(currentRequests => {
+            const currentRequestsSnapshot = serviceRequestsRef.current;
+            const newUnreadCount = currentRequestsSnapshot.filter((req: IServiceRequest) =>
+              req.status === 'notified_multiple' &&
+              req.notified_providers?.includes(userIdFromUrl) &&
+              req.accepted_by_provider_id !== userIdFromUrl
+            ).length;
+            return newUnreadCount;
+          });
         }
       )
       .subscribe();
@@ -579,8 +907,7 @@ async function handleRejectRequest(id: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userIdFromUrl, providerData?.phone_verified, fetchServiceRequests]); // Re-subscribe if userId or phone_verified status changes
-
+  }, [userIdFromUrl, providerData?.phone_verified]); // Removed serviceRequests from dependency to prevent infinite loop, using ref instead
 
   // Handler for form changes
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1017,12 +1344,9 @@ async function handleRejectRequest(id: string) {
     }
   };
 
-  // Handler for accepting a request
-
   if (loading) {
     return <DashboardSkeleton />;
   }
-  
 
   if (error) {
     return (
@@ -1131,7 +1455,7 @@ async function handleRejectRequest(id: string) {
                     return (
                       <SidebarMenuItem key={item.tab}>
                         <SidebarMenuButton
-                          onClick={() => setActiveTab(item.tab as "request" | "settings" | "phone-verification" | "profile")}
+                          onClick={() => setActiveTab(item.tab as "request" | "chat" | "settings" | "phone-verification" | "profile")}
                           className={`w-full justify-start px-3 py-2 rounded-lg transition-colors relative ${
                             activeTab === item.tab
                               ? "bg-[#db4b0d] text-white hover:bg-[#c4420c]"
@@ -1201,6 +1525,7 @@ async function handleRejectRequest(id: string) {
                 <BreadcrumbItem>
                   <BreadcrumbPage className="font-medium">
                     {activeTab === "request" && "Service Requests"}
+                    {activeTab === "chat" && "Chat Messages"}
                     {activeTab === "profile" && "Profile"}
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "phone-verification" && "Phone Verification"}
@@ -1223,9 +1548,29 @@ async function handleRejectRequest(id: string) {
           View and manage service requests from users.
         </CardDescription>
       </CardHeader>
+      {/* Add the ProviderRequestNotification component */}
+      {userIdFromUrl && (
+        <ProviderRequestNotification
+          providerId={userIdFromUrl}
+          onAccept={async (requestId) => {
+            // Call the handleAcceptRequest function
+            await handleAcceptRequest(requestId);
+          }}
+          onReject={async (requestId) => {
+            // Call the handleRejectRequest function
+            await handleRejectRequest(requestId);
+          }}
+          onOpenChat={(userId, requestId) => {
+            // Set the active tab to chat and open the chat interface
+            setActiveTab('chat');
+            // Optionally, open the chat in a new window/tab
+            window.open(`/chat?with=${userId}&request=${requestId}`, '_blank');
+          }}
+        />
+      )}
 
       <CardContent className="space-y-4">
-        {notifications.length === 0 ? (
+        {serviceRequests.length === 0 ? (
           <div className="text-center py-12">
             <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No New Requests</h3>
@@ -1235,7 +1580,7 @@ async function handleRejectRequest(id: string) {
           </div>
         ) : (
           <div className="space-y-4">
-            {notifications.map((request: any) => (
+            {serviceRequests.map((request) => (
               <Card key={request.id} className="border-gray-200 shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
@@ -1249,6 +1594,8 @@ async function handleRejectRequest(id: string) {
                           ? "bg-green-100 text-green-800"
                           : request.status === "rejected"
                           ? "bg-red-100 text-red-800"
+                          : request.status === "pending_notification" || request.status === "notified_multiple"
+                          ? "bg-yellow-100 text-yellow-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
@@ -1258,7 +1605,8 @@ async function handleRejectRequest(id: string) {
 
                   <p className="text-sm text-gray-700 flex items-start mb-3">
                     <MailOpen className="h-4 w-4 mr-2 text-gray-500 mt-0.5" />
-                    {request.message}
+                    {/* Using request_details instead of message */}
+                    {request.request_details || "No details provided"}
                   </p>
 
                   <p className="text-sm text-gray-600 flex items-center mb-1">
@@ -1267,7 +1615,10 @@ async function handleRejectRequest(id: string) {
                   </p>
 
                   {/* ✅ Buttons and States */}
-                  {request.status === "pending" && providerData.phone_verified && (
+                  {/* {(request.status === "pending_notification" || request.status === "notified_multiple") &&
+                   providerData.phone_verified &&
+                   // request.notified_providers?.includes(userIdFromUrl) &&
+                   request.accepted_by_provider_id !== userIdFromUrl && (
                     <div className="flex gap-2 mt-4">
                       <Button
                         onClick={() => handleAcceptRequest(request.id)}
@@ -1285,9 +1636,35 @@ async function handleRejectRequest(id: string) {
                         Reject
                       </Button>
                     </div>
-                  )}
+                  )} */}
 
-                  {request.status === "accepted" && request.provider_id === userIdFromUrl && (
+                  {userIdFromUrl &&
+ (request.status === "pending_notification" ||
+  request.status === "notified_multiple") &&
+ providerData.phone_verified &&
+ request.notified_providers?.includes(userIdFromUrl) &&
+ request.accepted_by_provider_id !== userIdFromUrl && (
+  <div className="flex gap-2 mt-4">
+    <Button
+      onClick={() => handleAcceptRequest(request.id)}
+      className="flex-1 bg-green-600 hover:bg-green-700"
+    >
+      <CheckCircle className="mr-2 h-4 w-4" />
+      Accept
+    </Button>
+    <Button
+      onClick={() => handleRejectRequest(request.id)}
+      variant="outline"
+      className="flex-1 border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+    >
+      <XCircle className="mr-2 h-4 w-4" />
+      Reject
+    </Button>
+  </div>
+)}
+
+
+                  {request.status === "accepted" && request.accepted_by_provider_id === userIdFromUrl && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4 text-center">
                       <p className="text-sm font-medium text-green-800 flex items-center justify-center">
                         <CheckCircle className="h-4 w-4 mr-2" />
@@ -1296,7 +1673,7 @@ async function handleRejectRequest(id: string) {
                     </div>
                   )}
 
-                  {request.status === "accepted" && request.provider_id !== userIdFromUrl && (
+                  {request.status === "accepted" && request.accepted_by_provider_id !== userIdFromUrl && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4 text-center">
                       <p className="text-sm font-medium text-blue-800 flex items-center justify-center">
                         <Info className="h-4 w-4 mr-2" />
@@ -1314,13 +1691,18 @@ async function handleRejectRequest(id: string) {
                     </div>
                   )}
 
-                  {!providerData.phone_verified && request.status === "pending" && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
-                      <p className="text-sm text-orange-700">
-                        Verify your phone number to accept this request.
-                      </p>
-                    </div>
-                  )}
+               {userIdFromUrl &&
+ !providerData.phone_verified &&
+ (request.status === "pending_notification" ||
+  request.status === "notified_multiple") &&
+ request.notified_providers?.includes(userIdFromUrl) &&
+ request.accepted_by_provider_id !== userIdFromUrl && (
+  <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+    <p className="text-sm text-orange-700">
+      Verify your phone number to accept this request.
+    </p>
+  </div>
+)}
                 </CardContent>
               </Card>
             ))}
@@ -1860,6 +2242,199 @@ async function handleRejectRequest(id: string) {
               </div>
             )}
 
+            {activeTab === "chat" && (
+            <div className="max-w-4xl mx-auto">
+              <Card className="shadow-sm border-gray-200">
+                <CardHeader>
+                  <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                    <MessageSquare className="mr-3 h-6 w-6 text-[#db4b0d]" />
+                    Chat Messages
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Communicate with users who have requested your services.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col md:flex-row gap-6 h-[500px]">
+                    {/* Conversations List - Left Side */}
+                    <div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
+                      <div className="p-2 border-b border-gray-200">
+                        <Input
+                          placeholder="Search conversations..."
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="flex-1 overflow-y-auto">
+                        <div className="space-y-2 p-2">
+                          {conversations.map((conv) => (
+                            <div
+                              key={conv.userId}
+                              className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                                selectedConversation === conv.userId
+                                  ? 'bg-[#db4b0d] text-white'
+                                  : 'hover:bg-gray-100'
+                              }`}
+                              onClick={() => setSelectedConversation(conv.userId)}
+                            >
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-semibold truncate">{conv.userName}</h4>
+                                <span className="text-xs opacity-70">{conv.lastMessageTime}</span>
+                              </div>
+                              <p className="text-sm truncate mt-1 opacity-80">{conv.lastMessage}</p>
+                              {conv.unread > 0 && (
+                                <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center mt-1">
+                                  {conv.unread}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat Interface - Right Side */}
+                    <div className="w-full md:w-2/3 flex flex-col">
+                      {selectedConversation ? (
+                        <>
+                          {/* Chat Header */}
+                          <div className="p-4 border-b border-gray-200 flex items-center">
+                            <Avatar className="h-10 w-10 mr-3">
+                              <AvatarFallback className="bg-[#db4b0d] text-white">
+                                {(() => {
+                                  const conv = conversations.find(c => c.userId === selectedConversation);
+                                  return conv?.userName.charAt(0) || 'U';
+                                })()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="font-semibold">
+                                {(() => {
+                                  const conv = conversations.find(c => c.userId === selectedConversation);
+                                  return conv?.userName || 'User';
+                                })()}
+                              </h3>
+                              <p className="text-xs text-gray-500">Online</p>
+                            </div>
+                          </div>
+
+                          {/* Messages Area */}
+                          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                            {chatMessages.map((msg) => (
+                              <div
+                                key={msg.id}
+                                className={`flex ${msg.sender_id === userIdFromUrl ? 'justify-end' : 'justify-start'}`}
+                              >
+                                <div
+                                  className={`max-w-xs p-3 rounded-lg ${
+                                    msg.sender_id === userIdFromUrl
+                                      ? 'bg-blue-500 text-white rounded-br-none'
+                                      : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                                  }`}
+                                >
+                                  <p>{msg.message}</p>
+                                  <p
+                                    className={`text-xs mt-1 ${
+                                      msg.sender_id === userIdFromUrl ? 'text-blue-100' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    {new Date(msg.created_at).toLocaleTimeString([], {
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Message Input */}
+                          <div className="p-4 border-t border-gray-200">
+                            <div className="flex space-x-2">
+                              <Input
+                                id="chat-input"
+                                placeholder="Type a message..."
+                                className="flex-1"
+                                onKeyDown={async (e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    const inputElement = e.target as HTMLInputElement;
+                                    const message = inputElement.value.trim();
+                                    if (message && selectedConversation) {
+                                      try {
+                                        const { error } = await supabase
+                                          .from('chat_messages')
+                                          .insert({
+                                            sender_id: userIdFromUrl,
+                                            recipient_id: selectedConversation,
+                                            message: message,
+                                          });
+
+                                        if (error) {
+                                          console.error('Error sending message:', error);
+                                          toast.error('Failed to send message');
+                                        } else {
+                                          // Clear the input
+                                          inputElement.value = '';
+                                        }
+                                      } catch (err) {
+                                        console.error('Error sending message:', err);
+                                        toast.error('Failed to send message');
+                                      }
+                                    }
+                                  }
+                                }}
+                              />
+                              <Button
+                                onClick={async () => {
+                                  const inputElement = document.getElementById('chat-input') as HTMLInputElement;
+                                  if (!inputElement) return;
+
+                                  const message = inputElement.value.trim();
+                                  if (message && selectedConversation) {
+                                    try {
+                                      const { error } = await supabase
+                                        .from('chat_messages')
+                                        .insert({
+                                          sender_id: userIdFromUrl,
+                                          recipient_id: selectedConversation,
+                                          message: message,
+                                        });
+
+                                      if (error) {
+                                        console.error('Error sending message:', error);
+                                        toast.error('Failed to send message');
+                                      } else {
+                                        // Clear the input
+                                        inputElement.value = '';
+                                      }
+                                    } catch (err) {
+                                      console.error('Error sending message:', err);
+                                      toast.error('Failed to send message');
+                                    }
+                                  }
+                                }}
+                              >
+                                Send
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                          <MessageSquare className="h-16 w-16 text-gray-300 mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No Conversation Selected</h3>
+                          <p className="text-gray-600 max-w-md">
+                            Select a conversation from the list to start chatting with users who have requested your services.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
             {activeTab === "phone-verification" && (
               <div className="max-w-2xl mx-auto">
                 <Card className="shadow-sm border-gray-200">
@@ -1999,7 +2574,7 @@ async function handleRejectRequest(id: string) {
                               <Button
                                 onClick={handleSavePhoneChange}
                                 disabled={isSavingPhone}
-                                className="bg-[#db4b0d] hover:bg-[#c4420c]"
+                                className="bg-[#db4b0d] hover:bg-[#c4420c] text-white"
                               >
                                 {isSavingPhone ? (
                                   <div className="flex items-center">

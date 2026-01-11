@@ -1,0 +1,6 @@
+﻿   Γû▓ Next.js 15.5.9
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully in 50s
+   Linting and checking validity of types ...

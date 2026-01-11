@@ -4,7 +4,7 @@ import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useSupabaseUser } from "../hooks/useSupabaseUser";
 import Services from "./components/Services";
 import HowItWorks from "./components/HowItWorks";
 import WhyChooseUs from "./components/WhyChooseUs";
@@ -41,7 +41,7 @@ export default function Home() {
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
-   const { isSignedIn } = useUser();
+   const { isSignedIn } = useSupabaseUser();
 
   // ✅ Handle Supabase OAuth redirect
   useEffect(() => {
@@ -109,14 +109,14 @@ export default function Home() {
             <p className="max-w-lg text-sm sm:text-base md:text-lg mx-auto md:mx-0">
               {banners[currentIndex].description}
             </p>
-          
+
             {/* <Link
               href={"/process"}
               className="inline-block bg-white text-black px-4 py-2 sm:px-5 sm:py-3 rounded-md hover:bg-gray-200 transition"
             >
               {banners[currentIndex].button}
             </Link> */}
-             
+
              {/* Show on mobile only */}
       <div className="flex justify-center md:hidden">
         <FindServiceBtn />

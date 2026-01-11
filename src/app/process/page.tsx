@@ -19,6 +19,10 @@ import { useServiceContext } from '../context/ServiceContext';
 import GoogleAutocomplete from '../components/GoogleAutocomplete';
 import { toast } from 'sonner';
 import MapComponent from '../components/MapComponent';
+import EnhancedMapComponent from '../components/EnhancedMapComponent';
+import UserRequestTracker from '../components/UserRequestTracker';
+import ProviderTrackingInfo from '../components/ProviderTrackingInfo';
+import ChatComponent from '../components/ChatComponent';
 // Removed Loader import as Google Maps API is no longer directly integrated here
 
 
@@ -88,6 +92,8 @@ function ProcessPage() {
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [acceptedProvider, setAcceptedProvider] = useState<ProviderInfo | null>(null);
   const [providerLiveLocation, setProviderLiveLocation] = useState<LiveLocation | null>(null);
+  // State for chat functionality
+  const [showChat, setShowChat] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false); // State to track map initialization
   const mapRef = useRef<any>(null); // Ref for the Leaflet map instance
   const mapContainerRef = useRef<HTMLDivElement>(null); // Ref for the map container div
@@ -302,6 +308,7 @@ const handlePlaceSelect = useCallback((
 
   // Fetch accepted provider's details (moved up for declaration order)
   const fetchAcceptedProviderDetails = useCallback(async (providerId: string) => {
+    console.log('Fetching provider details for ID:', providerId);
     try {
       // Note: This fetch directly from Supabase client assumes RLS allows authenticated users
       // to read ustaz_registrations. If RLS is stricter, you might need an API route.
@@ -311,7 +318,12 @@ const handlePlaceSelect = useCallback((
         .eq('userId', providerId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching provider details:', error);
+        throw error;
+      }
+
+      console.log('Provider details fetched successfully:', data);
       setAcceptedProvider({
         user_id: data.userId,
         firstName: data.firstName,
@@ -320,11 +332,12 @@ const handlePlaceSelect = useCallback((
         phoneCountryCode: data.phoneCountryCode,
         email: data.email,
       });
+      console.log('State updated with provider details');
     } catch (error) {
       console.error('Error fetching accepted provider details:', error);
       setAcceptedProvider(null);
     }
-  }, []);
+  }, [supabase]);
 
   // Supabase Realtime Subscription for Provider Live Location (moved up for declaration order)
   const subscribeToProviderLiveLocation = useCallback((requestId: string) => {
@@ -351,7 +364,7 @@ const handlePlaceSelect = useCallback((
       .subscribe();
 
     liveLocationSubscriptionRef.current = channel;
-  }, []);
+  }, [supabase, setProviderLiveLocation]);
 
   // Function to cancel the current service request (MOVED UP)
   const cancelServiceRequest = useCallback(async () => {
@@ -407,9 +420,45 @@ const handlePlaceSelect = useCallback((
     }
   }, [currentRequestId, user, t]);
 
+  // Function to handle chat request
+  const handleRequestChat = useCallback(() => {
+    if (acceptedProvider?.user_id && user?.id) {
+      setShowChat(true);
+    } else {
+      toast.error('Cannot start chat: provider or user information is missing');
+    }
+  }, [acceptedProvider, user]);
+
+  // Function to handle calling the provider
+  const handleCallProvider = useCallback(() => {
+    if (acceptedProvider?.phoneCountryCode && acceptedProvider?.phoneNumber) {
+      // Combine country code and phone number
+      const fullPhoneNumber = `${acceptedProvider.phoneCountryCode}${acceptedProvider.phoneNumber}`;
+
+      // For Pakistani numbers, ensure proper format
+      let formattedNumber = fullPhoneNumber;
+      if (fullPhoneNumber.startsWith('92')) {
+        formattedNumber = `+${fullPhoneNumber}`;
+      } else if (fullPhoneNumber.startsWith('+92')) {
+        formattedNumber = fullPhoneNumber;
+      } else if (fullPhoneNumber.startsWith('0')) {
+        // If it starts with 0, it might be a local format, convert to international
+        formattedNumber = `+92${fullPhoneNumber.substring(1)}`;
+      } else {
+        formattedNumber = `+92${fullPhoneNumber}`;
+      }
+
+      // Use window.location.href to initiate a phone call
+      window.location.href = `tel:${formattedNumber}`;
+    } else {
+      toast.error('Cannot make call: provider phone number is not available');
+    }
+  }, [acceptedProvider]);
+
 
   // Supabase Realtime Subscription for Service Request Status (Moved up for declaration order)
   const subscribeToServiceRequest = useCallback((requestId: string) => {
+    // Clean up any existing subscription first
     if (requestSubscriptionRef.current) {
       supabase.removeChannel(requestSubscriptionRef.current);
     }
@@ -429,7 +478,14 @@ const handlePlaceSelect = useCallback((
           const acceptedByProviderId = (payload.new as any).accepted_by_provider_id;
           console.log('Service Request Update received:', payload.new);
 
-          setRequestStatus(newStatus); // Update local state with new status
+          // Only update status if it's actually different to avoid unnecessary re-renders
+          setRequestStatus(prevStatus => {
+            if (prevStatus !== newStatus) {
+              console.log('Status changed from', prevStatus, 'to', newStatus);
+              return newStatus;
+            }
+            return prevStatus;
+          });
 
           if (newStatus === 'accepted' && acceptedByProviderId) {
             // Fetch provider details and start live location tracking
@@ -559,6 +615,21 @@ const handlePlaceSelect = useCallback((
 
   // Determine if the "Cancel Request" button should be enabled
   const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'finding_provider' || requestStatus === 'accepted');
+
+  // Set up real-time subscription when request ID changes
+  useEffect(() => {
+    if (currentRequestId) {
+      subscribeToServiceRequest(currentRequestId);
+    }
+
+    // Clean up subscription when component unmounts or requestId changes
+    return () => {
+      if (requestSubscriptionRef.current) {
+        supabase.removeChannel(requestSubscriptionRef.current);
+        requestSubscriptionRef.current = null;
+      }
+    };
+  }, [currentRequestId, subscribeToServiceRequest]);
 
   if (!isLoaded) {
     return (
@@ -717,40 +788,96 @@ const handlePlaceSelect = useCallback((
 
               {/* Action Buttons - Modified to fetch providers first */}
               <div className="flex flex-col sm:flex-row gap-4 mt-6">
-             <Button
-  onClick={() =>
-    sendServiceRequest(
-      user?.id || user?.user_metadata.id,
-      service,
-      user?.user_metadata.name || "User"
-    )
-  }
-  disabled={isSending}
-  className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
->
-  {isSending ? (
-    <>
-      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-      Sending Request...
-    </>
-  ) : noProvider ? (
-    <>
-      <XCircle className="h-5 w-5 mr-2 text-red-400" />
-      No Provider Found
-    </>
-  ) : isSent ? (
-    <>
-      <CheckCircle className="h-5 w-5 mr-2 text-green-400" />
-      Sent!
-    </>
-  ) : (
-    <>
-      <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
-      Find Available Providers
-    </>
-  )}
-</Button>
+                <Button
+                  onClick={async () => {
+                    if (!user || !service || (!userLatitude && !address)) {
+                      toast.error("Please complete your service selection and location.");
+                      return;
+                    }
 
+                    // Set status to finding provider to show loading UI
+                    setRequestStatus('finding_provider');
+                    setSearchMessage('Finding nearby providers...');
+
+                    try {
+                      // Get user coordinates if not available
+                      let finalLatitude = userLatitude;
+                      let finalLongitude = userLongitude;
+
+                      if (!finalLatitude || !finalLongitude) {
+                        // Try to geocode the address
+                        const geocoded = await geocodeAddress(address, manualPostalCode);
+                        if (geocoded) {
+                          finalLatitude = geocoded.lat;
+                          finalLongitude = geocoded.lng;
+                        } else {
+                          toast.error("Could not determine location. Please use GPS or enter a valid address.");
+                          setRequestStatus('error');
+                          setSearchMessage('Could not determine location');
+                          return;
+                        }
+                      }
+
+                      // Call the new API endpoint to create service request
+                      const response = await fetch('/api/create-service-request', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userId: user.id,
+                          serviceType: service,
+                          userLat: finalLatitude,
+                          userLng: finalLongitude,
+                          requestDetails: address, // Use the address as request details
+                          radiusKm: 3
+                        })
+                      });
+
+                      // Check if response is ok before parsing JSON
+                      if (!response.ok) {
+                        const errorText = await response.text();
+                        try {
+                          const errorData = JSON.parse(errorText);
+                          throw new Error(errorData.error || 'Failed to create service request');
+                        } catch (e) {
+                          throw new Error('Failed to create service request: ' + errorText);
+                        }
+                      }
+
+                      const data = await response.json();
+
+                      // Update UI with request info
+                      setCurrentRequestId(data.requestId);
+                      setRequestStatus('notified_multiple');
+                      setSearchMessage('Request sent to nearby providers. Waiting for response...');
+
+                      toast.success(`Request sent to ${data.providersNotified} providers!`);
+                    } catch (error: any) {
+                      console.error('Error creating service request:', error);
+                      setRequestStatus('error');
+                      setSearchMessage(error.message || 'Failed to send request');
+                      toast.error(error.message || 'Failed to send request');
+                    }
+                  }}
+                  disabled={requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
+                  className="flex-1 group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
+                >
+                  {(requestStatus === 'finding_provider') ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                      Finding Providers...
+                    </>
+                  ) : (requestStatus === 'notified_multiple') ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-3 animate-spin" />
+                      Waiting for Response...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+                      Find Available Providers
+                    </>
+                  )}
+                </Button>
 
                 <Button
                   onClick={cancelServiceRequest}
@@ -815,34 +942,44 @@ const handlePlaceSelect = useCallback((
 
               {/* Request Status Display (after initial selection and request sent) */}
               {currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'accepted' || requestStatus === 'rejected' || requestStatus === 'cancelled' || requestStatus === 'completed' || requestStatus === 'no_ustaz_found' || requestStatus === 'error' || (requestStatus === 'finding_provider' && searchMessage === t('notifyingSelectedProviders'))) && (
-                <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200 shadow-sm text-center">
-                  <h3 className="text-xl font-bold text-[#db4b0d] mb-3">{t('requestStatus')}</h3>
-                  <p className="text-lg font-semibold text-gray-700 flex items-center justify-center">
-                    {requestStatus === 'finding_provider' && <Loader2 className="h-5 w-5 mr-2 animate-spin text-[#db4b0d]" />}
-                    {requestStatus === 'notified_multiple' && <Clock className="h-5 w-5 mr-2 text-[#db4b0d]" />}
-                    {requestStatus === 'accepted' && <CheckCircle className="h-5 w-5 mr-2 text-green-500" />}
-                    {requestStatus === 'rejected' && <XCircle className="h-5 w-5 mr-2 text-red-500" />}
-                    {requestStatus === 'cancelled' && <XCircle className="h-5 w-5 mr-2 text-red-500" />}
-                    {requestStatus === 'completed' && <CheckCircle className="h-5 w-5 mr-2 text-green-500" />}
-                    {(requestStatus === 'error' || requestStatus === 'no_ustaz_found') && <XCircle className="h-5 w-5 mr-2 text-red-500" />}
-                    {searchMessage || t(requestStatus)}
-                  </p>
-                  {requestStatus === 'accepted' && acceptedProvider && (
-                    <div className="mt-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                      <h4 className="text-xl font-bold text-gray-800 mb-3">{t('providerDetails')}</h4>
-                      <p className="text-lg font-semibold text-gray-700 flex items-center justify-center">
-                        <UserIcon className="w-5 h-5 mr-2 text-[#db4b0d]" />
-                        {acceptedProvider.firstName} {acceptedProvider.lastName}
-                      </p>
-                      <div className="flex justify-center gap-4 mt-4">
-                        <a href={`tel:${acceptedProvider.phoneCountryCode}${acceptedProvider.phoneNumber}`} className="flex items-center text-[#db4b0d] hover:text-[#a93a0b] font-medium">
-                          <Phone className="w-5 h-5 mr-2" /> {t('callProvider')}
-                        </a>
-                        <Button variant="ghost" className="flex items-center text-gray-700 hover:text-[#db4b0d] font-medium">
-                          <MessageSquare className="w-5 h-5 mr-2" /> {t('chatWithProvider')}
-                        </Button>
-                      </div>
-                    </div>
+                <div className="mt-8">
+                  <div className="debug-info hidden"> {/* Hidden debug info for troubleshooting */}
+                    <p>Debug: requestStatus = {requestStatus}</p>
+                    <p>Debug: acceptedProvider exists = {!!acceptedProvider}</p>
+                    <p>Debug: acceptedProvider = {acceptedProvider ? `${acceptedProvider.firstName} ${acceptedProvider.lastName}` : 'null'}</p>
+                    <p>Debug: providerLiveLocation = {providerLiveLocation ? 'exists' : 'null'}</p>
+                  </div>
+                  {acceptedProvider ? (
+                    <ProviderTrackingInfo
+                      userLat={userLatitude}
+                      userLng={userLongitude}
+                      provider={acceptedProvider}
+                      liveLocation={providerLiveLocation}
+                      onRequestChat={handleRequestChat}
+                      onCallProvider={handleCallProvider}
+                    />
+                  ) : (
+                    <UserRequestTracker
+                      userId={user?.id || user?.user_metadata.id}
+                      requestId={currentRequestId}
+                      onProviderAccepted={(providerId) => {
+                        // Removed redundant state mutation - let realtime be the single source of truth
+                        // setRequestStatus('accepted');
+                        // fetchAcceptedProviderDetails(providerId);
+                      }}
+                      onProviderRejected={() => {
+                        setRequestStatus('rejected');
+                        setSearchMessage('Provider rejected the request. Looking for another provider...');
+                      }}
+                      onNoProvidersFound={() => {
+                        setRequestStatus('no_ustaz_found');
+                        setSearchMessage('No providers found in your area. Please try again later.');
+                      }}
+                      onLiveLocationUpdate={(location) => {
+                        // Update the provider live location in the parent component
+                        setProviderLiveLocation(location);
+                      }}
+                    />
                   )}
                 </div>
               )}
@@ -865,13 +1002,33 @@ const handlePlaceSelect = useCallback((
 
   {/* Google Maps Component */}
   <div className="w-full h-[400px] lg:h-[calc(100vh - 150px)] border-gray-900 rounded-xl shadow-xl overflow-hidden">
-    <MapComponent
-      userLat={userLatitude ?? undefined}
-      userLng={userLongitude ?? undefined}
-      providerLat={providerLiveLocation?.latitude ?? undefined}
-      providerLng={providerLiveLocation?.longitude ?? undefined}
-      providerInfo={acceptedProvider}
-    />
+    {requestStatus === 'idle' ? (
+      <EnhancedMapComponent
+        userLat={userLatitude ?? undefined}
+        userLng={userLongitude ?? undefined}
+        providerLat={providerLiveLocation?.latitude ?? undefined}
+        providerLng={providerLiveLocation?.longitude ?? undefined}
+        providerInfo={acceptedProvider}
+        showDraggableUserMarker={true}
+        userAddress={address}
+        onUserLocationChange={(lat, lng, addr) => {
+          setUserLatitude(lat);
+          setUserLongitude(lng);
+          setAddress(addr);
+        }}
+        onAddressChange={(newAddr) => {
+          setAddress(newAddr);
+        }}
+      />
+    ) : (
+      <MapComponent
+        userLat={userLatitude ?? undefined}
+        userLng={userLongitude ?? undefined}
+        providerLat={providerLiveLocation?.latitude ?? undefined}
+        providerLng={providerLiveLocation?.longitude ?? undefined}
+        providerInfo={acceptedProvider}
+      />
+    )}
   </div>
 
   {/* Last updated info */}
@@ -885,6 +1042,17 @@ const handlePlaceSelect = useCallback((
         </div>
       </div>
       <Footer />
+
+      {/* Chat Component - Only renders when showChat is true */}
+      {showChat && user?.id && acceptedProvider?.user_id && (
+        <ChatComponent
+          currentUserId={user.id}
+          otherUserId={acceptedProvider.user_id}
+          currentUserName={user.user_metadata?.name || 'You'}
+          otherUserName={`${acceptedProvider.firstName} ${acceptedProvider.lastName}`}
+          onClose={() => setShowChat(false)}
+        />
+      )}
     </>
   );
 }

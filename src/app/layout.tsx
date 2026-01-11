@@ -2,12 +2,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Gulzar, IBM_Plex_Sans_Arabic, Noto_Kufi_Arabic, Rakkas } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import localFont from 'next/font/local';
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
 import { ServiceProvider } from "./context/ServiceContext";
 import { Toaster } from "@/components/ui/sonner";
+import { ClerkProvider } from "@clerk/nextjs";
 
 
 const urduFont = Gulzar({
@@ -60,35 +60,34 @@ export default async function RootLayout({
     const direction = ['ur', 'ar'].includes(locale) ? 'rtl' : 'ltr';
 
   return (
-    <ClerkProvider>
-      <html
-        lang={locale}
-        dir={direction}
-        // Apply all font variables to the html tag for Tailwind to pick them up
-        className={`${arabicFont.variable} ${urduFont.variable} ${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable}`}
-        // cz-shortcut-listen="true"
-      >
-        <head>
-          <link rel="manifest" href="/manifest.json" />
-          <meta name="theme-color" content="#000000" />
-        </head>
+    <html
+      lang={locale}
+      dir={direction}
+      // Apply all font variables to the html tag for Tailwind to pick them up
+      className={`${arabicFont.variable} ${urduFont.variable} ${anton.variable} ${atkinson.variable} ${geistSans.variable} ${geistMono.variable}`}
+      // cz-shortcut-listen="true"
+    >
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+      </head>
 
-        <body
-          className={
-            `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-atkinson"} antialiased`
-            
-          }
-        > 
-          <NextIntlClientProvider messages={messages}>
-            {/* Header and Footer might need specific font classes if they are in a different language than the main content */}
-            {/* For example, if Header is always LTR with Atkinson font */}
-            <ServiceProvider>
-              {children}
-            </ServiceProvider>
-            <Toaster position="top-center" />
-          </NextIntlClientProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+      <body
+        className={
+          `${locale === "ur" ? "font-urdu" : locale === "ar" ? "font-arabic" : "font-atkinson"} antialiased`
+
+        }
+              suppressHydrationWarning={true}
+        >
+        <NextIntlClientProvider messages={messages}>
+          {/* Header and Footer might need specific font classes if they are in a different language than the main content */}
+          {/* For example, if Header is always LTR with Atkinson font */}
+          <ServiceProvider>
+            {children}
+          </ServiceProvider>
+          <Toaster position="top-center" />
+        </NextIntlClientProvider>
+      </body>
+    </html>
   );
 }

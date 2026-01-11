@@ -1,0 +1,23 @@
+{
+  "name": "Ustaz - Service Marketplace",
+  "short_name": "Ustaz",
+  "description": "Connect with trusted service professionals in your area",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FEF3C7",
+  "theme_color": "#DB4B0D",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon512_rounded.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon512_maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
