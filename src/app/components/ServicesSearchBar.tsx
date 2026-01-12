@@ -188,7 +188,7 @@ const ServiceSearchBar = () => {
 
   return (
   <div className="w-full max-w-sm px-4">
-    <div className="flex flex-col sm:flex-row items-center gap-3 backdrop-blur-2xl p-4 rounded-2xl shadow-md shadow-[#b75024]">
+    <div className="flex flex-col sm:flex-row items-center gap-3 backdrop-blur-2xl p-4 rounded-2xl shadow-lg shadow-orange-200/50 border border-orange-100 bg-white/70">
       
       {/* Location Input (Google Autocomplete)
       <div className="rounded-xl px-3 py-2 w-full sm:flex-1">

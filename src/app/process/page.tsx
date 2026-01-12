@@ -23,6 +23,7 @@ import EnhancedMapComponent from '../components/EnhancedMapComponent';
 import UserRequestTracker from '../components/UserRequestTracker';
 import ProviderTrackingInfo from '../components/ProviderTrackingInfo';
 import ChatComponent from '../components/ChatComponent';
+import LifecycleMapWrapper from '../components/LifecycleMapWrapper';
 // Removed Loader import as Google Maps API is no longer directly integrated here
 
 
@@ -238,18 +239,47 @@ const handlePlaceSelect = useCallback((
     if (navigator.geolocation) {
       setRequestStatus('finding_provider'); // Use a more general status for location finding
       setSearchMessage(t('gettingLocation'));
-      setAddress(''); // Clear address in context
-      setService(''); // Clear service in context
       setManualPostalCode('');
       setUserLatitude(null); // Clear previous GPS coords
       setUserLongitude(null);
       setShowProviderList(false); // Hide provider list when getting new location
 
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLatitude(position.coords.latitude);
-          setUserLongitude(position.coords.longitude);
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          setUserLatitude(lat);
+          setUserLongitude(lng);
           setSearchMessage(t('locationDetected'));
+
+          // Reverse geocode the coordinates to get address
+          try {
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+            if (!apiKey) {
+              console.error('Google Maps API key is not set');
+              setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+              return;
+            }
+
+            const response = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
+            );
+            const data = await response.json();
+
+            if (data.status === 'OK' && data.results[0]) {
+              const formattedAddress = data.results[0].formatted_address;
+              setAddress(formattedAddress); // Update address in context
+            } else {
+              // Fallback to coordinates if reverse geocoding fails
+              setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            }
+          } catch (error) {
+            console.error('Reverse geocoding failed:', error);
+            // Fallback to coordinates if reverse geocoding fails
+            setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+          }
+
           setRequestStatus('idle'); // Back to idle after getting location, ready for search
         },
         (error) => {
@@ -1002,31 +1032,25 @@ const handlePlaceSelect = useCallback((
 
   {/* Google Maps Component */}
   <div className="w-full h-[400px] lg:h-[calc(100vh - 150px)] border-gray-900 rounded-xl shadow-xl overflow-hidden">
-    {requestStatus === 'idle' ? (
-      <EnhancedMapComponent
+    {/* Use LifecycleMapWrapper to handle the different search phases */}
+    {typeof window !== 'undefined' && (
+      <LifecycleMapWrapper
         userLat={userLatitude ?? undefined}
         userLng={userLongitude ?? undefined}
         providerLat={providerLiveLocation?.latitude ?? undefined}
         providerLng={providerLiveLocation?.longitude ?? undefined}
         providerInfo={acceptedProvider}
-        showDraggableUserMarker={true}
         userAddress={address}
-        onUserLocationChange={(lat, lng, addr) => {
-          setUserLatitude(lat);
-          setUserLongitude(lng);
-          setAddress(addr);
+        liveLocations={[]} // Add live location history if available
+        searchPhase={
+          requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? 'finding_providers' :
+          requestStatus === 'accepted' || requestStatus === 'arriving' || requestStatus === 'in_progress' ? 'provider_accepted' :
+          'address_selection'
+        }
+        onRouteCalculated={(route) => {
+          // Handle route calculation if needed
+          console.log('Route calculated:', route);
         }}
-        onAddressChange={(newAddr) => {
-          setAddress(newAddr);
-        }}
-      />
-    ) : (
-      <MapComponent
-        userLat={userLatitude ?? undefined}
-        userLng={userLongitude ?? undefined}
-        providerLat={providerLiveLocation?.latitude ?? undefined}
-        providerLng={providerLiveLocation?.longitude ?? undefined}
-        providerInfo={acceptedProvider}
       />
     )}
   </div>
