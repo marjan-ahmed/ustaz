@@ -143,7 +143,13 @@ const UserRequestTracker = ({
             filter: `request_id=eq.${requestId}`,
           },
           (payload) => {
-            const locationData = payload.new as LiveLocation;
+            const rawLocationData = payload.new as { latitude: number; longitude: number; updated_at: string };
+            const locationData: LiveLocation = {
+              latitude: rawLocationData.latitude,
+              longitude: rawLocationData.longitude,
+              updated_at: rawLocationData.updated_at
+            };
+
             setLiveLocation(locationData);
 
             // Call parent callback to update live location if it exists

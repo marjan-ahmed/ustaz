@@ -15,7 +15,8 @@ type ProviderInfo = {
 interface LiveLocation {
   latitude: number;
   longitude: number;
-  timestamp: string;
+  timestamp?: string;
+  updated_at?: string;
 }
 
 interface ServiceMapComponentProps {

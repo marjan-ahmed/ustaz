@@ -29,7 +29,7 @@ import LifecycleMapWrapper from '../components/LifecycleMapWrapper';
 
 // Define types for service request status and provider info
 // Updated RequestStatus to include 'notified_multiple' from backend
-type RequestStatus = 'idle' | 'finding_provider' | 'notified' | 'notified_multiple' | 'no_ustaz_found' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'pending_notification';
+type RequestStatus = 'idle' | 'finding_provider' | 'notified' | 'notified_multiple' | 'no_ustaz_found' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'pending_notification' | 'arriving' | 'in_progress';
 
 
 interface ProviderInfo {
@@ -1041,7 +1041,7 @@ const handlePlaceSelect = useCallback((
         providerLng={providerLiveLocation?.longitude ?? undefined}
         providerInfo={acceptedProvider}
         userAddress={address}
-        liveLocations={[]} // Add live location history if available
+        liveLocations={providerLiveLocation ? [providerLiveLocation] : []} // Pass as is
         searchPhase={
           requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? 'finding_providers' :
           requestStatus === 'accepted' || requestStatus === 'arriving' || requestStatus === 'in_progress' ? 'provider_accepted' :

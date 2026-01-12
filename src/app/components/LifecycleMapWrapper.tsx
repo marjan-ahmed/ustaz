@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ServiceMapComponent from './ServiceMapComponent';
 
-interface LiveLocation {
+interface LiveLocationFromParent {
   latitude: number;
   longitude: number;
   updated_at: string;
@@ -18,7 +18,7 @@ interface LifecycleMapWrapperProps {
   providerLat?: number | null;
   providerLng?: number | null;
   providerInfo?: ProviderInfo | null;
-  liveLocations?: LiveLocation[];
+  liveLocations?: LiveLocationFromParent[];
   userAddress?: string;
   searchPhase: 'address_selection' | 'finding_providers' | 'provider_accepted';
   onMapLoad?: (map: google.maps.Map) => void;
@@ -51,6 +51,15 @@ const LifecycleMapWrapper: React.FC<LifecycleMapWrapperProps> = React.memo(({
   // Determine if we should show draggable user marker based on search phase
   const showDraggableUserMarker = searchPhase === 'address_selection';
 
+  // Convert liveLocations to the format expected by ServiceMapComponent
+  const convertedLiveLocations = useMemo(() => {
+    return liveLocations?.map(loc => ({
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      timestamp: loc.updated_at, // Map updated_at to timestamp
+    })) || [];
+  }, [liveLocations]);
+
   // Memoize the ServiceMapComponent props to prevent unnecessary re-renders
   const serviceMapProps = useMemo(() => ({
     userLat,
@@ -58,7 +67,7 @@ const LifecycleMapWrapper: React.FC<LifecycleMapWrapperProps> = React.memo(({
     providerLat,
     providerLng,
     providerInfo,
-    liveLocations,
+    liveLocations: convertedLiveLocations,
     userAddress,
     searchPhase,
     showDraggableUserMarker,
@@ -71,7 +80,7 @@ const LifecycleMapWrapper: React.FC<LifecycleMapWrapperProps> = React.memo(({
     providerLat,
     providerLng,
     providerInfo,
-    liveLocations,
+    convertedLiveLocations,
     userAddress,
     searchPhase,
     showDraggableUserMarker,
