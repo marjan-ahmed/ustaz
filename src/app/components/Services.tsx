@@ -63,7 +63,7 @@ function Services() {
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-3" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
             {t('ourservices')}
           </h2>
           <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
@@ -112,7 +112,7 @@ function Services() {
               />
 
               {/* Subtle Blur Background for Text */}
-              <div className="absolute bottom-0 left-0 right-0 h-32 sm:h-40 md:h-48 bg-gradient-to-t from-black/40 via-black/10 to-transparent backdrop-blur-lg" 
+              <div className="absolute bottom-0 left-0 right-0 h-40 sm:h-48 md:h-56 bg-gradient-to-t from-black/40 via-black/10 to-transparent backdrop-blur-lg" 
                    style={{ 
                      maskImage: 'linear-gradient(to top, black 30%, transparent 100%)',
                      WebkitMaskImage: 'linear-gradient(to top, black 30%, transparent 100%)'
@@ -120,7 +120,7 @@ function Services() {
               />
 
               {/* Content Overlay at Bottom */}
-              <div className="absolute bottom-2 sm:bottom-3 md:bottom-4 left-0 right-0 px-4 sm:px-5 md:px-6 pb-1 sm:pb-2 transition-all duration-500 ease-out"
+              <div className="absolute bottom-[-30px] sm:bottom-[-20px] md:bottom-[-10px] left-0 right-0 px-4 sm:px-5 md:px-6 pb-2 sm:pb-3 transition-all duration-500 ease-out"
                    style={{
                      transform: hoveredCard === index ? 'translateY(-30px)' : 'translateY(0)'
                    }}>

@@ -87,7 +87,7 @@ export default function Header() {
   return (
     // <header className="w-full bg-white shadow">
     //   <nav className="max-w-7xl mx-auto flex items-center justify-between px-6">
-    <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 h-[50px] flex items-center">
+    <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 h-[53px] flex items-center">
       <nav className="max-w-7xl mx-auto w-full flex items-center justify-between px-6">
         <div className="flex items-center h-20">
           <Link href="/">
