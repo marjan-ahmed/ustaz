@@ -3,6 +3,7 @@
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSupabaseUser } from "../hooks/useSupabaseUser";
 import Services from "./components/Services";
@@ -91,12 +92,14 @@ export default function Home() {
       Connect with verified service providers for all your needs. From repairs to installations, getinstant quotes and book appointments.
     </p>
 
-    <button className="bg-gray-900 text-white px-5 py-2 rounded-full font-semibold hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-100 w-fit group z-10">
-      Get started
-      <svg className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-      </svg>
-    </button>
+    <Link href="/process">
+      <button className="bg-gray-900 text-white px-5 py-2 rounded-full font-semibold hover:bg-gray-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-100 w-fit group z-10">
+        Get started
+        <svg className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+        </svg>
+      </button>
+    </Link>
   </div>
 
   {/* Illustration */}
@@ -115,22 +118,23 @@ export default function Home() {
         <div className="md:col-span-1 grid grid-cols-1 gap-2 md:gap-4">
           
           {/* Top Right Card - Book Services */}
-          <div className="bg-gradient-to-br from-[#FF6B4A] to-[#FF4521] rounded-3xl p-6 md:p-8 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden min-h-[220px] md:min-h-[320px] flex flex-col justify-between">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-5 right-5 w-24 h-24 border-2 border-white rounded-full"></div>
-              <div className="absolute bottom-5 left-5 w-16 h-16 border-2 border-white rounded-full"></div>
-            </div>
+          <Link href="/process">
+            <div className="bg-gradient-to-br from-[#FF6B4A] to-[#FF4521] rounded-3xl p-6 md:p-8 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden min-h-[220px] md:min-h-[320px] flex flex-col justify-between">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-5 right-5 w-24 h-24 border-2 border-white rounded-full"></div>
+                <div className="absolute bottom-5 left-5 w-16 h-16 border-2 border-white rounded-full"></div>
+              </div>
 
-            <div className="relative z-10">
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-2" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
-                Book your<br /><span className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg">service</span> slot
-              </h3>
-              
-              <p className="text-white/80 text-sm mb-4">
-                Schedule instantly
-              </p>
-            </div>
+              <div className="relative z-10">
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-2" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
+                  Book your<br /><span className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg">service</span> slot
+                </h3>
+                
+                <p className="text-white/80 text-sm mb-4">
+                  Schedule instantly
+                </p>
+              </div>
 
             {/* Chart/Graph visual */}
             <div className="relative z-10 bg-white/20 backdrop-blur-sm rounded-2xl p-4 mt-4">
@@ -155,41 +159,44 @@ export default function Home() {
               </svg>
             </div>
           </div>
+          </Link>
 
           {/* Bottom Right Card - Join Platform */}
-          <div className="bg-gray-900 rounded-3xl p-6 md:p-8 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden min-h-[180px] md:min-h-[240px] flex flex-col justify-between">
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-32 h-22 bg-[#db4b0d] rounded-full blur-3xl opacity-20"></div>
-            
-            <div className="relative z-10">
-              <h3 className="text-2xl md:text-3xl font-bold text-white mb-3" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
-                Become a service provider
-              </h3>
+          <Link href="/become-ustaz">
+            <div className="bg-gray-900 rounded-3xl p-6 md:p-8 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden min-h-[200px] md:min-h-[240px] flex flex-col justify-between">
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-22 bg-[#db4b0d] rounded-full blur-3xl opacity-20"></div>
               
-              <p className="text-white/70 text-sm mb-4">
-                Join our <span className="bg-white/20 px-2 py-0.5 rounded">network</span>
-              </p>
-            </div>
-
-            {/* Avatar group and mentors */}
-            <div className="relative z-10 flex items-center gap-3">
-              <div className="flex -space-x-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-gray-900"></div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-gray-900"></div>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-gray-900"></div>
+              <div className="relative z-10">
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-3" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
+                  Become a service provider
+                </h3>
+                
+                <p className="text-white/70 text-sm mb-2">
+                  Join our <span className="bg-white/20 px-2 py-0.5 rounded">network</span>
+                </p>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
-                <span className="text-white text-sm font-medium">+500 professionals</span>
+
+              {/* Avatar group and mentors */}
+              <div className="relative z-10 flex items-center gap-2 flex-wrap">
+                <div className="flex -space-x-3">
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-gray-900"></div>
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-gray-900"></div>
+                  <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-gray-900"></div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                  <span className="text-white text-xs md:text-sm font-medium">+500 professionals</span>
+                </div>
+              </div>
+
+              {/* Arrow icon */}
+              <div className="absolute bottom-4 right-4 md:bottom-6 md:right-6 w-9 h-9 md:w-10 md:h-10 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-white/20 transition-all">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </div>
             </div>
-
-            {/* Arrow icon */}
-            <div className="absolute bottom-6 right-6 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center group-hover:bg-white/20 transition-all">
-              <svg className="w-5 h-5 text-white transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </div>
-          </div>
+          </Link>
         </div>
 
       </div>

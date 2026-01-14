@@ -3,6 +3,7 @@
 import React from "react";
 import { ClipboardList, PhoneCall, Wrench, CheckCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link" 
 
 function HowItWorks() {
   const t = useTranslations("howItWorks");
@@ -110,12 +111,14 @@ function HowItWorks() {
 
         {/* CTA Section */}
         <div className="text-center mt-16">
-          <button className="bg-[#db4b0d] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
-            Get Started Now
-            <svg className="inline-block ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </button>
+          <Link href={'/process'}>
+            <button className="bg-[#db4b0d] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
+              Get Started Now
+              <svg className="inline-block ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </button>
+          </Link>
         </div>
       </div>
     </section>
