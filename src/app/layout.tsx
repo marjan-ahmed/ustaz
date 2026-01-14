@@ -69,6 +69,7 @@ export default async function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
+        <link href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,700,400,600,300,1,500&display=swap" rel="stylesheet" />
       </head>
 
       <body

@@ -292,6 +292,7 @@ const ServiceMapComponent: React.FC<ServiceMapComponentProps> = React.memo(({
 
   // Auto-fit map to show both user and provider when both are available
   useEffect(() => {
+    console.log('ServiceMapComponent - liveLocations:', liveLocations, 'providerLat:', providerLat, 'providerLng:', providerLng);
     if (mapRef && userLat != null && userLng != null) {
       const bounds = new window.google.maps.LatLngBounds();
 
@@ -306,6 +307,7 @@ const ServiceMapComponent: React.FC<ServiceMapComponentProps> = React.memo(({
       // Add live locations to bounds if available
       if (liveLocations && liveLocations.length > 0) {
         liveLocations.forEach(loc => {
+          console.log('Extending bounds with live location:', loc);
           bounds.extend(new window.google.maps.LatLng(loc.latitude, loc.longitude));
         });
       }

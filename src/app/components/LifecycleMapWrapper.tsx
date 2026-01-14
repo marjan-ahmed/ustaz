@@ -53,6 +53,7 @@ const LifecycleMapWrapper: React.FC<LifecycleMapWrapperProps> = React.memo(({
 
   // Convert liveLocations to the format expected by ServiceMapComponent
   const convertedLiveLocations = useMemo(() => {
+    console.log('LifecycleMapWrapper received live locations:', liveLocations);
     return liveLocations?.map(loc => ({
       latitude: loc.latitude,
       longitude: loc.longitude,

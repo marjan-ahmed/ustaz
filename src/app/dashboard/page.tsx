@@ -80,6 +80,7 @@ import {
 } from "@/components/ui/dialog";
 import LocationTracker from "../components/LocationTracker";
 import ProviderRequestNotification from "../components/ProviderRequestNotification";
+import ProviderLocationTracker from "../components/ProviderLocationTracker";
 import { toast } from "sonner";
 
 // Define TypeScript Interfaces
@@ -2167,7 +2168,25 @@ function ProviderDashboardInner() {
                             </div>
                           </div>
                         </div>
-                        <LocationTracker userId={providerData.userId} />
+                        {/* Location Tracking */}
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <MapPin className="mr-2 h-5 w-5 text-[#db4b0d]" />
+                            Location Tracking
+                          </h3>
+                          <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-1">
+                              <ProviderLocationTracker
+                                providerId={providerData.userId}
+                                requestId={serviceRequests.find(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)?.id || null}
+                                isActive={serviceRequests.some(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)}
+                                onLocationUpdate={(location) => {
+                                  console.log('Provider location received in dashboard:', location);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
 
                         {/* Service Information */}
                         <div>

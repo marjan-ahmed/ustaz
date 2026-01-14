@@ -3,71 +3,81 @@
 import React from "react";
 import { Bolt, Wrench, ThumbsUp, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { StickyScroll } from "@/components/ui/sticky-scroll-reveal";
+import Image from "next/image";
 
 function WhyChooseUs() {
   const t = useTranslations("WhyChooseUs");
 
-  const features = [
+  const content = [
     {
-      icon: <Bolt className="h-8 w-8 text-orange-600" />,
       title: t("instantAccessTitle"),
       description: t("instantAccessDesc"),
+      content: (
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-500 to-red-600 text-white rounded-lg p-8">
+          <div className="text-center">
+            <Bolt className="h-16 w-16 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold">Instant Access</h3>
+          </div>
+        </div>
+      ),
     },
     {
-      icon: <Wrench className="h-8 w-8 text-orange-600" />,
       title: t("verifiedProfessionalsTitle"),
       description: t("verifiedProfessionalsDesc"),
+      content: (
+        <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-lg">
+          <div className="relative h-full w-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+            <Wrench className="h-32 w-32 text-white/20 absolute" />
+            <div className="text-center text-white z-10">
+              <ThumbsUp className="h-16 w-16 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold">Verified Experts</h3>
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      icon: <ThumbsUp className="h-8 w-8 text-orange-600" />,
       title: t("easyBookingTitle"),
       description: t("easyBookingDesc"),
+      content: (
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-lg p-8">
+          <div className="text-center">
+            <ThumbsUp className="h-16 w-16 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold">Easy Booking</h3>
+          </div>
+        </div>
+      ),
     },
     {
-      icon: <Clock className="h-8 w-8 text-orange-600" />,
       title: t("timeSavingTitle"),
       description: t("timeSavingDesc"),
+      content: (
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-lg p-8">
+          <div className="text-center">
+            <Clock className="h-16 w-16 mx-auto mb-4" />
+            <h3 className="text-2xl font-bold">Time Saving</h3>
+          </div>
+        </div>
+      ),
     },
   ];
 
   return (
-    <section className="py-16 bg-gradient-to-b from-white to-amber-50/20">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-3 mb-6 px-6 py-3 rounded-full bg-white/80 backdrop-blur-sm border border-orange-200 shadow-lg">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-            <span className="text-sm font-medium text-orange-800 uppercase tracking-wider">
-              Why Choose Us
-            </span>
-          </div>
-          <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-orange-900 via-amber-800 to-yellow-700 bg-clip-text text-transparent mb-6">
+    <section className="py-16 md:py-24 bg-white">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center mb-8 md:mb-1">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
             {t("heading")}
           </h2>
 
-          <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-12">
+          <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto mb-12">
             {t("intro")}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="group flex items-start space-x-4 p-6 rounded-2xl bg-white/70 backdrop-blur-sm border border-orange-100 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
-            >
-              <div className="bg-gradient-to-br from-orange-100 to-amber-100 p-3 rounded-full group-hover:from-orange-200 group-hover:to-amber-200 transition-colors">
-                {feature.icon}
-              </div>
-              <div>
-                <h3 className="font-bold text-xl text-orange-800 mb-2 group-hover:text-orange-600 transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
-              </div>
-            </div>
-          ))}
+        <div className="w-full">
+          <StickyScroll content={content} />
         </div>
       </div>
     </section>

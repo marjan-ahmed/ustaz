@@ -380,7 +380,7 @@ const handlePlaceSelect = useCallback((
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: 'INSERT', // Listen for INSERT events (new location records)
           schema: 'public',
           table: 'live_locations',
           filter: `request_id=eq.${requestId}`,
@@ -388,6 +388,22 @@ const handlePlaceSelect = useCallback((
         (payload) => {
           const newLocation = payload.new as LiveLocation;
           console.log('Live Location Update received:', newLocation);
+          console.log('Provider location updated - Lat:', newLocation.latitude, 'Lng:', newLocation.longitude, 'Time:', newLocation.updated_at);
+          setProviderLiveLocation(newLocation);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE', // Also listen for UPDATE events (existing location records)
+          schema: 'public',
+          table: 'live_locations',
+          filter: `request_id=eq.${requestId}`,
+        },
+        (payload) => {
+          const newLocation = payload.new as LiveLocation;
+          console.log('Live Location Update received:', newLocation);
+          console.log('Provider location updated - Lat:', newLocation.latitude, 'Lng:', newLocation.longitude, 'Time:', newLocation.updated_at);
           setProviderLiveLocation(newLocation);
         }
       )
@@ -512,6 +528,7 @@ const handlePlaceSelect = useCallback((
           setRequestStatus(prevStatus => {
             if (prevStatus !== newStatus) {
               console.log('Status changed from', prevStatus, 'to', newStatus);
+              console.log('Provider accepted by ID:', acceptedByProviderId);
               return newStatus;
             }
             return prevStatus;
@@ -519,6 +536,7 @@ const handlePlaceSelect = useCallback((
 
           if (newStatus === 'accepted' && acceptedByProviderId) {
             // Fetch provider details and start live location tracking
+            console.log('Provider accepted request, starting live location tracking for request:', requestId);
             fetchAcceptedProviderDetails(acceptedByProviderId);
             subscribeToProviderLiveLocation(requestId);
           } else if (newStatus === 'rejected') {
@@ -1041,7 +1059,10 @@ const handlePlaceSelect = useCallback((
         providerLng={providerLiveLocation?.longitude ?? undefined}
         providerInfo={acceptedProvider}
         userAddress={address}
-        liveLocations={providerLiveLocation ? [providerLiveLocation] : []} // Pass as is
+        liveLocations={providerLiveLocation ? (() => {
+          console.log('Passing live location to map:', providerLiveLocation);
+          return [providerLiveLocation];
+        })() : []} // Pass as is with logging
         searchPhase={
           requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? 'finding_providers' :
           requestStatus === 'accepted' || requestStatus === 'arriving' || requestStatus === 'in_progress' ? 'provider_accepted' :

@@ -41,18 +41,43 @@ export default function LocationTracker({ userId }: Props) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           intervalRef.current = setInterval(() => {
             updateLocation(latitude, longitude);
-          }, 3000); // every 3 seconds
+          }, 5000); // every 5 seconds to be less frequent
         },
         (err) => {
           console.error('❌ Geolocation error:', err);
+          console.log('⚠️ Attempting to request geolocation permissions again...');
+
+          // Try to get position once more with a prompt for permissions
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const { latitude, longitude } = pos.coords;
+              console.log('📍 Got location after error:', latitude, longitude);
+
+              if (intervalRef.current) clearInterval(intervalRef.current);
+              intervalRef.current = setInterval(() => {
+                updateLocation(latitude, longitude);
+              }, 5000); // every 5 seconds
+            },
+            (getError) => {
+              console.error('❌ Unable to get location after retry:', getError);
+              // Still try to update with last known coordinates if available elsewhere
+            },
+            {
+              enableHighAccuracy: true,
+              maximumAge: 30000, // Use cached position up to 30 seconds old
+              timeout: 10000,    // Wait up to 10 seconds for a response
+            }
+          );
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 5000,
+          maximumAge: 10000,  // Accept cached position up to 10 seconds old
+          timeout: 10000,     // Wait up to 10 seconds for a response
         }
       );
       watchIdRef.current = watchId;
+    } else {
+      console.error('❌ Geolocation is not supported by this browser');
     }
 
     return () => {

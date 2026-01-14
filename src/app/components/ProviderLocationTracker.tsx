@@ -60,6 +60,9 @@ const ProviderLocationTracker = ({
       setCurrentLocation({ latitude: lat, longitude: lng });
       setLastUpdateTime(new Date().toLocaleTimeString());
 
+      // Log the provider location for debugging
+      console.log('Provider location updated:', { latitude: lat, longitude: lng, timestamp: new Date().toISOString() });
+
       // Call parent callback if provided
       if (onLocationUpdate) {
         onLocationUpdate({ latitude: lat, longitude: lng });

@@ -50,16 +50,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create or update the live location record
-    // We'll use upsert to update if exists, insert if not
-    const point = `POINT(${longitude} ${latitude})`;
-
+    // Create or update the live location record using upsert
+    // Now that we have a unique constraint on request_id, this will work properly
     const { data: liveLocation, error: locationError } = await supabase
       .from('live_locations')
       .upsert({
         provider_id: providerId,
         request_id: requestId,
-        location: point,
         latitude: latitude,
         longitude: longitude,
         updated_at: new Date().toISOString()
@@ -76,6 +73,15 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Log the provider location for debugging
+    console.log('Provider location updated:', {
+      providerId: liveLocation.provider_id,
+      requestId: liveLocation.request_id,
+      latitude: liveLocation.latitude,
+      longitude: liveLocation.longitude,
+      updatedAt: liveLocation.updated_at
+    });
 
     return NextResponse.json({
       message: 'Live location updated successfully',
@@ -144,6 +150,7 @@ export async function GET(req: NextRequest) {
     if (locationError) {
       // If no live location exists yet, return a specific response
       if (locationError.code === 'PGRST116') { // No rows returned
+        console.log('No live location available yet for request:', requestId);
         return NextResponse.json({
           message: 'No live location available yet',
           location: null
@@ -156,6 +163,15 @@ export async function GET(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Log the provider location for debugging
+    console.log('Live location fetched for request:', {
+      requestId: liveLocation.request_id,
+      providerId: liveLocation.provider_id,
+      latitude: liveLocation.latitude,
+      longitude: liveLocation.longitude,
+      updatedAt: liveLocation.updated_at
+    });
 
     return NextResponse.json({
       location: {
@@ -224,6 +240,8 @@ export async function DELETE(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    console.log('Live location tracking stopped for request:', requestId);
 
     return NextResponse.json({
       message: 'Live location tracking stopped successfully'
