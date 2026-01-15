@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { RxHamburgerMenu } from "react-icons/rx";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { useEffect, useState } from "react";
 import LanguageSwitcher from "./LanguageSwitcher";
@@ -247,7 +246,7 @@ export default function Header() {
         <div className="md:hidden flex items-center">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <button className="relative w-6 h-6 text-gray-700 focus:outline-none flex items-center justify-center" aria-label="Open menu">
+              <button className="relative w-6 h-6 text-black focus:outline-none flex items-center justify-center" aria-label="Open menu">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6"> 
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5" className="transition-all duration-300 origin-center" style={{ transform: open ? 'rotate(45deg) translateY(7px) translateX(0px)' : 'rotate(0deg) translateY(0px)', }} /> 
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 15.75h16.5" className="transition-all duration-300 origin-center" style={{ transform: open ? 'rotate(-45deg) translateY(-7px) translateX(0px)' : 'rotate(0deg) translateY(0px)', }} /> 
