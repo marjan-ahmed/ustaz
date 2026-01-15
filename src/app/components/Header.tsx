@@ -33,6 +33,8 @@ export default function Header() {
   const [authReady, setAuthReady] = useState(false);
   const [language, setLanguage] = useState("en");
   const pathname = usePathname();
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     const savedLang = localStorage.getItem("language");
@@ -64,6 +66,29 @@ export default function Header() {
     return () => subscription.unsubscribe();
   }, [authReady]);
 
+  // Hide/Reveal on Scroll Effect
+  useEffect(() => {
+    const controlNavbar = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 10) {
+        // Always show when at top
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down & past threshold - hide
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', controlNavbar);
+    return () => window.removeEventListener('scroll', controlNavbar);
+  }, [lastScrollY]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
@@ -87,35 +112,44 @@ export default function Header() {
   return (
     // <header className="w-full bg-white shadow">
     //   <nav className="max-w-7xl mx-auto flex items-center justify-between px-6">
-    <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 h-[53px] flex items-center">
+    <header 
+      className={`sticky top-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 h-[53px] flex items-center transition-transform duration-300 ease-in-out ${
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       <nav className="max-w-7xl mx-auto w-full flex items-center justify-between px-6">
-        <div className="flex items-center h-20">
+        {/* Logo - Left */}
+        <div className="flex items-center h-20 flex-shrink-0">
           <Link href="/">
            <Image
               src="/ustaz_logo.png"
-              width={100} // Reduced from 118
-              height={90}  // Fixed height to force navbar slimness
+              width={100}
+              height={90}
               alt="Ustaz Logo"
               className="w-auto h-20 object-contain" 
             />
           </Link>
         </div>
 
-        <div className="hidden md:flex items-center gap-5">
+        {/* Nav Items - Center */}
+        <div className="hidden md:flex items-center gap-6 absolute left-1/2 transform -translate-x-1/2">
          {navItems.map((item) => (
   <Link
     key={item.href}
     href={item.href}
-    className={`text-[18px] tracking-tight sm:tracking-wide sm:text-[16px] lg:text-[14px] transition-colors ${
+    className={`nav-wave-link text-[18px] tracking-tight sm:tracking-wide sm:text-[16px] lg:text-[14px] transition-colors whitespace-nowrap ${
       pathname === item.href
-        ? "text-[#db4b0d]"
+        ? "text-[#db4b0d] active"
         : "text-gray-700 hover:text-[#db4b0d]"
     }`}
   >
     {item.label}
             </Link>
           ))}
+        </div>
 
+        {/* Auth & Language - Right */}
+        <div className="hidden md:flex items-center gap-5">
           {/* Auth Profile with jugaar - skeleton loader prevents layout shift */}
           {!authReady || isLoading ? (
             <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse flex-shrink-0" />

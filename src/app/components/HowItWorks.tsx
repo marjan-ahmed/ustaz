@@ -1,12 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { ClipboardList, PhoneCall, Wrench, CheckCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
-import Link from "next/link" 
+import Link from "next/link";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 function HowItWorks() {
   const t = useTranslations("howItWorks");
+  const sectionRef = useRef<HTMLDivElement>(null);
+  
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start 0.5", "end 0.8"]
+  });
+
+  const pathLength = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   const steps = [
     {
@@ -36,7 +45,7 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <section ref={sectionRef} className="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
         {/* Section Header */}
         <div className="text-center mb-16 md:mb-20">
@@ -50,16 +59,73 @@ function HowItWorks() {
 
         {/* Steps Container */}
         <div className="relative">
-          {/* Dotted Connection Line - Desktop */}
-          <div className="hidden lg:block absolute top-24 left-0 right-0 h-0.5">
-            <svg className="w-full h-8" viewBox="0 0 1200 40" preserveAspectRatio="none">
+          {/* Animated Ribbon Path - Desktop */}
+          <div className="hidden lg:block absolute top-24 left-0 right-0 h-full pointer-events-none">
+            <svg className="w-full h-full" viewBox="0 0 1200 300" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="ribbonGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#db4b0d" stopOpacity="0.6" />
+                  <stop offset="25%" stopColor="#ff6b4a" stopOpacity="0.8" />
+                  <stop offset="50%" stopColor="#ff8c6a" stopOpacity="0.9" />
+                  <stop offset="75%" stopColor="#ff6b4a" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="#db4b0d" stopOpacity="0.6" />
+                </linearGradient>
+                
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                  <feMerge>
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+              </defs>
+              
+              {/* Background shadow path */}
               <path
-                d="M 50 20 Q 300 10, 400 20 T 800 20 T 1150 20"
+                d="M 100 20 Q 300 -20, 400 20 T 700 20 T 1000 20 L 1100 20"
                 fill="none"
-                stroke="#cbd5e1"
-                strokeWidth="2"
-                strokeDasharray="8,8"
+                stroke="#e5e7eb"
+                strokeWidth="8"
                 strokeLinecap="round"
+              />
+              
+              {/* Animated ribbon path */}
+              <motion.path
+                d="M 100 20 Q 300 -20, 400 20 T 700 20 T 1000 20 L 1100 20"
+                fill="none"
+                stroke="url(#ribbonGradient)"
+                strokeWidth="12"
+                strokeLinecap="round"
+                filter="url(#glow)"
+                style={{
+                  pathLength,
+                }}
+                initial={{ pathLength: 0 }}
+              />
+              
+              {/* Shimmer overlay */}
+              <motion.path
+                d="M 100 20 Q 300 -20, 400 20 T 700 20 T 1000 20 L 1100 20"
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth="4"
+                opacity="0.5"
+                strokeLinecap="round"
+                style={{
+                  pathLength,
+                }}
+                initial={{ pathLength: 0 }}
+              />
+              
+              {/* Moving dot */}
+              <motion.circle
+                cx={useTransform(scrollYProgress, [0, 1], [100, 1100])}
+                cy={20}
+                r="12"
+                fill="#fff"
+                stroke="#db4b0d"
+                strokeWidth="3"
+                filter="url(#glow)"
               />
             </svg>
           </div>

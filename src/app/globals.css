@@ -31,7 +31,48 @@
   color: black;
 }
 
+/* Wave Underline Effect for Nav Items */
+.nav-wave-link {
+  position: relative;
+  display: inline-block;
+}
 
+.nav-wave-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #db4b0d, transparent);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-wave-link:hover::after {
+  width: 100%;
+  animation: waveFlow 0.6s ease-in-out;
+}
+
+@keyframes waveFlow {
+  0% {
+    transform: translateX(-100%) scaleX(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(0%) scaleX(1) translateY(-2px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0%) scaleX(1) translateY(0px);
+    opacity: 1;
+  }
+}
+
+.nav-wave-link.active::after {
+  width: 100%;
+  background: #db4b0d;
+  animation: none;
+}
 
 @theme inline {
   --color-background: var(--background);

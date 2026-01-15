@@ -17,6 +17,7 @@ import { supabase } from "../../client/supabaseClient";
 import ServiceSearchBar from "./components/ServicesSearchBar";
 import FindServiceBtn from "./components/FindServiceBtn";
 import InstallPWAPopup from "./components/InstallPWAPopup";
+import { BsLightningChargeFill } from "react-icons/bs";
 
 export default function Home() {
   const t = useTranslations('hero')
@@ -77,7 +78,7 @@ export default function Home() {
   {/* Badge */}
   <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-red-600 font-medium w-fit mb-6">
     <span className="w-1 h-1 sm:w-2 sm:h-2 bg-red-500 rounded-full animate-pulse"></span>
-    Need a quick service? 24/7
+    <div className="flex items-center gap-1">Need an instant service <BsLightningChargeFill /></div>
   </div>
 
   {/* Main Content */}
