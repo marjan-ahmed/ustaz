@@ -16,6 +16,10 @@
   font-family: var(--font-atkinson, sans-serif);
 }
 
+::selection {
+  background-color: #e3a47e;
+}
+
 [dir="rtl"] {
   direction: rtl;
 }

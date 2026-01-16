@@ -72,14 +72,14 @@ function Services() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4
                         [&>*:nth-child(4)]:lg:col-start-1 [&>*:nth-child(4)]:lg:col-end-2
                         [&>*:nth-child(5)]:lg:col-start-2 [&>*:nth-child(5)]:lg:col-end-3
                         justify-items-center">
           {services.map((service, index) => (
             <div
               key={index}
-              className="group relative bg-white overflow-hidden transition-all duration-300 w-full h-[320px] sm:h-[380px] md:h-[420px] max-w-full sm:max-w-sm"
+              className="group relative rounded-xl bg-white overflow-hidden transition-all duration-300 w-full h-[320px] sm:h-[380px] md:h-[420px] max-w-full sm:max-w-sm"
               onMouseEnter={() => setHoveredCard(index)}
               onMouseLeave={() => setHoveredCard(null)}
               style={{

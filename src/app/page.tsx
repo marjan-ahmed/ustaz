@@ -69,11 +69,11 @@ export default function Home() {
     
     {/* Bento Hero Section */}
     <section className="relative w-full min-h-screen flex items-center justify-center pb-4 px-4 md:pb-8 md:px-8 bg-gray-50">
-      <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+      <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-3 gap-3">
         
         {/* Main Left Card - Find Ustaz */}
         <div 
-  className="md:col-span-2 bg-[#FFF7ED] rounded-3xl p-8 md:p-12 hover:shadow-sm transition-all duration-300 group cursor-pointer relative overflow-hidden min-h-[450px] md:min-h-[600px] flex flex-col justify-between"
+  className="md:col-span-2 bg-[#FFF7ED] rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-12 hover:shadow-sm transition-all duration-300 group cursor-pointer relative overflow-hidden min-h-[500px] md:min-h-[600px] flex flex-col justify-between"
 >
   {/* Badge */}
   <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-red-600 font-medium w-fit mb-6">
@@ -89,7 +89,7 @@ export default function Home() {
       <span className="text-[#db4b0d]">near you</span>
     </h1>
 
-    <p className="text-sm sm:text-md md:text-lg leading-relaxed text-gray-600 mb-8 max-w-xl">
+    <p className="text-sm sm:text-md md:text-lg leading-relaxed text-gray-700 mb-8 max-w-xl">
       Connect with verified service providers for all your needs. From repairs to installations, getinstant quotes and book appointments.
     </p>
 
@@ -104,23 +104,26 @@ export default function Home() {
   </div>
 
   {/* Illustration */}
-          <div className="absolute bottom-[-50px] right-0 w-[280px] h-[280px] md:w-[350px] md:h-[350px] lg:w-[420px] lg:h-[420px] opacity-20 sm:opacity-100 transition-all duration-300 pointer-events-none">
+          <div className="absolute bottom-[-50px] right-0 w-[280px] h-[280px] md:w-[350px] md:h-[350px] lg:w-[420px] lg:h-[420px] opacity-100 sm:opacity-100 transition-all duration-300 pointer-events-none">
             <Image 
-              src="/images/hero-illustration.png" 
+              // src="/images/service-confirmed.png"
+              src="/images/image-final-illustration.png"
+              // src="/images/image.png"
+              // src={'/images/pngtrans.png'}
               alt="Service marketplace illustration" 
               width={420} 
               height={420} 
-              className="w-full h-full object-cover object-bottom"
+              className="w-full h-full object-contain object-bottom"
             />
           </div>
         </div>
 
         {/* Right Column - Two Stacked Cards */}
-        <div className="md:col-span-1 grid grid-cols-1 gap-2 md:gap-4">
+        <div className="md:col-span-1 grid grid-cols-1 gap-3">
           
           {/* Top Right Card - Book Services */}
           <Link href="/process">
-            <div className="bg-gradient-to-br from-[#FF6B4A] to-[#FF4521] rounded-3xl p-6 md:p-8 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden min-h-[220px] md:min-h-[320px] flex flex-col justify-between">
+            <div className="bg-gradient-to-br from-[#FF6B4A] to-[#FF4521] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-7 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden h-[280px] sm:h-[320px] md:h-[360px] flex flex-col justify-between">
               {/* Background Pattern */}
               <div className="absolute inset-0 opacity-10">
                 <div className="absolute top-5 right-5 w-24 h-24 border-2 border-white rounded-full"></div>
@@ -129,16 +132,16 @@ export default function Home() {
 
               <div className="relative z-10">
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-2" style={{fontFamily: 'Clash Grotesk, sans-serif'}}>
-                  Book your<br /><span className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg">service</span> slot
+                  Get help<br /><span className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg">on demand</span>
                 </h3>
                 
                 <p className="text-white/80 text-sm mb-4">
-                  Schedule instantly
+                  Connect instantly with nearby pros
                 </p>
               </div>
 
             {/* Chart/Graph visual */}
-            <div className="relative z-10 bg-white/20 backdrop-blur-sm rounded-2xl p-4 mt-4">
+            <div className="relative z-10 bg-white/20 backdrop-blur-sm rounded-xl p-4 mt-4">
               <div className="flex items-end justify-between h-20 gap-2">
                 <div className="flex-1 bg-white/40 rounded-t-lg" style={{height: '40%'}}></div>
                 <div className="flex-1 bg-white/60 rounded-t-lg" style={{height: '60%'}}></div>
@@ -164,7 +167,7 @@ export default function Home() {
 
           {/* Bottom Right Card - Join Platform */}
           <Link href="/become-ustaz">
-            <div className="bg-gray-900 rounded-3xl p-6 md:p-8 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden min-h-[200px] md:min-h-[240px] flex flex-col justify-between">
+            <div className="bg-gray-900 rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-7 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden h-[200px] sm:h-[220px] md:h-[240px] flex flex-col justify-between">
               {/* Background decoration */}
               <div className="absolute top-0 right-0 w-32 h-22 bg-[#db4b0d] rounded-full blur-3xl opacity-20"></div>
               
