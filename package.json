@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0",
     "@formatjs/intl-localematcher": "^0.6.1",
     "@googlemaps/js-api-loader": "^1.16.10",
     "@heroicons/react": "^2.2.0",
@@ -34,6 +38,7 @@
     "@types/negotiator": "^0.6.4",
     "axios": "^1.10.0",
     "class-variance-authority": "^0.7.1",
+    "claude": "^0.1.1",
     "clsx": "^2.1.1",
     "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "^8.6.0",

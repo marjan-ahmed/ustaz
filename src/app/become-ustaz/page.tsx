@@ -28,6 +28,9 @@ import { ImageCropEditor } from "../components/image-crop-editor"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import { useTranslations } from "next-intl"
+import { useSupabaseUser } from "@/hooks/useSupabaseUser"
+import PhoneOtpAuth from "../components/PhoneOtpAuth"
+import { Loader2 } from "lucide-react"
 
 // Define TypeScript Interfaces
 interface IFormData {
@@ -79,6 +82,7 @@ function generateUUID(): string {
 
 function App() {
   const t = useTranslations("form")
+  const { user, isLoaded, isSignedIn } = useSupabaseUser()
   const [currentStep, setCurrentStep] = useState<number>(1)
   const router = useRouter()
   const [formData, setFormData] = useState<IFormData>({
@@ -105,7 +109,25 @@ function App() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [userId, setUserId] = useState<string>(generateUUID())
+  const [userId, setUserId] = useState<string>("")
+
+  // Bind provider profile to the authenticated user — never a random UUID.
+  useEffect(() => {
+    if (user?.id) setUserId(user.id)
+  }, [user?.id])
+
+  // If signed in and a provider profile already exists, route straight to dashboard.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !user?.id) return
+    ;(async () => {
+      const { data } = await supabase
+        .from("ustaz_registrations")
+        .select("userId")
+        .eq("userId", user.id)
+        .maybeSingle()
+      if (data) router.replace("/dashboard")
+    })()
+  }, [isLoaded, isSignedIn, user?.id, router])
   const [countries, setCountries] = useState<ICountry[]>([])
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [slideDirection, setSlideDirection] = useState<"next" | "back" | null>(null)
@@ -484,7 +506,9 @@ function App() {
         avatarUrl: data.avatarUrl || null,
         registrationDate: new Date().toISOString(),
         userId: userId,
-        phone_verified: isPhoneVerified,
+        // Reaching this form requires a completed Supabase Auth OTP session,
+        // so phone is verified by construction.
+        phone_verified: true,
         // Removed latitude: data.latitude,
         // Removed longitude: data.longitude,
       }
@@ -495,9 +519,8 @@ function App() {
       console.log("Data successfully sent to Supabase:", supabaseData)
       setIsLoading(false)
       setIsRegisteredSuccessfully(true)
-      localStorage.setItem("registeredUserId", userId)
       localStorage.setItem("isRegisteredSuccessfully", "true")
-      router.push(`/dashboard?userId=${userId}`) // Redirect on success
+      router.push(`/dashboard`) // Redirect on success — userId derived from session
     } catch (error: any) {
       console.error("Error sending data to Supabase:", error.message)
       setIsLoading(false)
@@ -547,12 +570,43 @@ function App() {
   useEffect(() => {
     const storedUserId = localStorage.getItem("registeredUserId")
     const storedSuccess = localStorage.getItem("isRegisteredSuccessfully")
-    if (storedUserId && storedSuccess === "true") {
-      setUserId(storedUserId)
+    if (storedSuccess === "true") {
       setIsRegisteredSuccessfully(true)
     }
+    // Ignore any legacy `registeredUserId` from localStorage — userId now
+    // comes from the authenticated session only.
+    void storedUserId
   }, [])
 
+
+  // Auth gate: providers must verify phone (Supabase OTP) before completing the form.
+  if (!isLoaded) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader2 className="w-10 h-10 animate-spin text-[#db4b0d]" />
+        </div>
+        <Footer />
+      </>
+    )
+  }
+
+  if (!isSignedIn) {
+    return (
+      <>
+        <Header />
+        <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 px-4 py-16">
+          <PhoneOtpAuth
+            title="Become a Ustaz"
+            subtitle="Verify your phone to start your provider registration."
+            onSuccess={() => { /* re-render once useSupabaseUser flips to signed-in */ }}
+          />
+        </main>
+        <Footer />
+      </>
+    )
+  }
 
   return (
     <>

@@ -1,26 +1,24 @@
-// src/lib/supabaseClient.ts
+// Browser-side Supabase client.
+// Uses @supabase/ssr's createBrowserClient so the session is stored in cookies
+// (not localStorage). This is required so Next.js Route Handlers / Server
+// Components can read the session via cookies() and authenticate the user.
+import { createBrowserClient } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
-// This function creates and returns a Supabase client instance.
-// It can be used for both client-side (with anon key) and server-side (with service role key) operations.
-// The `auth` option `persistSession: false` is important for server-side clients
-// to prevent session storage issues.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('Supabase URL or Anon Key is missing. Check your environment variables.');
+}
+
+// Default browser client — cookie-backed session, RLS-enforced.
+export const supabase = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Backwards-compatible factory (still used in a few places).
 export function createClient(supabaseUrl: string, supabaseKey: string, options?: any) {
   if (!supabaseUrl || !supabaseKey) {
-    console.error("Supabase URL or Key is missing. Please check your environment variables.");
-    throw new Error("Supabase client cannot be initialized: Missing URL or Key.");
+    throw new Error('Supabase client cannot be initialized: Missing URL or Key.');
   }
   return createSupabaseClient(supabaseUrl, supabaseKey, options);
 }
-
-// Export a default client for common client-side usage (e.g., in React components)
-// This client uses the public ANON key and will persist sessions by default.
-// It's recommended to use this for client-side interactions where RLS is enforced.
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
-// Note: For server-side operations where you need to bypass RLS (like sending notifications),
-// you would use `createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })`
-// as demonstrated in your API route.

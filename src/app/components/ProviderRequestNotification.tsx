@@ -272,10 +272,14 @@ const ProviderRequestNotification = ({
   };
 
   const handleAccept = async (requestId: string) => {
+    // Optimistically remove the popup so the provider sees immediate feedback;
+    // the realtime UPDATE will re-render the dashboard list with `accepted`.
+    setActiveRequests((prev) => prev.filter((r) => r.id !== requestId));
     onAccept(requestId);
   };
 
   const handleReject = async (requestId: string) => {
+    setActiveRequests((prev) => prev.filter((r) => r.id !== requestId));
     onReject(requestId);
   };
 

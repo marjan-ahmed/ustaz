@@ -1,141 +1,121 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+const PROVIDER_ACTIONS = ['arriving', 'in_progress', 'completed'] as const;
+const ALL_ACTIONS = [...PROVIDER_ACTIONS, 'cancelled'] as const;
+type Action = (typeof ALL_ACTIONS)[number];
+
+async function createAuthedClient() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (n) => cookieStore.get(n)?.value,
+        set: () => {},
+        remove: () => {},
+      },
+    },
+  );
+}
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createAuthedClient();
+  const { data: { user }, error: authErr } = await supabase.auth.getUser();
+  if (authErr || !user) {
+    return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
+  }
 
   try {
-    const { requestId, providerId, userId, action } = await req.json(); // action can be 'arriving', 'in_progress', 'completed', 'cancelled'
-
-    if (!requestId || !action) {
+    const { requestId, action } = (await req.json()) as { requestId?: string; action?: Action };
+    if (!requestId || !action || !ALL_ACTIONS.includes(action)) {
       return NextResponse.json(
-        { error: 'Missing required parameters: requestId, action' },
-        { status: 400 }
+        { error: `Missing or invalid: requestId, action (${ALL_ACTIONS.join('|')})` },
+        { status: 400 },
       );
     }
 
-    if (!['arriving', 'in_progress', 'completed', 'cancelled'].includes(action)) {
-      return NextResponse.json(
-        { error: 'Invalid action. Use "arriving", "in_progress", "completed", or "cancelled"' },
-        { status: 400 }
-      );
-    }
-
-    // Get the service request to check its current status and authorization
-    const { data: serviceRequest, error: requestError } = await supabase
+    const { data: sr, error: srErr } = await supabase
       .from('service_requests')
-      .select('*')
+      .select('id, user_id, accepted_by_provider_id, status')
       .eq('id', requestId)
-      .single();
+      .maybeSingle();
 
-    if (requestError) {
-      console.error('Error fetching service request:', requestError);
-      return NextResponse.json(
-        { error: 'Service request not found', details: requestError.message },
-        { status: 404 }
-      );
+    if (srErr || !sr) {
+      return NextResponse.json({ error: 'Service request not found' }, { status: 404 });
     }
 
-    if (!serviceRequest) {
-      return NextResponse.json(
-        { error: 'Service request not found' },
-        { status: 404 }
-      );
-    }
+    const isOwner = sr.user_id === user.id;
+    const isProvider = sr.accepted_by_provider_id === user.id;
 
-    // Validate authorization based on the action
-    let authorized = false;
-
-    switch (action) {
-      case 'arriving':
-      case 'in_progress':
-      case 'completed':
-        // Provider must be the one assigned to the request
-        authorized = serviceRequest.accepted_by_provider_id === providerId;
-        break;
-      case 'cancelled':
-        // Either the user who created the request or the assigned provider can cancel
-        authorized = serviceRequest.user_id === userId || serviceRequest.accepted_by_provider_id === providerId;
-        break;
-    }
+    const authorized =
+      action === 'cancelled' ? isOwner || isProvider : isProvider;
 
     if (!authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized to perform this action' },
-        { status: 403 }
+        { error: 'Forbidden: session user not authorized for this action' },
+        { status: 403 },
       );
     }
 
-    let resultData;
-    let resultError;
-
-    // Use the appropriate database function based on the action
+    let resp;
     switch (action) {
       case 'arriving':
-        ({ data: resultData, error: resultError } = await supabase
-          .rpc('update_request_to_arriving', {
-            p_request_id: requestId,
-            p_provider_id: providerId
-          }));
+        resp = await supabase.rpc('update_request_to_arriving', {
+          p_request_id: requestId,
+          p_provider_id: user.id,
+        });
         break;
       case 'in_progress':
-        ({ data: resultData, error: resultError } = await supabase
-          .rpc('update_request_to_in_progress', {
-            p_request_id: requestId,
-            p_provider_id: providerId
-          }));
+        resp = await supabase.rpc('update_request_to_in_progress', {
+          p_request_id: requestId,
+          p_provider_id: user.id,
+        });
         break;
       case 'completed':
-        ({ data: resultData, error: resultError } = await supabase
-          .rpc('update_request_to_completed', {
-            p_request_id: requestId,
-            p_provider_id: providerId
-          }));
+        resp = await supabase.rpc('update_request_to_completed', {
+          p_request_id: requestId,
+          p_provider_id: user.id,
+        });
         break;
       case 'cancelled':
-        ({ data: resultData, error: resultError } = await supabase
-          .rpc('cancel_service_request', {
-            p_request_id: requestId,
-            p_user_id: userId,
-            p_provider_id: providerId
-          }));
+        resp = await supabase.rpc('cancel_service_request', {
+          p_request_id: requestId,
+          p_user_id: isOwner ? user.id : null,
+          p_provider_id: isProvider ? user.id : null,
+        });
         break;
     }
 
+    const { data: resultData, error: resultError } = resp!;
     if (resultError) {
-      console.error(`Error updating request status to ${action}:`, resultError);
+      console.error(`[update-request-status] ${action} failed`, {
+        uid: user.id,
+        requestId,
+        error: resultError.message,
+      });
       return NextResponse.json(
         { error: `Failed to update request status to ${action}`, details: resultError.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    if (!resultData || resultData.length === 0) {
+    const row = Array.isArray(resultData) ? resultData[0] : resultData;
+    if (!row || row.success === false) {
       return NextResponse.json(
-        { error: `Failed to update request status to ${action}` },
-        { status: 500 }
+        { error: row?.message ?? `Failed to update request status to ${action}` },
+        { status: 400 },
       );
     }
 
-    const result = resultData[0];
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({
-      message: result.message,
-      request: result.updated_request
-    });
-
-  } catch (error: any) {
-    console.error('Unexpected error in update-request-status API:', error);
+    return NextResponse.json({ message: row.message, request: row.updated_request });
+  } catch (e: any) {
+    console.error('[update-request-status] unexpected', e);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
+      { error: 'Internal server error', details: e.message },
+      { status: 500 },
     );
   }
 }

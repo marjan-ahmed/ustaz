@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/server';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '../../../client/supabaseClient';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,162 +16,177 @@ interface ProviderLocationTrackerProps {
   onLocationUpdate?: (location: { latitude: number; longitude: number }) => void;
 }
 
+const MIN_MOVE_M = 10;
+const MIN_INTERVAL_MS = 2_500;
+const DB_PERSIST_MS = 20_000;
+
+function haversine(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6_371_000;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
 const ProviderLocationTracker = ({
   providerId,
   requestId,
   isActive,
-  onLocationUpdate
+  onLocationUpdate,
 }: ProviderLocationTrackerProps) => {
   const [isSharing, setIsSharing] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
-  const [watchId, setWatchId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Function to update location in the database
-  const updateLocationInDatabase = async (lat: number, lng: number) => {
-    if (!requestId) {
-      console.warn('No request ID provided, cannot update location');
-      return;
-    }
+  const watchIdRef = useRef<number | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const subscribedRef = useRef(false);
+  const pendingRef = useRef<{ lat: number; lng: number; heading: number | null; speed: number | null; ts: number } | null>(null);
+  const lastSentRef = useRef<{ lat: number; lng: number; t: number } | null>(null);
+  const dbTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const persistToDb = useCallback(async (lat: number, lng: number) => {
+    if (!requestId) return;
     try {
-      const response = await fetch('/api/update-provider-location', {
+      const res = await fetch('/api/update-provider-location', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          providerId,
-          requestId,
-          latitude: lat,
-          longitude: lng
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ providerId, requestId, latitude: lat, longitude: lng }),
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to update location');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg =
+          res.status === 401
+            ? 'You are not signed in. Open this tab in an Incognito window and sign in as the provider.'
+            : res.status === 403
+            ? `Cookie session belongs to ${body.session_user?.slice(0, 8) ?? 'someone else'}, but this request was accepted by ${body.accepted_by_provider_id?.slice(0, 8) ?? 'a different provider'}. Sign out, then sign in as the provider.`
+            : `Persist failed (${res.status}): ${body.error ?? 'unknown'}`;
+        setError(msg);
+        console.error('[tracker] persist failed', res.status, body);
+      } else {
+        if (error) setError(null);
       }
-
-      // Update state with new location
-      setCurrentLocation({ latitude: lat, longitude: lng });
-      setLastUpdateTime(new Date().toLocaleTimeString());
-
-      // Log the provider location for debugging
-      console.log('Provider location updated:', { latitude: lat, longitude: lng, timestamp: new Date().toISOString() });
-
-      // Call parent callback if provided
-      if (onLocationUpdate) {
-        onLocationUpdate({ latitude: lat, longitude: lng });
-      }
-
-      // Reset progress bar
-      setProgress(0);
-
-      // Increment progress every second to show next update time
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-
-      intervalRef.current = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 100) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-            }
-            return 100;
-          }
-          return prev + 20; // Updates every 5 seconds (100/5 = 20% per second)
-        });
-      }, 1000);
-
-    } catch (err: any) {
-      console.error('Error updating location:', err);
-      setError(err.message);
-      toast.error(`Failed to update location: ${err.message}`);
+    } catch (e) {
+      console.warn('db persist network error', e);
     }
-  };
+  }, [providerId, requestId, error]);
 
-  // Function to start location tracking
-  const startLocationTracking = () => {
+  const stopLocationTracking = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (dbTimerRef.current) {
+      clearInterval(dbTimerRef.current);
+      dbTimerRef.current = null;
+    }
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+    subscribedRef.current = false;
+    pendingRef.current = null;
+    setIsSharing(false);
+    toast.success('Location tracking stopped');
+  }, []);
+
+  const startLocationTracking = useCallback(() => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser');
       toast.error('Geolocation is not supported by your browser');
       return;
     }
-
     if (!requestId) {
-      setError('No active service request to track location for');
-      toast.error('No active service request to track location for');
+      setError('No active service request');
+      toast.error('No active service request');
       return;
     }
 
-    setIsSharing(true);
     setError(null);
+    setIsSharing(true);
 
-    // Use watchPosition to continuously track location
-    const id = navigator.geolocation.watchPosition(
+    const channel = supabase.channel(`location-update:${requestId}`, {
+      config: { broadcast: { self: false, ack: false } },
+    });
+    channel.subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        subscribedRef.current = true;
+        console.log(`[provider] broadcasting on location-update:${requestId}`);
+        // Flush any ping captured before the WebSocket handshake completed.
+        const queued = pendingRef.current;
+        if (queued) {
+          pendingRef.current = null;
+          channel.send({
+            type: 'broadcast',
+            event: 'location-update',
+            payload: { ...queued, providerId, requestId },
+          });
+        }
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        subscribedRef.current = false;
+      }
+    });
+    channelRef.current = channel;
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        updateLocationInDatabase(latitude, longitude);
+        const { latitude: lat, longitude: lng, heading, speed } = position.coords;
+        const now = Date.now();
+        const last = lastSentRef.current;
+
+        if (last) {
+          if (now - last.t < MIN_INTERVAL_MS) return;
+          if (haversine(last.lat, last.lng, lat, lng) < MIN_MOVE_M) return;
+        }
+        lastSentRef.current = { lat, lng, t: now };
+
+        const payload = { lat, lng, heading, speed, ts: now };
+
+        if (subscribedRef.current) {
+          channel.send({
+            type: 'broadcast',
+            event: 'location-update',
+            payload: { ...payload, providerId, requestId },
+          });
+        } else {
+          // Subscription handshake still in flight — queue latest ping;
+          // it will be flushed when status becomes 'SUBSCRIBED'.
+          pendingRef.current = payload;
+        }
+
+        // Persist immediately too, so customers joining late see a marker.
+        persistToDb(lat, lng);
+
+        setCurrentLocation({ latitude: lat, longitude: lng });
+        setLastUpdateTime(new Date().toLocaleTimeString());
+        onLocationUpdate?.({ latitude: lat, longitude: lng });
       },
       (err) => {
         setError(`Unable to retrieve your location: ${err.message}`);
         toast.error(`Unable to retrieve your location: ${err.message}`);
         stopLocationTracking();
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 10000, // 10 seconds
-        timeout: 5000,     // 5 seconds
-      }
+      { enableHighAccuracy: true, maximumAge: 5_000, timeout: 15_000 },
     );
 
-    setWatchId(id);
+    dbTimerRef.current = setInterval(() => {
+      const last = lastSentRef.current;
+      if (last) persistToDb(last.lat, last.lng);
+    }, DB_PERSIST_MS);
+
     toast.success('Location tracking started');
-  };
+  }, [requestId, providerId, onLocationUpdate, persistToDb, stopLocationTracking]);
 
-  // Function to stop location tracking
-  const stopLocationTracking = () => {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      setWatchId(null);
-    }
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    setIsSharing(false);
-    setProgress(0);
-    toast.success('Location tracking stopped');
-  };
-
-  // Effect to start/stop tracking based on isActive prop
   useEffect(() => {
-    if (isActive && !isSharing) {
-      startLocationTracking();
-    } else if (!isActive && isSharing) {
-      stopLocationTracking();
-    }
-  }, [isActive]);
+    if (isActive && !isSharing) startLocationTracking();
+    else if (!isActive && isSharing) stopLocationTracking();
+  }, [isActive, isSharing, startLocationTracking, stopLocationTracking]);
 
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [watchId]);
+  useEffect(() => () => stopLocationTracking(), [stopLocationTracking]);
 
   return (
     <Card className="shadow-sm border-gray-200">
@@ -178,15 +194,9 @@ const ProviderLocationTracker = ({
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg">Location Tracking</CardTitle>
           {isSharing ? (
-            <Badge className="bg-green-500 flex items-center">
-              <Radio className="w-4 h-4 mr-1" />
-              Active
-            </Badge>
+            <Badge className="bg-green-500 flex items-center"><Radio className="w-4 h-4 mr-1" />Live</Badge>
           ) : (
-            <Badge variant="outline" className="flex items-center">
-              <Circle className="w-4 h-4 mr-1" />
-              Inactive
-            </Badge>
+            <Badge variant="outline" className="flex items-center"><Circle className="w-4 h-4 mr-1" />Inactive</Badge>
           )}
         </div>
       </CardHeader>
@@ -196,7 +206,7 @@ const ProviderLocationTracker = ({
             <span className="text-sm font-medium">Live Location Sharing</span>
             <Button
               size="sm"
-              variant={isSharing ? "destructive" : "default"}
+              variant={isSharing ? 'destructive' : 'default'}
               onClick={isSharing ? stopLocationTracking : startLocationTracking}
             >
               {isSharing ? 'Stop Sharing' : 'Start Sharing'}
@@ -218,40 +228,21 @@ const ProviderLocationTracker = ({
                   {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
                 </span>
               </div>
-
               {lastUpdateTime && (
                 <div className="flex items-center text-sm">
                   <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                  <span>Last updated: {lastUpdateTime}</span>
+                  <span>Last broadcast: {lastUpdateTime}</span>
                 </div>
               )}
             </div>
           )}
 
-          {isSharing && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Next update in</span>
-                <span>{Math.max(0, 5 - Math.floor(progress / 20))}s</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-              <div className="flex items-center text-xs text-gray-500">
-                <Navigation className="w-3 h-3 mr-1" />
-                <span>Location updates every 5 seconds</span>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center">
+            <Navigation className="w-4 h-4 mr-2 text-blue-700 shrink-0" />
             <p className="text-blue-700 text-sm">
               {isSharing
-                ? 'Your location is being shared with the customer in real-time'
-                : 'Start sharing your location when you\'re on the way to the service location'}
+                ? 'Streaming live position via broadcast (≥10 m / ≥2.5 s)'
+                : 'Start sharing once you head toward the customer'}
             </p>
           </div>
         </div>

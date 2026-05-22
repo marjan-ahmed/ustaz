@@ -283,7 +283,7 @@ const handlePlaceSelect = useCallback((
           setRequestStatus('idle'); // Back to idle after getting location, ready for search
         },
         (error) => {
-          console.error("Error getting location:", error);
+          console.error('Error getting location:', { code: error.code, message: error.message });
           setRequestStatus('error'); // Set error status
           let errorMessage = t('locationErrorGeneric');
           switch (error.code) {
@@ -336,38 +336,35 @@ const handlePlaceSelect = useCallback((
 );
 
 
-  // Fetch accepted provider's details (moved up for declaration order)
-  const fetchAcceptedProviderDetails = useCallback(async (providerId: string) => {
-    console.log('Fetching provider details for ID:', providerId);
+  // Fetch accepted provider's details via SECURITY DEFINER RPC.
+  // RLS blocks direct SELECT on ustaz_registrations for non-owners;
+  // this RPC returns only the provider currently assigned to the
+  // calling customer's open request.
+  const fetchAcceptedProviderDetails = useCallback(async (_providerId: string) => {
+    if (!currentRequestId) return;
     try {
-      // Note: This fetch directly from Supabase client assumes RLS allows authenticated users
-      // to read ustaz_registrations. If RLS is stricter, you might need an API route.
       const { data, error } = await supabase
-        .from('ustaz_registrations')
-        .select('userId, firstName, lastName, phoneNumber, phoneCountryCode, email')
-        .eq('userId', providerId)
-        .single();
+        .rpc('get_assigned_provider', { p_request_id: currentRequestId });
 
-      if (error) {
-        console.error('Error fetching provider details:', error);
-        throw error;
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) {
+        setAcceptedProvider(null);
+        return;
       }
-
-      console.log('Provider details fetched successfully:', data);
       setAcceptedProvider({
-        user_id: data.userId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phoneNumber: data.phoneNumber,
-        phoneCountryCode: data.phoneCountryCode,
-        email: data.email,
+        user_id: row.user_id,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        phoneNumber: row.phone_number,
+        phoneCountryCode: row.phone_country_code,
+        email: row.email,
       });
-      console.log('State updated with provider details');
-    } catch (error) {
-      console.error('Error fetching accepted provider details:', error);
+    } catch (err) {
+      console.error('Error fetching accepted provider details:', err);
       setAcceptedProvider(null);
     }
-  }, [supabase]);
+  }, [currentRequestId]);
 
   // Supabase Realtime Subscription for Provider Live Location (moved up for declaration order)
   const subscribeToProviderLiveLocation = useCallback((requestId: string) => {
@@ -654,6 +651,32 @@ const handlePlaceSelect = useCallback((
     }
   }, [isLoaded, isSignedIn]);
 
+  // Resume an in-flight request after page reload / navigation.
+  // Without this, currentRequestId is only known when the customer just clicked
+  // "Find Providers". If they reload / navigate back, the page forgets the
+  // active request → marker can't render.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !user?.id) return;
+    if (currentRequestId) return; // already tracking
+    (async () => {
+      const { data, error } = await supabase
+        .from('service_requests')
+        .select('id, status, accepted_by_provider_id')
+        .eq('user_id', user.id)
+        .in('status', ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) return;
+      console.log('[customer] resuming open request', data.id, data.status);
+      setCurrentRequestId(data.id);
+      setRequestStatus(data.status as RequestStatus);
+      if (data.status === 'accepted' && data.accepted_by_provider_id) {
+        fetchAcceptedProviderDetails(data.accepted_by_provider_id);
+      }
+    })();
+  }, [isLoaded, isSignedIn, user?.id, currentRequestId, fetchAcceptedProviderDetails]);
+
 
   // Determine if the "Find Providers" button should be enabled
   const canSearch = service && ( // Use service from context
@@ -678,6 +701,72 @@ const handlePlaceSelect = useCallback((
       }
     };
   }, [currentRequestId, subscribeToServiceRequest]);
+
+  // Subscribe to the provider's BROADCAST channel + poll the DB row.
+  // Polling is the safety net: if our subscribe happens AFTER the provider's
+  // first ping (race) and the provider is stationary so no new broadcast fires,
+  // the polled DB row keeps the marker fresh.
+  useEffect(() => {
+    console.log('[customer] tracking useEffect deps:', {
+      currentRequestId,
+      requestStatus,
+      acceptedProvider: !!acceptedProvider,
+    });
+    if (!currentRequestId || requestStatus !== 'accepted') {
+      console.log('[customer] tracking useEffect bailed — preconditions not met');
+      return;
+    }
+    console.log('[customer] tracking useEffect ACTIVE for', currentRequestId);
+
+    let cancelled = false;
+    const fetchSnapshot = async () => {
+      const { data } = await supabase
+        .from('live_locations')
+        .select('latitude, longitude, updated_at')
+        .eq('request_id', currentRequestId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setProviderLiveLocation((prev) => {
+        // Only update if newer than what we already have.
+        const incoming = new Date(data.updated_at).getTime();
+        const current = prev ? new Date(prev.updated_at).getTime() : 0;
+        if (incoming <= current) return prev;
+        return {
+          latitude: data.latitude,
+          longitude: data.longitude,
+          updated_at: data.updated_at,
+        };
+      });
+    };
+
+    fetchSnapshot();                                   // seed immediately
+    const pollId = setInterval(fetchSnapshot, 5_000);  // ...and every 5 s
+
+    const ch = supabase
+      .channel(`location-update:${currentRequestId}`, {
+        config: { broadcast: { self: false } },
+      })
+      .on('broadcast', { event: 'location-update' }, ({ payload }) => {
+        const p = payload as { lat: number; lng: number; ts: number };
+        console.log('[customer] broadcast ping received', p);
+        setProviderLiveLocation({
+          latitude: p.lat,
+          longitude: p.lng,
+          updated_at: new Date(p.ts).toISOString(),
+        });
+      })
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[customer] subscribed to location-update:${currentRequestId}`);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      clearInterval(pollId);
+      supabase.removeChannel(ch);
+    };
+  }, [currentRequestId, requestStatus]);
 
   if (!isLoaded) {
     return (

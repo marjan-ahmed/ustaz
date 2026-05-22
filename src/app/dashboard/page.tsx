@@ -34,7 +34,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sidebar,
@@ -82,6 +82,7 @@ import LocationTracker from "../components/LocationTracker";
 import ProviderRequestNotification from "../components/ProviderRequestNotification";
 import ProviderLocationTracker from "../components/ProviderLocationTracker";
 import { toast } from "sonner";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 // Define TypeScript Interfaces
 interface IProviderData {
@@ -316,8 +317,11 @@ function ProviderDashboardInner() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
 
-  const searchParams = useSearchParams();
-  const userIdFromUrl = searchParams.get("userId");
+  // Provider identity comes from the authenticated session — NEVER from the URL.
+  // A URL `?userId=` param is ignored and stripped on first render.
+  const router = useRouter();
+  const { user, isLoaded, isSignedIn } = useSupabaseUser();
+  const userIdFromUrl = user?.id ?? null;
 
   // Dashboard menu items - Added "Request" and "Chat"
   const dashboardMenuItems = [
@@ -485,7 +489,7 @@ function ProviderDashboardInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          providerId: userIdFromUrl,
+          // providerId is derived server-side from auth.uid(); never trust client value.
           requestId: requestId,
           action: 'accept'
         })
@@ -516,7 +520,7 @@ function ProviderDashboardInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          providerId: userIdFromUrl,
+          // providerId is derived server-side from auth.uid(); never trust client value.
           requestId: requestId,
           action: 'reject'
         })
@@ -603,7 +607,18 @@ function ProviderDashboardInner() {
     }
   }, []);
 
+  // Auth gate: send unauthenticated visitors to provider login. After auth,
+  // if no provider profile exists for this user, send them to /become-ustaz.
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      router.replace('/auth/provider-login');
+      return;
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !userIdFromUrl) return;
     fetchProviderData(userIdFromUrl);
 
     // Update provider status to online and available when dashboard loads
@@ -849,12 +864,17 @@ function ProviderDashboardInner() {
 
   // New: Realtime subscription for service requests for this provider
   useEffect(() => {
-    if (!userIdFromUrl || !providerData?.phone_verified) return; // Only subscribe if user ID is available and phone is verified
+    // Supabase Auth is now the source of truth for phone verification;
+    // `phone_verified` column kept for legacy UI but no longer gates realtime.
+    if (!userIdFromUrl) return;
 
     // Initial fetch
     fetchServiceRequests(userIdFromUrl);
 
-    // Set up Realtime listener
+    // Set up Realtime listener.
+    // NOTE: postgres_changes filters only support eq/neq/lt/lte/gt/gte/in —
+    // `cs` (array contains) is silently dropped. So we subscribe broadly and
+    // filter client-side; RLS still ensures we only RECEIVE rows we can read.
     const channel = supabase
       .channel(`provider_requests:${userIdFromUrl}`)
       .on(
@@ -863,32 +883,31 @@ function ProviderDashboardInner() {
           event: '*',
           schema: 'public',
           table: 'service_requests',
-          filter: `notified_providers.cs.{${userIdFromUrl}}` // Strict filtration maintained
         },
         (payload) => {
-          console.log("Realtime service_requests change:", payload);
+          const newRequest = payload.new as IServiceRequest;
+          const oldRequest = payload.old as IServiceRequest | undefined;
 
-          // Efficiently update the state with the new data instead of refetching
-          setServiceRequests(prev => {
-            const newRequest = payload.new as IServiceRequest;
+          const isMine =
+            newRequest?.accepted_by_provider_id === userIdFromUrl ||
+            newRequest?.notified_providers?.includes(userIdFromUrl) ||
+            oldRequest?.accepted_by_provider_id === userIdFromUrl ||
+            oldRequest?.notified_providers?.includes(userIdFromUrl);
 
-            // If it's a DELETE event, remove the request
+          if (!isMine) return;
+          console.log('Realtime service_requests change:', payload);
+
+          setServiceRequests((prev) => {
             if (payload.eventType === 'DELETE') {
-              return prev.filter(req => req.id !== newRequest.id);
+              return prev.filter((req) => req.id !== (oldRequest?.id ?? newRequest.id));
             }
-
-            // For INSERT/UPDATE, check if request already exists
-            const existingIndex = prev.findIndex(req => req.id === newRequest.id);
-
+            const existingIndex = prev.findIndex((req) => req.id === newRequest.id);
             if (existingIndex >= 0) {
-              // Update existing request
-              const updatedRequests = [...prev];
-              updatedRequests[existingIndex] = newRequest;
-              return updatedRequests;
-            } else {
-              // Add new request to the beginning of the list
-              return [newRequest, ...prev];
+              const updated = [...prev];
+              updated[existingIndex] = newRequest;
+              return updated;
             }
+            return [newRequest, ...prev];
           });
 
           // Recalculate unread count based on the current requests list using ref to avoid stale closure
@@ -908,7 +927,7 @@ function ProviderDashboardInner() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userIdFromUrl, providerData?.phone_verified]); // Removed serviceRequests from dependency to prevent infinite loop, using ref instead
+  }, [userIdFromUrl]); // phone_verified gate removed — auth is the verification
 
   // Handler for form changes
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1375,15 +1394,15 @@ function ProviderDashboardInner() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>No Provider Data Found</CardTitle>
+            <CardTitle>Complete your provider profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-gray-600">
-              Could not retrieve your provider information. This might happen if you are not yet registered or if there
-              was an issue fetching your specific user ID.
+              You're signed in but haven't registered as a Ustaz provider yet.
+              Fill out your profile to start receiving service requests.
             </p>
-            <Button onClick={() => fetchProviderData(userIdFromUrl)} className="w-full bg-[#db4b0d] hover:bg-[#c4420c]">
-              Try Reloading
+            <Button onClick={() => router.push('/become-ustaz')} className="w-full bg-[#db4b0d] hover:bg-[#c4420c]">
+              Register as a Provider
             </Button>
           </CardContent>
         </Card>
@@ -1537,6 +1556,38 @@ function ProviderDashboardInner() {
           </header>
 
           <main className="flex-1 p-6">
+            {/*
+              Always-mounted: location tracker + new-request popup.
+              These run regardless of which tab the provider is on, so:
+                - accepting a request immediately starts broadcasting GPS
+                - a new request popup appears even while on Profile/Chat/etc.
+              Tracker UI is only visible on the Profile tab; the popup is
+              `position: fixed` so it floats above the content on every tab.
+            */}
+            {userIdFromUrl && (
+              <ProviderRequestNotification
+                providerId={userIdFromUrl}
+                onAccept={async (requestId) => { await handleAcceptRequest(requestId); }}
+                onReject={async (requestId) => { await handleRejectRequest(requestId); }}
+                onOpenChat={(userId, requestId) => {
+                  setActiveTab('chat');
+                  window.open(`/chat?with=${userId}&request=${requestId}`, '_blank');
+                }}
+              />
+            )}
+            {providerData && (
+              <div className={activeTab === 'profile' ? 'mb-6 max-w-4xl mx-auto' : 'hidden'}>
+                <ProviderLocationTracker
+                  providerId={providerData.userId}
+                  requestId={serviceRequests.find(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)?.id || null}
+                  isActive={serviceRequests.some(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)}
+                  onLocationUpdate={(location) => {
+                    console.log('Provider location received in dashboard:', location);
+                  }}
+                />
+              </div>
+            )}
+
             {activeTab === "request" && (
   <div className="max-w-4xl mx-auto">
     <Card className="shadow-sm border-gray-200">
@@ -1549,26 +1600,8 @@ function ProviderDashboardInner() {
           View and manage service requests from users.
         </CardDescription>
       </CardHeader>
-      {/* Add the ProviderRequestNotification component */}
-      {userIdFromUrl && (
-        <ProviderRequestNotification
-          providerId={userIdFromUrl}
-          onAccept={async (requestId) => {
-            // Call the handleAcceptRequest function
-            await handleAcceptRequest(requestId);
-          }}
-          onReject={async (requestId) => {
-            // Call the handleRejectRequest function
-            await handleRejectRequest(requestId);
-          }}
-          onOpenChat={(userId, requestId) => {
-            // Set the active tab to chat and open the chat interface
-            setActiveTab('chat');
-            // Optionally, open the chat in a new window/tab
-            window.open(`/chat?with=${userId}&request=${requestId}`, '_blank');
-          }}
-        />
-      )}
+      {/* ProviderRequestNotification lifted to top of <main> so the
+          floating popup persists across every tab. See above. */}
 
       <CardContent className="space-y-4">
         {serviceRequests.length === 0 ? (
@@ -2168,25 +2201,7 @@ function ProviderDashboardInner() {
                             </div>
                           </div>
                         </div>
-                        {/* Location Tracking */}
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <MapPin className="mr-2 h-5 w-5 text-[#db4b0d]" />
-                            Location Tracking
-                          </h3>
-                          <div className="grid grid-cols-1 gap-6">
-                            <div className="space-y-1">
-                              <ProviderLocationTracker
-                                providerId={providerData.userId}
-                                requestId={serviceRequests.find(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)?.id || null}
-                                isActive={serviceRequests.some(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)}
-                                onLocationUpdate={(location) => {
-                                  console.log('Provider location received in dashboard:', location);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
+                        {/* Location Tracking card is rendered at top level (always mounted) — see <main> */}
 
                         {/* Service Information */}
                         <div>
