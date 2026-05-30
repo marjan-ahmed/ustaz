@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { sendPush } from '@/lib/sendPush';
 
 async function createAuthedClient() {
   const cookieStore = await cookies();
@@ -57,6 +58,32 @@ export async function POST(req: NextRequest) {
         { error: row?.message ?? `Failed to ${action} request` },
         { status: 400 },
       );
+    }
+
+    // On accept, push a confirmation to the customer (closed-tab friendly).
+    if (action === 'accept' && row.updated_request) {
+      const updated = typeof row.updated_request === 'string'
+        ? JSON.parse(row.updated_request)
+        : row.updated_request;
+      const customerId = updated?.user_id;
+      if (customerId) {
+        // Look up provider name for a friendlier body
+        const { data: prov } = await supabase
+          .from('ustaz_registrations')
+          .select('"firstName","lastName","service_type"')
+          .eq('userId', user.id)
+          .maybeSingle();
+        const providerName = prov
+          ? `${prov.firstName ?? ''} ${prov.lastName ?? ''}`.trim() || 'Your Ustaz'
+          : 'Your Ustaz';
+        const serviceType = prov?.service_type ?? updated?.service_type ?? 'service';
+        sendPush(
+          [customerId],
+          `${providerName} accepted your request`,
+          `Your ${serviceType} provider is on the way`,
+          { url: '/process', requestId: String(updated.id ?? requestId) },
+        ).catch((err) => console.error('[sendPush] handle-service-request push failed:', err));
+      }
     }
 
     return NextResponse.json({

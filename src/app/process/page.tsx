@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl'; // For multi-language support
 import { supabase } from '../../../client/supabaseClient'; // Client-side Supabase instance
 import {
-  MapPin, Briefcase, Search, Loader2, LocateFixed, XCircle, CheckCircle, Phone, MessageSquare, Route, Clock, User as UserIcon, MailOpen
+  MapPin, Briefcase, Search, Loader2, LocateFixed, XCircle, CheckCircle, Phone, MessageSquare, Route, Clock, User as UserIcon, MailOpen, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import Footer from '@/app/components/Footer';
 import { HomeModernIcon } from '@heroicons/react/24/solid'; // Assuming this is correct for Home icon
 import Link from 'next/link';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser'; // Using your custom Supabase user hook
+import { useFcmToken } from '@/hooks/useFcmToken';
 import { useServiceContext } from '../context/ServiceContext';
 import GoogleAutocomplete from '../components/GoogleAutocomplete';
 import { toast } from 'sonner';
@@ -78,6 +79,7 @@ const timeAgo = (dateString: string, t: ReturnType<typeof useTranslations>) => {
 function ProcessPage() {
   const t = useTranslations('process'); // Translations for this page
   const { user, isSignedIn, isLoaded } = useSupabaseUser(); // Using your custom Supabase user hook
+  const { status: fcmStatus, retry: retryFcm } = useFcmToken(Boolean(isLoaded && isSignedIn && user?.id));
   // Destructure address and service from context, and their setters
   const { address, setAddress, service, setService} = useServiceContext();
 
@@ -808,6 +810,41 @@ const handlePlaceSelect = useCallback((
                 {t('selectServiceAndLocation')}
               </p>
             </div>
+
+            {/* Push notification status indicator */}
+            {isLoaded && isSignedIn && fcmStatus !== 'loading' && fcmStatus !== 'granted' && (
+              <div
+                className={`flex items-center gap-2 px-3 py-2 mb-4 rounded-lg text-xs border transition-colors ${
+                  fcmStatus === 'registered'
+                    ? 'bg-green-50 border-green-200 text-green-700'
+                    : fcmStatus === 'denied' || fcmStatus === 'error'
+                    ? 'bg-amber-50 border-amber-200 text-amber-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}
+              >
+                {fcmStatus === 'registered' ? (
+                  <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                ) : fcmStatus === 'denied' || fcmStatus === 'error' ? (
+                  <XCircle className="h-3.5 w-3.5 shrink-0" />
+                ) : (
+                  <Bell className="h-3.5 w-3.5 shrink-0" />
+                )}
+                <span className="flex-1">
+                  {fcmStatus === 'registered' && 'Push notifications active — you will be notified when a provider accepts'}
+                  {fcmStatus === 'denied' && 'Notifications blocked. Enable in browser settings to get notified when a provider accepts.'}
+                  {fcmStatus === 'unsupported' && 'Push notifications not supported on this browser'}
+                  {fcmStatus === 'error' && 'Notification setup failed'}
+                </span>
+                {(fcmStatus === 'denied' || fcmStatus === 'error') && (
+                  <button
+                    onClick={retryFcm}
+                    className="font-medium underline underline-offset-2 whitespace-nowrap transition-colors hover:text-amber-800"
+                  >
+                    {fcmStatus === 'denied' ? 'Allow' : 'Retry'}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="space-y-6 mb-8">
               {/* Service Type Selection */}

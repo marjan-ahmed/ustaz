@@ -78,11 +78,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import LocationTracker from "../components/LocationTracker";
 import ProviderRequestNotification from "../components/ProviderRequestNotification";
 import ProviderLocationTracker from "../components/ProviderLocationTracker";
 import { toast } from "sonner";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { useFcmToken } from "@/hooks/useFcmToken";
 
 // Define TypeScript Interfaces
 interface IProviderData {
@@ -322,6 +322,17 @@ function ProviderDashboardInner() {
   const router = useRouter();
   const { user, isLoaded, isSignedIn } = useSupabaseUser();
   const userIdFromUrl = user?.id ?? null;
+
+  // Register this device for FCM push so the provider receives new-request
+  // notifications even when the dashboard tab is closed.
+  const { status: fcmStatus, retry: retryFcm } = useFcmToken(Boolean(isLoaded && isSignedIn && user?.id));
+
+  // Debug: log FCM token registration status
+  useEffect(() => {
+    if (isLoaded && isSignedIn && user?.id && fcmStatus !== 'loading') {
+      console.log('[dashboard] FCM token status:', fcmStatus);
+    }
+  }, [isLoaded, isSignedIn, user?.id, fcmStatus]);
 
   // Dashboard menu items - Added "Request" and "Chat"
   const dashboardMenuItems = [
@@ -1463,6 +1474,77 @@ function ProviderDashboardInner() {
                 </div>
               )}
             </div>
+
+              {/* Push notification status — visible in sidebar at all times */}
+              <div className="mb-4">
+                <div
+                  className={`rounded-lg border p-3 transition-colors ${
+                    fcmStatus === 'registered'
+                      ? 'bg-green-50 border-green-200'
+                      : fcmStatus === 'denied' || fcmStatus === 'error'
+                      ? 'bg-amber-50 border-amber-200'
+                      : fcmStatus === 'unsupported'
+                      ? 'bg-gray-50 border-gray-200'
+                      : 'bg-blue-50 border-blue-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    {fcmStatus === 'denied' || fcmStatus === 'error' ? (
+                      <XCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600" />
+                    ) : fcmStatus === 'registered' ? (
+                      <CheckCircle className="h-4 w-4 mt-0.5 shrink-0 text-green-600" />
+                    ) : (
+                      <Bell className={`h-4 w-4 mt-0.5 shrink-0 ${
+                        fcmStatus === 'unsupported' ? 'text-gray-400' : 'text-blue-600'
+                      }`} />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`text-xs font-medium ${
+                          fcmStatus === 'registered'
+                            ? 'text-green-800'
+                            : fcmStatus === 'denied' || fcmStatus === 'error'
+                            ? 'text-amber-800'
+                            : fcmStatus === 'unsupported'
+                            ? 'text-gray-600'
+                            : 'text-blue-800'
+                        }`}
+                      >
+                        {fcmStatus === 'registered' && 'Push notifications active'}
+                        {fcmStatus === 'loading' && 'Setting up notifications…'}
+                        {fcmStatus === 'denied' && 'Notifications blocked'}
+                        {fcmStatus === 'unsupported' && 'Push not supported'}
+                        {fcmStatus === 'error' && 'Notification setup failed'}
+                        {fcmStatus === 'granted' && 'Registering device…'}
+                      </p>
+                      {fcmStatus === 'denied' && (
+                        <>
+                          <p className="text-[10px] text-amber-700 mt-1 leading-relaxed">
+                            Click <strong>🔒 Site Info</strong> in address bar → <strong>Site Settings</strong> → set Notifications to <strong>Allow</strong>, then tap below.
+                          </p>
+                          <button
+                            onClick={retryFcm}
+                            className="text-xs mt-1.5 font-medium text-amber-700 underline underline-offset-2 transition-colors hover:text-amber-800"
+                          >
+                            Try again after allowing
+                          </button>
+                        </>
+                      )}
+                      {fcmStatus === 'error' && (
+                        <button
+                          onClick={retryFcm}
+                          className="text-xs mt-1.5 font-medium text-amber-700 underline underline-offset-2 transition-colors hover:text-amber-800"
+                        >
+                          Retry setup
+                        </button>
+                      )}
+                    </div>
+                    {fcmStatus === 'loading' && (
+                      <div className="h-3 w-3 mt-0.5 shrink-0 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    )}
+                  </div>
+                </div>
+              </div>
 
             <SidebarGroup>
               <SidebarGroupLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">

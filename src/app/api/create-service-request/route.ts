@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { sendPush } from '@/lib/sendPush';
 
 async function createAuthedClient() {
   const cookieStore = await cookies();
@@ -84,6 +85,14 @@ export async function POST(req: NextRequest) {
         providerIds: [],
       });
     }
+
+    // Fire-and-forget FCM push to notified providers (works even if their tab is closed).
+    sendPush(
+      providersNotified as string[],
+      `New ${serviceType} request nearby`,
+      requestDetails ?? 'A customer has requested your service',
+      { url: '/dashboard', requestId: String(requestId), serviceType: String(serviceType) },
+    ).catch((err) => console.error('[sendPush] create-service-request push failed:', err));
 
     return NextResponse.json({
       message: 'Service request created and notifications sent successfully',
