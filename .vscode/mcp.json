@@ -1,11 +1,23 @@
 {
-  "servers": {
-    "shadcn": {
-      "command": "npx",
-      "args": [
-        "shadcn@latest",
-        "mcp"
-      ]
-    }
-  }
+	"servers": {
+		"shadcn": {
+			"command": "npx",
+			"args": [
+				"shadcn@latest",
+				"mcp"
+			],
+			"type": "stdio"
+		},
+		"TestSprite MCP": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"@testsprite/testsprite-mcp@latest"
+			],
+			 "env": {
+        "API_KEY": "sk-user-sR7CscJT3JLqS8T6bvla0qSet85mwrje-zOtI4RocM5slsi-7vJ75vpNKIdIUfgi0bt1SGmRwSKaXrYZ_QTBSL6E8TuPhSukbVXJfFMxpH4IH9OMyaqWrJU9CzWNUsSjBWU"
+      }
+		}
+	},
+	"inputs": []
 }

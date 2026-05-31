@@ -1,25 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createAuthedClient } from '@/lib/server';
 
-const PROVIDER_ACTIONS = ['arriving', 'in_progress', 'completed'] as const;
+const PROVIDER_ACTIONS = ['arriving', 'arrived', 'in_progress', 'start_service', 'completed'] as const;
 const ALL_ACTIONS = [...PROVIDER_ACTIONS, 'cancelled'] as const;
 type Action = (typeof ALL_ACTIONS)[number];
-
-async function createAuthedClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get: (n) => cookieStore.get(n)?.value,
-        set: () => {},
-        remove: () => {},
-      },
-    },
-  );
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createAuthedClient();
@@ -68,14 +52,26 @@ export async function POST(req: NextRequest) {
           p_provider_id: user.id,
         });
         break;
+      case 'arrived':
+        resp = await supabase.rpc('update_request_to_arrived', {
+          p_request_id: requestId,
+          p_provider_id: user.id,
+        });
+        break;
       case 'in_progress':
         resp = await supabase.rpc('update_request_to_in_progress', {
           p_request_id: requestId,
           p_provider_id: user.id,
         });
         break;
+      case 'start_service':
+        resp = await supabase.rpc('start_service', {
+          p_request_id: requestId,
+          p_provider_id: user.id,
+        });
+        break;
       case 'completed':
-        resp = await supabase.rpc('update_request_to_completed', {
+        resp = await supabase.rpc('complete_service', {
           p_request_id: requestId,
           p_provider_id: user.id,
         });

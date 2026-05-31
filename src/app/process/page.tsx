@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl'; // For multi-language support
 import { supabase } from '../../../client/supabaseClient'; // Client-side Supabase instance
 import {
-  MapPin, Briefcase, Search, Loader2, LocateFixed, XCircle, CheckCircle, Phone, MessageSquare, Route, Clock, User as UserIcon, MailOpen, Bell
+  MapPin, Briefcase, Search, Loader2, LocateFixed, XCircle, CheckCircle, Phone, MessageSquare, Route, Clock, User as UserIcon, MailOpen, Bell, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ import UserRequestTracker from '../components/UserRequestTracker';
 import ProviderTrackingInfo from '../components/ProviderTrackingInfo';
 import ChatComponent from '../components/ChatComponent';
 import LifecycleMapWrapper from '../components/LifecycleMapWrapper';
+import RatingModal from '../components/RatingModal';
 // Removed Loader import as Google Maps API is no longer directly integrated here
 
 
@@ -95,6 +96,11 @@ function ProcessPage() {
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [acceptedProvider, setAcceptedProvider] = useState<ProviderInfo | null>(null);
   const [providerLiveLocation, setProviderLiveLocation] = useState<LiveLocation | null>(null);
+  // State for rating modal
+  const [showRating, setShowRating] = useState(false);
+  // Full-screen rating lockout — forces customer to rate before resuming
+  const [pendingLockout, setPendingLockout] = useState(false);
+
   // State for chat functionality
   const [showChat, setShowChat] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false); // State to track map initialization
@@ -546,9 +552,13 @@ const handlePlaceSelect = useCallback((
           } else if (newStatus === 'no_ustaz_found' || newStatus === 'error_finding_ustaz') {
             setSearchMessage(payload.new.message || t('noProvidersFound'));
             // Optionally, show a retry button or allow manual retry
-          } else if (newStatus === 'cancelled' || newStatus === 'completed') {
-            // Request finished, clean up
-            cancelServiceRequest(); // This will clear state and subscriptions
+          } else if (newStatus === 'completed') {
+            // Service completed — show mandatory rating lockout
+            setPendingLockout(true);
+            setShowRating(true);
+          } else if (newStatus === 'cancelled') {
+            // Request cancelled, clean up
+            cancelServiceRequest();
           }
         }
       )
@@ -1212,7 +1222,64 @@ const handlePlaceSelect = useCallback((
 
         </div>
       </div>
-      <Footer />
+      <Footer />                  {/* Rating Modal - shows after service completion */}
+      {/* Rating modal — full-screen lockout after completion, dismissable otherwise */}
+      {showRating && currentRequestId && user?.id && acceptedProvider?.user_id && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${pendingLockout ? 'bg-black/60' : 'bg-black/40'}`}>
+          <div className="w-full max-w-md">
+            <div className="text-center mb-4">
+              <div className="h-12 w-12 mx-auto mb-2 flex items-center justify-center rounded-full bg-amber-100">
+                <Star className="h-6 w-6 text-amber-600 fill-amber-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Rate {acceptedProvider.firstName} {acceptedProvider.lastName}
+              </h2>
+              {pendingLockout && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Please rate your provider to continue
+                </p>
+              )}
+            </div>
+            <RatingModal
+              requestId={currentRequestId}
+              raterId={user.id}
+              ratedUserName={`${acceptedProvider.firstName} ${acceptedProvider.lastName}`}
+              onComplete={() => {
+                setShowRating(false);
+                setPendingLockout(false);
+                // Clean up client-side state
+                if (requestSubscriptionRef.current) {
+                  supabase.removeChannel(requestSubscriptionRef.current);
+                  requestSubscriptionRef.current = null;
+                }
+                if (liveLocationSubscriptionRef.current) {
+                  supabase.removeChannel(liveLocationSubscriptionRef.current);
+                  liveLocationSubscriptionRef.current = null;
+                }
+                if (retryTimeoutRef.current) {
+                  clearTimeout(retryTimeoutRef.current);
+                  retryTimeoutRef.current = null;
+                }
+                setCurrentRequestId(null);
+                setAcceptedProvider(null);
+                setProviderLiveLocation(null);
+                setAvailableProviders([]);
+                setSelectedProviderIds([]);
+                setShowProviderList(false);
+                if (userMarkerRef.current && window.L) {
+                  mapRef.current?.removeLayer(userMarkerRef.current);
+                  userMarkerRef.current = null;
+                }
+                if (providerMarkerRef.current && window.L) {
+                  mapRef.current?.removeLayer(providerMarkerRef.current);
+                  providerMarkerRef.current = null;
+                }
+              }}
+              onClose={pendingLockout ? undefined : () => setShowRating(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Chat Component - Only renders when showChat is true */}
       {showChat && user?.id && acceptedProvider?.user_id && (

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/server';
 import UserTrackingMap from '../components/UserTrackingMap';
 import ProviderRequestTracker from '../components/ProviderRequestTracker';
 import ProviderLocationTracker from '../components/ProviderLocationTracker';

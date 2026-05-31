@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Phone, MessageSquare, Clock, Navigation, MapPin } from 'lucide-react';
+import { Phone, MessageSquare, Clock, Navigation, MapPin, Star, Briefcase, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '../../../client/supabaseClient';
 
 interface ProviderInfo {
   user_id: string;
@@ -40,6 +41,8 @@ const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
 }) => {
   const [distance, setDistance] = useState<number | null>(null);
   const [eta, setEta] = useState<number | null>(null); // in minutes
+  const [providerRating, setProviderRating] = useState<{ avg: number; count: number; jobs: number } | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(true);
 
   // Calculate distance and ETA
   useEffect(() => {
@@ -83,6 +86,34 @@ const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
     }
   }, [userLat, userLng, liveLocation]);
 
+  // Fetch provider rating & completed job stats
+  useEffect(() => {
+    if (!provider?.user_id) return;
+    let cancelled = false;
+    setRatingLoading(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_provider_stats', { p_provider_id: provider.user_id });
+        if (cancelled) return;
+        if (error) {
+          console.warn('Error fetching provider stats:', error);
+          return;
+        }
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) {
+          setProviderRating({
+            avg: row.avg_rating || 0,
+            count: row.total_ratings || 0,
+            jobs: row.completed_jobs || 0
+          });
+        }
+      } finally {
+        if (!cancelled) setRatingLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [provider?.user_id]);
+
   if (!provider) {
     return null;
   }
@@ -111,6 +142,24 @@ const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
                 {provider.firstName} {provider.lastName}
               </h3>
               <p className="text-sm text-gray-600">Service Provider</p>
+              {/* Rating badge */}
+              <div className="flex items-center gap-3 mt-1">
+                {ratingLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                ) : providerRating ? (
+                  <>
+                    <div className="flex items-center text-sm">
+                      <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 mr-1" />
+                      <span className="font-semibold text-gray-800">{providerRating.avg.toFixed(1)}</span>
+                      <span className="text-gray-400 ml-1">({providerRating.count})</span>
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Briefcase className="h-3.5 w-3.5 mr-1" />
+                      <span>{providerRating.jobs} service{providerRating.jobs !== 1 ? 's' : ''} completed</span>
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
 

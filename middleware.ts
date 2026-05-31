@@ -67,7 +67,56 @@ import { createServerClient } from '@supabase/ssr';
 const PROVIDER_AUTH = '/auth/provider-login';
 const CUSTOMER_AUTH = '/auth/login';
 
+/**
+ * Verify the admin session cookie in Edge Runtime.
+ * Parses the JSON payload (before the last '.') and checks expiry + email match.
+ * Full HMAC signature verification happens in API routes (Node.js runtime).
+ */
+function verifyAdminCookieEdge(cookieValue: string | undefined): boolean {
+  if (!cookieValue) return false;
+
+  try {
+    const lastDot = cookieValue.lastIndexOf('.');
+    if (lastDot === -1) return false;
+
+    const payload = cookieValue.slice(0, lastDot);
+    const parsed = JSON.parse(payload);
+
+    // Verify expiry
+    if (!parsed.exp || parsed.exp < Date.now()) return false;
+
+    // Verify email matches configured admin
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail || parsed.email !== adminEmail) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+
+  // ─── Admin route protection (Edge Runtime safe — no Node.js crypto) ───
+  if (path.startsWith('/admin')) {
+    // Allow access to login page
+    if (path === '/admin/login') {
+      return NextResponse.next();
+    }
+
+    // Verify admin session cookie (payload expiry + email check)
+    const adminSession = req.cookies.get('admin_session')?.value;
+    if (!verifyAdminCookieEdge(adminSession)) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/admin/login';
+      return NextResponse.redirect(url);
+    }
+
+    // Authenticated admin — allow access
+    return NextResponse.next();
+  }
+
   // 1. Create an initial response
   let res = NextResponse.next({
     request: {
@@ -101,7 +150,6 @@ export async function middleware(req: NextRequest) {
 
   // 3. Always run getUser() to refresh the token if necessary
   const { data: { user } } = await supabase.auth.getUser();
-  const path = req.nextUrl.pathname;
 
   // Logged-in user landing on "/" goes to dashboard.
   if (user && path === '/') {
@@ -137,5 +185,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/become-ustaz/:path*', '/process/:path*'],
+  matcher: ['/', '/dashboard/:path*', '/become-ustaz/:path*', '/process/:path*', '/admin', '/admin/:path*'],
 };

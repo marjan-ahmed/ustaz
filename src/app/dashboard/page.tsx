@@ -25,6 +25,7 @@ import {
   Clock, // Added for request timestamp
   MessageSquare,
   Info, // Added for chat/message icon
+  Wallet as WalletIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,8 @@ import {
 } from "@/components/ui/dialog";
 import ProviderRequestNotification from "../components/ProviderRequestNotification";
 import ProviderLocationTracker from "../components/ProviderLocationTracker";
+import ArrivalWorkflow from "../components/ArrivalWorkflow";
+import WalletPanel from "../components/WalletPanel";
 import { toast } from "sonner";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { useFcmToken } from "@/hooks/useFcmToken";
@@ -277,7 +280,7 @@ function ProviderDashboardInner() {
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   // Added 'request' and 'chat' tabs
-  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request" | "chat">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request" | "chat" | "wallet">("profile");
 
   // State for editing profile
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
@@ -301,6 +304,8 @@ function ProviderDashboardInner() {
   });
   const [phoneChangeErrors, setPhoneChangeErrors] = useState<Record<string, string>>({});
   const [isSavingPhone, setIsSavingPhone] = useState<boolean>(false);
+
+  // Rating state is now only on the process page (customer rates provider)
 
   // New state for service requests
   const [serviceRequests, setServiceRequests] = useState<IServiceRequest[]>([]);
@@ -360,6 +365,11 @@ function ProviderDashboardInner() {
       title: "Phone Verification",
       tab: "phone-verification",
       icon: Phone,
+    },
+    {
+      title: "Wallet",
+      tab: "wallet",
+      icon: WalletIcon,
     },
   ];
 
@@ -588,6 +598,15 @@ function ProviderDashboardInner() {
     }
   }, []);
 
+  // Callback for ArrivalWorkflow status changes
+  const handleRequestStatusChange = useCallback((newStatus: string, requestId: string) => {
+    setServiceRequests((prev) =>
+      prev.map((req) =>
+        req.id === requestId ? { ...req, status: newStatus as IServiceRequest['status'] } : req
+      )
+    );
+  }, []);
+
   // New: Fetch service requests for this provider
   const fetchServiceRequests = useCallback(async (providerId: string) => {
     try {
@@ -661,6 +680,8 @@ function ProviderDashboardInner() {
       const data = await response.json();
 
       if (!response.ok) {
+        // Show specific error from server (e.g. insufficient balance)
+        toast.error(data.details || data.error || 'Failed to update provider status');
         throw new Error(data.error || 'Failed to update provider status');
       }
     } catch (error: any) {
@@ -1557,7 +1578,7 @@ function ProviderDashboardInner() {
                     return (
                       <SidebarMenuItem key={item.tab}>
                         <SidebarMenuButton
-                          onClick={() => setActiveTab(item.tab as "request" | "chat" | "settings" | "phone-verification" | "profile")}
+                          onClick={() => setActiveTab(item.tab as "request" | "chat" | "settings" | "phone-verification" | "profile" | "wallet")}
                           className={`w-full justify-start px-3 py-2 rounded-lg transition-colors relative ${
                             activeTab === item.tab
                               ? "bg-[#db4b0d] text-white hover:bg-[#c4420c]"
@@ -1631,6 +1652,7 @@ function ProviderDashboardInner() {
                     {activeTab === "profile" && "Profile"}
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "phone-verification" && "Phone Verification"}
+                    {activeTab === "wallet" && "Wallet"}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -1648,7 +1670,7 @@ function ProviderDashboardInner() {
             */}
             {userIdFromUrl && (
               <ProviderRequestNotification
-                providerId={userIdFromUrl}
+                providerId={userIdFromUrl!}
                 onAccept={async (requestId) => { await handleAcceptRequest(requestId); }}
                 onReject={async (requestId) => { await handleRejectRequest(requestId); }}
                 onOpenChat={(userId, requestId) => {
@@ -1780,12 +1802,15 @@ function ProviderDashboardInner() {
 )}
 
 
-                  {request.status === "accepted" && request.accepted_by_provider_id === userIdFromUrl && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4 text-center">
-                      <p className="text-sm font-medium text-green-800 flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        You have accepted this request.
-                      </p>
+                  {request.accepted_by_provider_id === userIdFromUrl && ["accepted", "arriving", "arrived", "in_progress", "work_in_progress", "completed"].includes(request.status) && (
+                    <div className="mt-4">
+                      <ArrivalWorkflow
+                        requestId={request.id}
+                        providerId={userIdFromUrl!}
+                        serviceStartedAt={(request as any).service_started_at}
+                        currentStatus={request.status}
+                        onStatusChange={(newStatus) => handleRequestStatusChange(newStatus, request.id)}
+                      />
                     </div>
                   )}
 
@@ -2356,6 +2381,10 @@ function ProviderDashboardInner() {
                   </CardContent>
                 </Card>
               </div>
+            )}
+
+            {activeTab === "wallet" && userIdFromUrl && (
+              <WalletPanel providerId={userIdFromUrl} />
             )}
 
             {activeTab === "chat" && (

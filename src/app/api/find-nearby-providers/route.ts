@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/server';
+import { createAuthedClient } from '@/lib/server';
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createAuthedClient();
 
   // Define type for provider with distance
   type ProviderWithDistance = {
