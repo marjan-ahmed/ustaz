@@ -17,9 +17,13 @@ Next.js 15 (App Router, Turbopack) frontend, Supabase backend.
   sensitive table; all privileged operations go through `SECURITY DEFINER` RPCs.
 - **Realtime**: two channels — `location-update:{requestId}` (broadcast, hot path)
   and `postgres_changes` for state transitions on `service_requests`.
+- **Push (closed-tab)**: FCM HTTP v1 via `send-fcm` Edge Function; tokens in
+  `fcm_tokens` (RLS, self-only); `useFcmToken` hook on dashboard + process.
 - **Maps**: Google Maps via `@react-google-maps/api`.
 - **i18n**: next-intl (EN/UR/AR with RTL).
 - **Twilio Verify**: SMS provider for OTP, called from Edge Functions only.
+- **Mobile target**: Capacitor (`capacitor.config.ts`) — re-uses same Supabase
+  JWT, RPCs, and Realtime channels; no auth re-implementation needed.
 
 ### Key Components
 - **ServiceContext**: Manages service request state (address, service type, coordinates).
@@ -69,10 +73,20 @@ Prefer the **Supabase MCP** for schema/data changes — `mcp__supabase__apply_mi
 - `verify-otp` — Twilio Verify check → upsert auth user with synthesized email
   `<digits>@phone.ustaz.local` → `admin.generateLink({ type:'magiclink' })` →
   client exchanges `token_hash` via `supabase.auth.verifyOtp` to set the cookie.
+- `send-fcm` — FCM HTTP v1 send. Server-to-server only; guarded by
+  `x-internal-secret` header. Mints OAuth2 access token from service account,
+  looks up `fcm_tokens` for the recipient `userIds`, sends, auto-prunes
+  `UNREGISTERED` / `NOT_FOUND` tokens. Called by Next.js routes via
+  `src/lib/sendPush.ts` after request creation and accept.
 
 ### Required Edge Function secrets
-`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `PHONE_PEPPER`.
-Set via Dashboard → Edge Functions → Secrets.
+- OTP: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `PHONE_PEPPER`
+- Push: `FCM_SERVICE_ACCOUNT_JSON` (rotated key only — never commit), `INTERNAL_API_SECRET`
+- Both must also be present in Next.js (`.env.local`) where applicable:
+  `NEXT_PUBLIC_FIREBASE_*` (web config), `NEXT_PUBLIC_FIREBASE_VAPID_KEY`, `INTERNAL_API_SECRET`.
+Set Supabase-side via Dashboard → Edge Functions → Secrets (multiline values OK
+for the FCM JSON). Never paste the service account JSON anywhere except the
+Supabase secret store.
 
 ### Twilio gotchas
 - **Twilio Verify Geo-Permissions**: PK (and most non-US countries) blocked by
@@ -100,9 +114,65 @@ Set via Dashboard → Edge Functions → Secrets.
  → in_progress → work_in_progress → completed`
 Terminal: `cancelled`, `no_ustaz_found`, `rejected`.
 
-Transitions are enforced by RPCs (`accept_service_request_authed`,
-`update_request_to_arriving`, etc.). Adding a status? Update the RPC + the
-dashboard render conditions + the customer `RequestStatus` union.
+Each transition is a `SECURITY DEFINER` RPC: `accept_service_request_authed`,
+`update_request_to_arriving`, `update_request_to_arrived`,
+`update_request_to_in_progress` / `start_service`, `complete_service`,
+`cancel_service_request`. The route at `src/app/api/update-request-status/route.ts`
+dispatches to them based on `action` and a session-derived `user.id`.
+
+Timer columns populated by these RPCs: `provider_arrived_at` (on `arrived`),
+`service_started_at` (on `in_progress`), `service_completed_at` (on `completed`).
+`complete_service` also clears `live_locations` for the request and sets the
+provider back to `available`.
+
+Adding a status? Update the RPC + the dashboard render conditions + the customer
+`RequestStatus` union + the `update-request-status` action list + `RatingModal`
+display conditions.
+
+## Ratings (two-way after completion)
+
+- `ratings` table: `(request_id, rater_id, rated_user_id, rating, comment)` with
+  `UNIQUE(request_id, rater_id)` — one rating per party per request.
+- `rate_service(p_request_id, p_rater_id, p_rated_user_id, p_rating, p_comment)`
+  RPC — `SECURITY DEFINER`; requires `status='completed'` and caller is a party.
+  ON CONFLICT does an UPDATE so re-rating is allowed.
+- `get_provider_stats(p_provider_id)` — avg rating, total ratings, completed jobs.
+- `RatingModal` is rendered on the customer's `/process` page when
+  `requestStatus === 'completed'` and on the provider's dashboard via
+  `existingRatings` guard. **Skip / dismiss does NOT mutate DB** — purely
+  client-side state cleanup.
+
+## Wallet / Escrow / Commission
+
+Prepaid wallet model — provider tops up; platform deducts commission per
+completed job. Cash flows directly customer → provider; only the commission
+slice is digitized.
+
+Tables: `provider_wallets`, `wallet_transactions`, `topup_requests`.
+RPC: `get_wallet(p_provider_id)` returns `(wallet_id, balance, total_earned,
+total_commission_paid, recent_transactions, pending_topups)`. **All
+internal references use `pw.balance` etc. aliased to avoid the RETURNS TABLE
+column ambiguity** (PostgreSQL treats those as in-scope variables).
+
+UI: `src/app/components/WalletPanel.tsx` shows balance + a topup flow
+(amount + Raast/JazzCash ref + receipt upload). Receipts go to the
+`topup-receipts` storage bucket via `/api/topup/upload-receipt`. Admin
+approves via `/api/admin/topup-action` which credits the balance + writes
+a ledger entry.
+
+`provider-status` POST checks wallet ≥ `min_wallet_to_work` before letting
+the provider go online — so a 0-balance provider cannot accept jobs.
+
+## Admin Portal
+
+Separate session-isolated portal at `/admin/*`:
+- `/admin/login` → POST `/api/admin/login` (env-based `ADMIN_EMAIL`/`ADMIN_PASSWORD`
+  in `.env.local`, server-only).
+- `/admin/dashboard` → review pending topups, approve/reject via
+  `/api/admin/topup-action`.
+
+Admin routes are gated separately from customer/provider session cookies and
+should never run under the public Supabase RLS context.
 
 ## Testing Gotchas (don't skip)
 
@@ -117,6 +187,35 @@ dashboard render conditions + the customer `RequestStatus` union.
   poll on the customer side is the safety net.
 - **postgres_changes filter ops**: only `eq, neq, lt, lte, gt, gte, in`.
   Array `cs` (contains) is silently dropped — filter client-side instead.
+- **Windows `.next/cache` rename race**: `next-pwa` + Webpack on Windows can
+  throw `Cannot read properties of undefined (reading 'length')` after several
+  incremental builds. Fix: `rm -rf .next` before `npm run build`. Vercel is
+  unaffected (fresh build per deploy).
+- **FCM service account is the keys-to-the-kingdom**: never paste it in chat,
+  IDE selections, or anywhere except the Supabase secret store. If exposed,
+  delete in Firebase IAM → generate new → update secret. Web config + VAPID
+  public key are not secrets and may live in `.env.local`.
+
+## E2E Tests
+
+Playwright suite in `e2e/` (`playwright.config.ts` at root): `cancellation`,
+`rating`, `refresh-resilience`, `state-machine`. Helpers in
+`e2e/helpers/{auth,db}.ts`. Run with `npx playwright test` against a running
+dev server. Useful for end-to-end smoke before deploy — covers the
+arrival → in_progress → completed → rating loop and refresh-state recovery.
+
+## Mobile (Capacitor) — upcoming
+
+`capacitor.config.ts` is the seed for the Android shell. The web app is
+designed so the mobile port reuses everything:
+- Same Supabase JWT (cookies on web, `localStorage` on mobile is acceptable).
+- Same `SECURITY DEFINER` RPCs over PostgREST.
+- Same Realtime channel names (`location-update:{requestId}`, `chat:{requestId}`, …).
+- FCM tokens registered through the same `fcm_tokens` table; the native FCM
+  SDK provides the token, the rest of the pipeline is identical.
+
+Do **not** invent mobile-specific RPCs or auth flows — if it doesn't work on
+web first, it shouldn't ship to mobile.
 
 ## Video Generation (ustaz-visuals)
 

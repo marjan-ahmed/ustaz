@@ -52,8 +52,8 @@ function Footer() {
             <ul className="space-y-3 text-sm">
               <li><Link href="/about" className="hover:text-white transition-colors">About</Link></li>
               <li><Link href="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-              <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
-              <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
             </ul>
           </div>
 
@@ -63,8 +63,7 @@ function Footer() {
             <ul className="space-y-3 text-sm">
               <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="/refund-policy" className="hover:text-white transition-colors">Refund Policy</Link></li>
-              <li><Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+              {/* <li><Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li> */}
             </ul>
           </div>
 
@@ -73,9 +72,9 @@ function Footer() {
             <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Connect</h3>
             <ul className="space-y-3 text-sm">
               <li><Link href="https://www.facebook.com/profile.php?id=61574423382909" target="_blank" className="hover:text-white transition-colors">Facebook</Link></li>
-              <li><Link href="https://instagram.com/m.marjan.ahmed" target="_blank" className="hover:text-white transition-colors">Instagram</Link></li>
-              <li><Link href="https://x.com/@m_marjanahmed" target="_blank" className="hover:text-white transition-colors">Twitter</Link></li>
-              <li><Link href="https://linkedin.com" target="_blank" className="hover:text-white transition-colors">LinkedIn</Link></li>
+              <li><Link href="https://instagram.com/mmarjanahmed" target="_blank" className="hover:text-white transition-colors">Instagram</Link></li>
+              <li><Link href="https://x.com/@marjan_ahmed32" target="_blank" className="hover:text-white transition-colors">Twitter</Link></li>
+              <li><Link href="https://linkedin.com/in/hafizmarjanahmed" target="_blank" className="hover:text-white transition-colors">LinkedIn</Link></li>
             </ul>
           </div>
         </div>

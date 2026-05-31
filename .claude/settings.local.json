@@ -10,7 +10,9 @@
       "Bash(supabase functions list)",
       "mcp__supabase__execute_sql",
       "mcp__supabase__list_tables",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_wait_for"
     ]
   },
   "enableAllProjectMcpServers": true,
