@@ -695,33 +695,33 @@ function ProviderDashboardInner() {
     );
   }, []);
 
-  // New: Fetch service requests for this provider
+  const ACTIVE_REQUEST_STATUSES = [
+    'notified_multiple', 'accepted', 'provider_enroute',
+    'arriving', 'arrived', 'in_progress', 'work_in_progress',
+  ] as const;
+
+  // New: Fetch service requests for this provider — only active ones
   const fetchServiceRequests = useCallback(async (providerId: string) => {
     try {
-      // Fetch requests where this provider was notified OR accepted
       const { data, error } = await supabase
         .from('service_requests')
         .select('*')
-        .or(`notified_providers.cs.{${providerId}},accepted_by_provider_id.eq.${providerId}`) // Check if providerId is in notified_providers array OR if they accepted
-        .order('created_at', { ascending: false }); // Show newest requests first
+        .or(`notified_providers.cs.{${providerId}},accepted_by_provider_id.eq.${providerId}`)
+        .in('status', ACTIVE_REQUEST_STATUSES)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      if (data) {
-        setServiceRequests(data as IServiceRequest[]);
-        // Calculate unread requests (e.g., status is 'notified_multiple' and not yet accepted by this provider)
-        const unread = data.filter(req =>
-          req.status === 'notified_multiple' &&
-          req.notified_providers?.includes(providerId) && // Ensure this provider was notified
-          req.accepted_by_provider_id !== providerId // And this provider hasn't accepted it yet
-        ).length;
-        setUnreadRequestCount(unread);
-      }
+      const rows = (data ?? []) as IServiceRequest[];
+      setServiceRequests(rows);
+      const unread = rows.filter(req =>
+        req.status === 'notified_multiple' &&
+        req.notified_providers?.includes(providerId) &&
+        req.accepted_by_provider_id !== providerId
+      ).length;
+      setUnreadRequestCount(unread);
     } catch (err: any) {
       console.error("Error fetching service requests:", err.message);
-      // Optionally set an error state for requests
     }
   }, []);
 
@@ -1036,6 +1036,11 @@ function ProviderDashboardInner() {
           setServiceRequests((prev) => {
             if (payload.eventType === 'DELETE') {
               return prev.filter((req) => req.id !== (oldRequest?.id ?? newRequest.id));
+            }
+            // Remove from list when it leaves active statuses (cancelled/completed/etc.)
+            const stillActive = (ACTIVE_REQUEST_STATUSES as readonly string[]).includes(newRequest.status);
+            if (!stillActive) {
+              return prev.filter((req) => req.id !== newRequest.id);
             }
             const existingIndex = prev.findIndex((req) => req.id === newRequest.id);
             if (existingIndex >= 0) {
@@ -1912,7 +1917,7 @@ function ProviderDashboardInner() {
 
 
                   {request.accepted_by_provider_id === userIdFromUrl && ["accepted", "arriving", "arrived", "in_progress", "work_in_progress", "completed"].includes(request.status) && (
-                    <div className="mt-4">
+                    <div className="mt-4 space-y-2">
                       <ArrivalWorkflow
                         requestId={request.id}
                         providerId={userIdFromUrl!}
@@ -1920,6 +1925,18 @@ function ProviderDashboardInner() {
                         currentStatus={request.status}
                         onStatusChange={(newStatus) => handleRequestStatusChange(newStatus, request.id)}
                       />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-[#db4b0d] text-[#db4b0d] hover:bg-orange-50"
+                        onClick={() => {
+                          setSelectedConversation(request.user_id);
+                          setActiveTab('chat');
+                        }}
+                      >
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Chat with Customer
+                      </Button>
                     </div>
                   )}
 

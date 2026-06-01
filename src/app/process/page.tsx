@@ -131,6 +131,7 @@ function ProcessPage() {
   const userMarkerRef = useRef<any>(null); // Ref for user's map marker
   const providerMarkerRef = useRef<any>(null); // Ref for provider's map marker
   const requestSubscriptionRef = useRef<any>(null); // Ref for service_requests subscription
+  const isSubmittingRef = useRef(false); // Guards against double-click on "Find Providers"
   const liveLocationSubscriptionRef = useRef<any>(null); // Ref for live_locations subscription
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for retry timeout
   const [noProvider, setNoProvider] = useState(false); // 👈 NEW state
@@ -562,10 +563,24 @@ const handlePlaceSelect = useCallback((
           });
 
           if (newStatus === 'accepted' && acceptedByProviderId) {
-            // Fetch provider details and start live location tracking
             console.log('Provider accepted request, starting live location tracking for request:', requestId);
             fetchAcceptedProviderDetails(acceptedByProviderId);
             subscribeToProviderLiveLocation(requestId);
+            // Immediately seed the map from DB in case provider already has a location
+            supabase
+              .from('live_locations')
+              .select('latitude, longitude, updated_at')
+              .eq('request_id', requestId)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) {
+                  setProviderLiveLocation({
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    updated_at: data.updated_at,
+                  });
+                }
+              });
           } else if (newStatus === 'rejected') {
             // If one provider rejected, we don't auto-retry here as multiple were notified
             // The backend should manage if *all* notified providers reject or timeout.
@@ -795,7 +810,7 @@ const handlePlaceSelect = useCallback((
     };
 
     fetchSnapshot();                                   // seed immediately
-    const pollId = setInterval(fetchSnapshot, 5_000);  // ...and every 5 s
+    const pollId = setInterval(fetchSnapshot, 2_000);  // poll every 2 s for fast first-paint
 
     const ch = supabase
       .channel(`location-update:${currentRequestId}`, {
@@ -1021,6 +1036,8 @@ const handlePlaceSelect = useCallback((
                       toast.error("Please complete your service selection and location.");
                       return;
                     }
+                    if (isSubmittingRef.current) return;
+                    isSubmittingRef.current = true;
 
                     // Set status to finding provider to show loading UI
                     setRequestStatus('finding_provider');
@@ -1083,6 +1100,8 @@ const handlePlaceSelect = useCallback((
                       setRequestStatus('error');
                       setSearchMessage(error.message || 'Failed to send request');
                       toast.error(error.message || 'Failed to send request');
+                    } finally {
+                      isSubmittingRef.current = false;
                     }
                   }}
                   disabled={requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
