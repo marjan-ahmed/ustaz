@@ -123,6 +123,11 @@ body {
   font-family: Arial, Helvetica, sans-serif, ;
 }
 
+/* Smooth in-page anchor scrolling for table-of-contents links */
+html {
+  scroll-behavior: smooth;
+}
+
 @keyframes slide-up {
   from {
     opacity: 0;
@@ -271,6 +276,11 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Use Atkinson variable font for prose h2 headings across legal pages */
+.prose h2, .prose-slate h2 {
+  font-family: var(--font-atkinson, system-ui, sans-serif) !important;
 }
 
 /* Service Modal Animation */

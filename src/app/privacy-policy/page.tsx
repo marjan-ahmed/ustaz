@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ReadingTime from '../components/ReadingTime';
 
 export const metadata = {
   title: 'Privacy Policy — Ustaz',
@@ -47,6 +48,7 @@ export default function PrivacyPolicy() {
             </h1>
             <p className="mt-3 text-sm text-gray-500">
               Last updated: <span className="font-medium text-gray-700">{LAST_UPDATED}</span>
+              <ReadingTime targetId="privacy-article" />
             </p>
             <p className="mt-6 text-base text-gray-700 leading-7">
               This Privacy Policy describes how Ustaz (&ldquo;<strong>we</strong>&rdquo;,
@@ -66,35 +68,41 @@ export default function PrivacyPolicy() {
           </header>
 
           <nav aria-label="Table of contents" className="mb-12">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Table of contents</h2>
-            <ol className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-gray-700 list-none">
-              {sections.map(([id, label]) => (
-                <li key={id}>
-                  <a href={`#${id}`} className="hover:text-[#db4b0d]">
-                    {label}
-                  </a>
-                </li>
-              ))}
-            </ol>
+            <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-gray-900">Table of contents</h2>
+                <span className="text-sm text-gray-500">{sections.length}</span>
+              </div>
+              <ol className="text-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {sections.map(([id, label], idx) => (
+                  <li key={id} className="">
+                    <a href={`#${id}`} className="flex items-center gap-3 text-gray-700 hover:text-[#db4b0d]">
+                      <span className="flex-none w-6 h-6 bg-gray-100 text-gray-700 rounded-full flex items-center justify-center text-xs font-medium">{idx + 1}</span>
+                      <span className="truncate">{label}</span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
           </nav>
 
-          <article className="prose prose-slate max-w-none prose-headings:scroll-mt-24 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-p:leading-7 prose-li:leading-7">
+          <article id="privacy-article" className="prose prose-slate max-w-none prose-headings:scroll-mt-24 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-p:leading-7 prose-li:leading-7">
 
-            <h2 id="scope">1. Scope &amp; Acceptance</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="scope">1. Scope &amp; Acceptance</h2>
             <p>
               This Policy applies to all personal data collected via the Ustaz web application, mobile
               applications, APIs, and any related services. By using the Platform, you acknowledge
               that you have read and understood this Policy.
             </p>
 
-            <h2 id="controller">2. Data Controller</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="controller">2. Data Controller</h2>
             <p>
               For the purposes of this Policy, the data controller is <strong>Ustaz (Pvt) Ltd</strong>,
               incorporated in Pakistan. Our registered contact for privacy matters is{' '}
               <a href="mailto:privacy@ustaz.app" className="text-[#db4b0d] underline">privacy@ustaz.app</a>.
             </p>
 
-            <h2 id="data-collected">3. Personal Data We Collect</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="data-collected">3. Personal Data We Collect</h2>
             <h3>From all users</h3>
             <ul>
               <li><strong>Identity</strong>: full name, profile photo.</li>
@@ -118,14 +126,14 @@ export default function PrivacyPolicy() {
               <li><strong>Rating history</strong>, completed-jobs count, online/offline status.</li>
             </ul>
 
-            <h2 id="how-collected">4. How We Collect Data</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="how-collected">4. How We Collect Data</h2>
             <ul>
               <li><strong>Directly from you</strong> when you register, complete profile fields, request a service, top up a wallet, or send a chat message.</li>
               <li><strong>Automatically</strong> via your device when you grant location, notification, or camera permission (e.g.&nbsp;real-time GPS while serving a request; CNIC photo upload).</li>
               <li><strong>From third parties</strong> &mdash; SMS provider (Twilio Verify) to validate your phone, mapping APIs (Google Maps) to geocode addresses, and (where applicable) background-check vendors.</li>
             </ul>
 
-            <h2 id="lawful-basis">5. Lawful Basis &amp; Purposes</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="lawful-basis">5. Lawful Basis &amp; Purposes</h2>
             <p>We process personal data based on one or more of the following lawful bases:</p>
             <ul>
               <li><strong>Contractual necessity</strong>: to provide the Platform&apos;s core functionality (creating, matching, fulfilling, and rating Service Requests).</li>
@@ -134,7 +142,7 @@ export default function PrivacyPolicy() {
               <li><strong>Legal obligation</strong>: tax records, regulatory compliance, response to lawful court orders.</li>
             </ul>
 
-            <h2 id="location">6. Location Data &mdash; Real-time Tracking</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="location">6. Location Data &mdash; Real-time Tracking</h2>
             <p>
               Real-time location tracking is fundamental to how Ustaz works. Here is exactly how it
               behaves:
@@ -167,7 +175,7 @@ export default function PrivacyPolicy() {
               </li>
             </ul>
 
-            <h2 id="cnic-kyc">7. CNIC &amp; KYC Verification</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="cnic-kyc">7. CNIC &amp; KYC Verification</h2>
             <p>
               Providers are required to submit their CNIC details for identity verification. CNIC
               data and submitted documents:
@@ -179,7 +187,7 @@ export default function PrivacyPolicy() {
               <li>Are retained for the duration of the Provider account and up to <strong>5 years</strong> after closure to comply with tax and regulatory requirements.</li>
             </ul>
 
-            <h2 id="payments">8. Payment &amp; Wallet Data</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="payments">8. Payment &amp; Wallet Data</h2>
             <p>
               Service fees flow <strong>directly between Customer and Provider in cash</strong>;
               Ustaz does not handle or process Customer payments. Provider wallet top-ups are
@@ -195,7 +203,7 @@ export default function PrivacyPolicy() {
               gateway directly under their PCI-DSS-compliant infrastructure.
             </p>
 
-            <h2 id="chat-content">9. Chat &amp; Communication Content</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="chat-content">9. Chat &amp; Communication Content</h2>
             <p>
               In-app chat messages between Customer and Provider are stored on our servers and may
               be accessed by authorised Ustaz personnel solely for safety, dispute resolution, and
@@ -204,7 +212,7 @@ export default function PrivacyPolicy() {
               dialer use your device&apos;s telephony stack and are <strong>not recorded</strong> by Ustaz.
             </p>
 
-            <h2 id="cookies">10. Cookies &amp; Local Storage</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="cookies">10. Cookies &amp; Local Storage</h2>
             <p>
               We use HTTP-only, secure cookies to maintain your authenticated session via Supabase
               Auth (<code>@supabase/ssr</code>). We do <strong>not</strong> use third-party
@@ -216,7 +224,7 @@ export default function PrivacyPolicy() {
               <li><strong>Analytics (optional)</strong>: anonymised performance and error telemetry; you may opt out via your account settings.</li>
             </ul>
 
-            <h2 id="push">11. Push Notification Tokens (FCM)</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="push">11. Push Notification Tokens (FCM)</h2>
             <p>
               When you grant notification permission, your browser issues a Firebase Cloud Messaging
               (FCM) registration token. We store this token against your account so we can notify
@@ -225,7 +233,7 @@ export default function PrivacyPolicy() {
               deletion. You can revoke push permission at any time via your browser settings.
             </p>
 
-            <h2 id="third-parties">12. Third-Party Service Providers</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="third-parties">12. Third-Party Service Providers</h2>
             <p>The following third parties process limited data on our behalf:</p>
             <ul>
               <li><strong>Supabase</strong> &mdash; database, authentication, real-time, storage, and serverless functions infrastructure.</li>
@@ -240,7 +248,7 @@ export default function PrivacyPolicy() {
               applicable law and only for the purposes we direct.
             </p>
 
-            <h2 id="sharing">13. How We Share Data</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="sharing">13. How We Share Data</h2>
             <p>We <strong>do not sell</strong> your personal data. We share data only:</p>
             <ul>
               <li>With the matched Customer or Provider, as necessary to complete a Service Request (e.g.&nbsp;name, phone, live location, address);</li>
@@ -250,7 +258,7 @@ export default function PrivacyPolicy() {
               <li>In connection with a merger, acquisition, or sale of all or part of Ustaz&apos;s business, with notice to affected users.</li>
             </ul>
 
-            <h2 id="retention">14. Data Retention</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="retention">14. Data Retention</h2>
             <ul>
               <li><strong>Account profile</strong>: retained while the account is active; deleted within 90 days of account closure, except where required by law.</li>
               <li><strong>Service Requests</strong>: retained for <strong>3 years</strong> after completion (financial-record requirement).</li>
@@ -261,7 +269,7 @@ export default function PrivacyPolicy() {
               <li><strong>OTP attempts log</strong>: <strong>24 hours</strong>, used solely for rate limiting.</li>
             </ul>
 
-            <h2 id="security">15. Security Measures</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="security">15. Security Measures</h2>
             <ul>
               <li>Encrypted-in-transit (TLS 1.2+) for all data exchanged between your device and our servers.</li>
               <li>Encrypted-at-rest for the database, file storage, and authentication tokens.</li>
@@ -276,7 +284,7 @@ export default function PrivacyPolicy() {
               guarantee absolute security of data transmitted over the internet.
             </p>
 
-            <h2 id="rights">16. Your Rights</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="rights">16. Your Rights</h2>
             <p>Subject to applicable law, you have the right to:</p>
             <ul>
               <li><strong>Access</strong> a copy of the personal data we hold about you;</li>
@@ -292,7 +300,7 @@ export default function PrivacyPolicy() {
               with verification of your identity. We will respond within <strong>30 days</strong>.
             </p>
 
-            <h2 id="minors">17. Minors</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="minors">17. Minors</h2>
             <p>
               The Platform is not directed to children under 18. We do not knowingly collect data
               from minors. If you believe a minor has provided us with personal data, please contact{' '}
@@ -300,7 +308,7 @@ export default function PrivacyPolicy() {
               and we will delete the data promptly.
             </p>
 
-            <h2 id="cross-border">18. International Data Transfers</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="cross-border">18. International Data Transfers</h2>
             <p>
               Some of our infrastructure providers (e.g.&nbsp;Supabase, Vercel, Firebase) operate
               data centres outside Pakistan. By using the Platform, you consent to your personal
@@ -308,7 +316,7 @@ export default function PrivacyPolicy() {
               equivalent to those required under Pakistani law.
             </p>
 
-            <h2 id="breach">19. Data Breach Notification</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="breach">19. Data Breach Notification</h2>
             <p>
               In the unlikely event of a personal data breach that is likely to result in a
               significant risk to your rights and freedoms, we will notify you and the relevant
@@ -316,7 +324,7 @@ export default function PrivacyPolicy() {
               breach, in line with international good practice.
             </p>
 
-            <h2 id="changes">20. Changes to this Policy</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="changes">20. Changes to this Policy</h2>
             <p>
               We may update this Policy from time to time. Material changes will be announced
               in-app and by notification at least <strong>30 days</strong> before they take effect.
@@ -324,7 +332,7 @@ export default function PrivacyPolicy() {
               revision.
             </p>
 
-            <h2 id="contact">21. Contact Our Privacy Team</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="contact">21. Contact Our Privacy Team</h2>
             <p>
               Questions, concerns, or requests regarding this Policy or your personal data may be
               directed to:
