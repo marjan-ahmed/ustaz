@@ -2601,7 +2601,7 @@ function ProviderDashboardInner() {
                     <div
                       className={`${
                         selectedConversation ? 'flex' : 'hidden sm:flex'
-                      } flex-1 flex-col bg-gradient-to-b from-orange-50/30 via-white to-white min-w-0`}
+                      } flex-1 flex-col min-w-0`}
                     >
                       {selectedConversation ? (
                         <>
@@ -2631,42 +2631,57 @@ function ProviderDashboardInner() {
                           </div>
 
                           {/* Messages */}
-                          <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4">
+                          <div
+                            className="flex-1 overflow-y-auto px-3 sm:px-4 py-3"
+                            style={{ background: '#efeae2' }}
+                          >
                             {chatMessages.length === 0 ? (
-                              <div className="flex flex-col items-center justify-center h-full text-center text-gray-400 px-6">
-                                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-3">
-                                  <Send className="w-5 h-5 text-[#db4b0d]" />
+                              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                                <div className="bg-white/80 rounded-2xl px-5 py-4 shadow-sm max-w-[220px]">
+                                  <p className="text-[13px] text-gray-500 leading-relaxed">
+                                    No messages yet.<br />Say hi 👋
+                                  </p>
                                 </div>
-                                <p className="text-sm">No messages yet. Say hi 👋</p>
                               </div>
                             ) : (
-                              <div className="space-y-1">
+                              <div className="pb-1">
                                 {chatMessages.map((msg: any, i: number) => {
                                   const mine = msg.sender_id === userIdFromUrl;
                                   const prev = chatMessages[i - 1];
-                                  const stacked = prev && prev.sender_id === msg.sender_id;
+                                  const stacked = Boolean(prev && prev.sender_id === msg.sender_id);
+                                  const radius = stacked
+                                    ? 'rounded-2xl'
+                                    : mine
+                                    ? 'rounded-tl-2xl rounded-bl-2xl rounded-tr-2xl rounded-br-[5px]'
+                                    : 'rounded-tr-2xl rounded-br-2xl rounded-tl-2xl rounded-bl-[5px]';
                                   return (
                                     <div
                                       key={msg.id}
                                       className={`flex ${mine ? 'justify-end' : 'justify-start'} ${stacked ? 'mt-0.5' : 'mt-2'}`}
                                     >
                                       <div
-                                        className={`max-w-[78%] px-3.5 py-2 shadow-sm ${
+                                        className={[
+                                          'max-w-[78%] px-3.5 pt-2 pb-1.5 shadow-sm',
+                                          radius,
                                           mine
-                                            ? `bg-[#db4b0d] text-white ${stacked ? 'rounded-2xl rounded-tr-md' : 'rounded-2xl rounded-br-md'}`
-                                            : `bg-white border border-gray-200 text-gray-900 ${stacked ? 'rounded-2xl rounded-tl-md' : 'rounded-2xl rounded-bl-md'}`
-                                        }`}
+                                            ? 'bg-[#d9fdd3] text-gray-900'
+                                            : 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
+                                        ].join(' ')}
                                       >
                                         <p className="text-[15px] leading-snug whitespace-pre-wrap break-words">
                                           {msg.message}
                                         </p>
-                                        <div className={`flex items-center gap-1 mt-1 text-[10px] ${mine ? 'text-white/80 justify-end' : 'text-gray-400'}`}>
-                                          <span>
+                                        <div className={`flex items-center gap-1 mt-0.5 ${mine ? 'justify-end' : 'justify-start'}`}>
+                                          <span className="text-[11px] text-gray-400 leading-none">
                                             {new Date(msg.created_at).toLocaleTimeString([], {
                                               hour: '2-digit', minute: '2-digit',
                                             })}
                                           </span>
-                                          {mine && (msg._pending ? <Clock className="w-3 h-3" /> : <CheckCheck className="w-3 h-3" />)}
+                                          {mine && (
+                                            msg._pending
+                                              ? <Clock className="w-3 h-3 text-gray-400" />
+                                              : <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+                                          )}
                                         </div>
                                       </div>
                                     </div>
@@ -2679,7 +2694,7 @@ function ProviderDashboardInner() {
 
                           {/* Composer */}
                           <form
-                            className="border-t border-gray-100 bg-white px-3 py-2.5 flex items-center gap-2"
+                            className="border-t border-gray-200 bg-[#f0f2f5] px-3 py-2.5 flex items-center gap-2 shrink-0"
                             onSubmit={(e) => {
                               e.preventDefault();
                               void sendChatMessage();
@@ -2695,15 +2710,15 @@ function ProviderDashboardInner() {
                                 }
                               }}
                               placeholder="Type a message…"
-                              className="flex-1 h-11 rounded-full px-4 bg-gray-50 border-gray-200 focus-visible:ring-[#db4b0d]/40"
+                              className="flex-1 h-11 rounded-full px-4 bg-white border-transparent shadow-sm focus-visible:ring-0 text-[15px]"
                             />
                             <Button
                               type="submit"
                               disabled={!chatDraft.trim() || chatSending}
-                              className="h-11 w-11 p-0 rounded-full bg-[#db4b0d] hover:bg-[#a93a0b] disabled:opacity-50 shrink-0"
+                              className="h-11 w-11 p-0 rounded-full bg-[#25d366] hover:bg-[#1ebe5d] disabled:opacity-50 disabled:bg-gray-300 shrink-0 transition-colors"
                               aria-label="Send message"
                             >
-                              {chatSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                              {chatSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 text-white" />}
                             </Button>
                           </form>
                         </>
