@@ -174,6 +174,63 @@ Separate session-isolated portal at `/admin/*`:
 Admin routes are gated separately from customer/provider session cookies and
 should never run under the public Supabase RLS context.
 
+## Chat (real-time + push)
+
+- **Tables**: `chat_messages (id, sender_id, recipient_id, message, created_at)`
+  — append-only. RLS: `chat_party_select` (only the two parties read);
+  `chat_send` requires `sender_id = auth.uid()` AND an existing
+  `service_requests` row linking sender and recipient where status is active OR
+  `completed` within the last **7 days** (follow-up window — matches Uber).
+  `UPDATE`/`DELETE` are revoked from `authenticated`/`anon` entirely so chat
+  is provably immutable.
+- **NO legacy `validate_chat_message_users` trigger** — dropped. It required
+  the recipient to exist in `profiles`, but customers never land in
+  `profiles` (we don't use that table). RLS already enforces the
+  party-relationship check via `service_requests`, so the trigger was
+  redundant AND wrong (broke provider → customer messages).
+- **NO legacy `Users can send/view/update` RLS policies** — dropped.
+  Permissive `using: true` policies OR'd with the strict ones and silently
+  defeated them.
+- **Realtime**: subscribe to `postgres_changes` INSERT on `chat_messages`
+  with NO filter; `postgres_changes` doesn't support `and(or(...))` /
+  compound filters and silently drops them. RLS gates which rows the
+  client actually receives. Always dedupe by `id` and reconcile optimistic
+  rows by matching `_pending` + content (see `ChatComponent.tsx` and the
+  dashboard `chat` tab).
+- **Optimistic UI is required.** Both surfaces insert an `id: temp_…`
+  message immediately with `_pending: true`, then swap it for the real row
+  when the realtime echo lands, or roll it back on RLS / network failure
+  (restoring the draft).
+- **Chat push** (`/api/chat/notify`): cookie-auth derives the sender from
+  the session, looks up the sender's display name, and fires `sendPush`
+  fire-and-forget. Called after every successful `chat_messages` INSERT on
+  both customer and provider sides. Uses the same `send-fcm` Edge Function
+  pipeline.
+- **Unread chat badge** on the provider sidebar mirrors the requests badge:
+  a per-provider `unread-chat:{providerId}` channel increments
+  `unreadChatCount` on inbound INSERTs that aren't from us and aren't the
+  currently-focused conversation; the badge clears the instant the Chat
+  tab opens.
+
+## Provider tracking card
+
+`ProviderTrackingInfo` on the customer's `/process` page:
+- Status-aware coloured header strip — accepts a `status` prop and maps
+  every state in `service_requests.status` to a colour + label + sub-line +
+  icon. Pulse-animated "Live" dot when a fresh broadcast ping has arrived.
+- ETA + Distance tiles. **Distance < 1 km renders as meters** (e.g.
+  `0.42 km` → `420 m`).
+- Reverse-geocodes the provider's lat/lng via Google Maps Geocoding API
+  (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`). Debounced 600 ms, module-level
+  cache keyed at ~11 m precision so we don't hammer the API. Falls back
+  to raw coords on failure.
+
+The card stays mounted through **every** active status (`provider_enroute`,
+`arriving`, `arrived`, `in_progress`, `work_in_progress`). The
+`ACTIVE_STATUSES` constant in `process/page.tsx` is the single source of
+truth — update it, the visibility gate, and the map `searchPhase` together
+when adding states.
+
 ## Testing Gotchas (don't skip)
 
 - **Cookie collision**: customer + provider in the same Chrome profile share

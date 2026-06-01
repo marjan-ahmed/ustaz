@@ -31,7 +31,29 @@ import RatingModal from '../components/RatingModal';
 
 // Define types for service request status and provider info
 // Updated RequestStatus to include 'notified_multiple' from backend
-type RequestStatus = 'idle' | 'finding_provider' | 'notified' | 'notified_multiple' | 'no_ustaz_found' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'pending_notification' | 'arriving' | 'in_progress';
+type RequestStatus =
+  | 'idle'
+  | 'finding_provider'
+  | 'notified'
+  | 'notified_multiple'
+  | 'no_ustaz_found'
+  | 'accepted'
+  | 'provider_enroute'
+  | 'arriving'
+  | 'arrived'
+  | 'in_progress'
+  | 'work_in_progress'
+  | 'rejected'
+  | 'cancelled'
+  | 'completed'
+  | 'error'
+  | 'pending_notification';
+
+// All statuses where the customer must keep seeing the provider card.
+const ACTIVE_STATUSES: RequestStatus[] = [
+  'notified_multiple', 'accepted', 'provider_enroute', 'arriving',
+  'arrived', 'in_progress', 'work_in_progress',
+];
 
 
 interface ProviderInfo {
@@ -1125,7 +1147,15 @@ const handlePlaceSelect = useCallback((
               )}
 
               {/* Request Status Display (after initial selection and request sent) */}
-              {currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'accepted' || requestStatus === 'rejected' || requestStatus === 'cancelled' || requestStatus === 'completed' || requestStatus === 'no_ustaz_found' || requestStatus === 'error' || (requestStatus === 'finding_provider' && searchMessage === t('notifyingSelectedProviders'))) && (
+              {currentRequestId && (
+                ACTIVE_STATUSES.includes(requestStatus) ||
+                requestStatus === 'rejected' ||
+                requestStatus === 'cancelled' ||
+                requestStatus === 'completed' ||
+                requestStatus === 'no_ustaz_found' ||
+                requestStatus === 'error' ||
+                (requestStatus === 'finding_provider' && searchMessage === t('notifyingSelectedProviders'))
+              ) && (
                 <div className="mt-8">
                   <div className="debug-info hidden"> {/* Hidden debug info for troubleshooting */}
                     <p>Debug: requestStatus = {requestStatus}</p>
@@ -1139,6 +1169,7 @@ const handlePlaceSelect = useCallback((
                       userLng={userLongitude}
                       provider={acceptedProvider}
                       liveLocation={providerLiveLocation}
+                      status={requestStatus}
                       onRequestChat={handleRequestChat}
                       onCallProvider={handleCallProvider}
                     />
@@ -1201,7 +1232,7 @@ const handlePlaceSelect = useCallback((
         })() : []} // Pass as is with logging
         searchPhase={
           requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? 'finding_providers' :
-          requestStatus === 'accepted' || requestStatus === 'arriving' || requestStatus === 'in_progress' ? 'provider_accepted' :
+          ACTIVE_STATUSES.includes(requestStatus) ? 'provider_accepted' :
           'address_selection'
         }
         onRouteCalculated={(route) => {
