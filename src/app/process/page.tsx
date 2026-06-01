@@ -994,7 +994,6 @@ const handlePlaceSelect = useCallback((
                     onPlaceSelect={handlePlaceSelect}
                     value={address}
                     disabled={requestStatus !== 'idle' && requestStatus !== 'error' && requestStatus !== 'no_ustaz_found'}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm transition focus:outline-none focus:ring-0 focus:border-[#db4b0d] bg-white text-gray-800 placeholder:text-gray-500"
                   />
                 </div>
                 <div className="mt-4">
