@@ -123,7 +123,7 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
       { types: ["address"] }
     );
 
-    const ac = autocompleteRef.current;
+    const ac = autocompleteRef.current!;
     ac.addListener("place_changed", () => {
       const place = ac.getPlace();
       if (place?.formatted_address && place.geometry?.location) {
