@@ -174,6 +174,18 @@ Separate session-isolated portal at `/admin/*`:
 Admin routes are gated separately from customer/provider session cookies and
 should never run under the public Supabase RLS context.
 
+## Legal pages
+
+Three standalone, server-rendered pages under `src/app/{terms,privacy-policy,cookie-policy}/page.tsx`.
+Each one shares the same structure: hero with `Last updated` + `ReadingTime`,
+numbered grid ToC, `<article>` body with `text-2xl font-extrabold mt-6`
+headings whose `id` matches the ToC entry. **Cookie Policy** lists the actual
+cookies we set (`sb-{ref}-auth-token`, `NEXT_LOCALE`, `firebase-messaging-sw.js`,
+etc.) and is explicit about NOT using advertising / cross-site trackers. Footer
+links to all three from the Legal column. When adding a new section, update the
+`sections` const + the heading `id` + the anchor link together — they MUST stay
+aligned for the ToC to navigate correctly.
+
 ## Chat (real-time + push)
 
 - **Tables**: `chat_messages (id, sender_id, recipient_id, message, created_at)`

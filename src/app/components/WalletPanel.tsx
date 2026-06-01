@@ -216,7 +216,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Balance Card */}
-      <Card className="shadow-sm border-gray-200 bg-gradient-to-br from-orange-50 to-red-50">
+      <Card className="shadow-sm border-gray-200 bg-gradient-to-br text-white bg-[#db4b0d]">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
           <div>
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">

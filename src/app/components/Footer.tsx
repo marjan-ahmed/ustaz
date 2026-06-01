@@ -63,7 +63,7 @@ function Footer() {
             <ul className="space-y-3 text-sm">
               <li><Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              {/* <li><Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li> */}
+              <li><Link href="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
             </ul>
           </div>
 
