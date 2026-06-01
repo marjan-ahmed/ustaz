@@ -705,11 +705,32 @@ const handlePlaceSelect = useCallback((
       console.log('[customer] resuming open request', data.id, data.status);
       setCurrentRequestId(data.id);
       setRequestStatus(data.status as RequestStatus);
-      if (data.status === 'accepted' && data.accepted_by_provider_id) {
-        fetchAcceptedProviderDetails(data.accepted_by_provider_id);
+
+      // Inline RPC call — DO NOT delegate to fetchAcceptedProviderDetails here.
+      // That function checks `currentRequestId` from its closure, which is
+      // still null at this exact moment (setCurrentRequestId hasn't committed
+      // yet). Bypassing it ensures the provider card renders on resume.
+      if (data.accepted_by_provider_id) {
+        const { data: prov, error: provErr } = await supabase
+          .rpc('get_assigned_provider', { p_request_id: data.id });
+        if (provErr) {
+          console.warn('[customer] get_assigned_provider on resume failed', provErr);
+          return;
+        }
+        const row = Array.isArray(prov) ? prov[0] : prov;
+        if (row) {
+          setAcceptedProvider({
+            user_id: row.user_id,
+            firstName: row.first_name,
+            lastName: row.last_name,
+            phoneNumber: row.phone_number,
+            phoneCountryCode: row.phone_country_code,
+            email: row.email,
+          });
+        }
       }
     })();
-  }, [isLoaded, isSignedIn, user?.id, currentRequestId, fetchAcceptedProviderDetails]);
+  }, [isLoaded, isSignedIn, user?.id, currentRequestId]);
 
 
   // Determine if the "Find Providers" button should be enabled
@@ -746,7 +767,7 @@ const handlePlaceSelect = useCallback((
       requestStatus,
       acceptedProvider: !!acceptedProvider,
     });
-    if (!currentRequestId || requestStatus !== 'accepted') {
+    if (!currentRequestId || !ACTIVE_STATUSES.includes(requestStatus) || requestStatus === 'notified_multiple') {
       console.log('[customer] tracking useEffect bailed — preconditions not met');
       return;
     }
