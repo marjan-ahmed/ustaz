@@ -216,21 +216,23 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Balance Card */}
-      <Card className="shadow-sm border-gray-200 bg-gradient-to-br text-white bg-[#db4b0d]">
+      <Card className="shadow-sm border-0" style={{ background: '#111828' }}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
           <div>
-            <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
-              <Wallet className="mr-3 h-6 w-6 text-[#db4b0d]" />
+            <CardTitle className="text-2xl font-bold text-white flex items-center">
+              <Wallet className="mr-3 h-6 w-6 text-white/70" />
               Wallet
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-white/50">
               Prepaid wallet for platform commission fees
             </CardDescription>
           </div>
           <Button
             onClick={() => setShowTopupForm(!showTopupForm)}
             variant={showTopupForm ? "outline" : "default"}
-            className={showTopupForm ? "" : "bg-[#db4b0d] hover:bg-[#c4420c]"}
+            className={showTopupForm
+              ? "border-white/30 text-white bg-white/10 hover:bg-white/20"
+              : "bg-[#db4b0d] hover:bg-[#c4420c] text-white"}
           >
             <Plus className="mr-2 h-4 w-4" />
             {showTopupForm ? "Cancel" : "Top Up"}
@@ -239,14 +241,14 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
         <CardContent>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-gray-500 mb-1">Available Balance</p>
-              <p className="text-4xl font-bold text-gray-900">
+              <p className="text-sm font-medium text-white/50 mb-1">Available Balance</p>
+              <p className="text-4xl font-bold text-white">
                 {walletData ? formatCurrency(walletData.balance) : "0 PKR"}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">Total Commission Paid</p>
-              <p className="text-lg font-semibold text-gray-700">
+              <p className="text-sm text-white/50">Total Commission Paid</p>
+              <p className="text-lg font-semibold text-white/80">
                 {walletData ? formatCurrency(walletData.total_commission_paid) : "0 PKR"}
               </p>
             </div>
@@ -254,8 +256,8 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
 
           {/* Floor warning */}
           {walletData && walletData.balance < 200 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm font-medium text-red-800 flex items-center">
+            <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-3">
+              <p className="text-sm font-medium text-red-300 flex items-center">
                 <XCircle className="h-4 w-4 mr-2 shrink-0" />
                 Low balance! You need at least <strong className="mx-1">200 PKR</strong> to go online and receive requests.
               </p>
