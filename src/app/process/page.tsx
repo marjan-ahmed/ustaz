@@ -123,7 +123,8 @@ function ProcessPage() {
   // Full-screen rating lockout — forces customer to rate before resuming
   const [pendingLockout, setPendingLockout] = useState(false);
 
-  // Warranty claim state
+  // Warranty claim state — uses its own requestId, never touches currentRequestId
+  const [warrantyRequestId, setWarrantyRequestId] = useState<string | null>(null);
   const [showWarranty, setShowWarranty]           = useState(false);
   const [warrantyClaimed, setWarrantyClaimed]     = useState(false);
   const [warrantyStatus, setWarrantyStatus]       = useState<string | null>(null);
@@ -495,6 +496,12 @@ const handlePlaceSelect = useCallback((
         providerMarkerRef.current = null;
       }
 
+      // Return to idle so service-type + location inputs re-enable
+      // without needing a page refresh.
+      setRequestStatus('idle');
+      setSearchMessage(null);
+      isSubmittingRef.current = false;
+
     } catch (error: any) {
       console.error('Error cancelling request:', error.message);
       setSearchMessage(`Error cancelling request: ${error.message}`);
@@ -598,10 +605,10 @@ const handlePlaceSelect = useCallback((
             setSearchMessage(payload.new.message || t('noProvidersFound'));
             // Optionally, show a retry button or allow manual retry
           } else if (newStatus === 'completed') {
-            // Service completed — show mandatory rating lockout
             setPendingLockout(true);
             setShowRating(true);
             setCompletedAt(new Date());
+            setWarrantyRequestId(requestId); // capture now so warranty shows after rating
           } else if (newStatus === 'cancelled') {
             // Request cancelled, clean up
             cancelServiceRequest();
@@ -768,7 +775,7 @@ const handlePlaceSelect = useCallback((
 
       if (completedReq) {
         setCompletedAt(new Date(completedReq.updated_at));
-        setCurrentRequestId(prev => prev ?? completedReq.id); // only set if no active request
+        setWarrantyRequestId(completedReq.id); // isolated — never sets currentRequestId
         const { data: wc } = await supabase
           .from('warranty_claims')
           .select('status')
@@ -1348,6 +1355,7 @@ const handlePlaceSelect = useCallback((
             <RatingModal
               requestId={currentRequestId}
               raterId={user.id}
+              ratedUserId={acceptedProvider.user_id}
               ratedUserName={`${acceptedProvider.firstName} ${acceptedProvider.lastName}`}
               onComplete={() => {
                 setShowRating(false);
@@ -1380,7 +1388,7 @@ const handlePlaceSelect = useCallback((
                   providerMarkerRef.current = null;
                 }
               }}
-              onClose={pendingLockout ? undefined : () => setShowRating(false)}
+              onClose={() => { setShowRating(false); setPendingLockout(false); }}
             />
           </div>
         </div>
@@ -1388,11 +1396,11 @@ const handlePlaceSelect = useCallback((
 
       {/* ── Warranty Claim Section ────────────────────────────────────────
           Shows after job completion, within 3 days, after rating is done.  */}
-      {requestStatus === 'completed' && !showRating && currentRequestId && acceptedProvider && (
+      {warrantyRequestId && !showRating && (
         (() => {
           const withinWindow = completedAt
             ? Date.now() - completedAt.getTime() < 3 * 24 * 60 * 60 * 1000
-            : false;
+            : true; // just completed live — treat as within window
 
           if (!withinWindow && !warrantyClaimed) return null;
 
@@ -1440,7 +1448,7 @@ const handlePlaceSelect = useCallback((
                                 const res = await fetch('/api/warranty/claim', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ requestId: currentRequestId, description: warrantyDesc }),
+                                  body: JSON.stringify({ requestId: warrantyRequestId, description: warrantyDesc }),
                                 });
                                 const d = await res.json();
                                 if (!res.ok) { toast.error(d.error || 'Failed to file claim'); return; }

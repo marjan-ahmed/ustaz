@@ -321,6 +321,9 @@ function ProviderDashboardInner() {
   const [warrantyClaims, setWarrantyClaims]   = useState<any[]>([]);
   const [warrantyResponding, setWarrantyResponding] = useState<string | null>(null);
 
+  // Provider stats (avg rating, completed jobs)
+  const [providerStats, setProviderStats] = useState<{ avg_rating: number; total_ratings: number; completed_jobs: number } | null>(null);
+
   // New state for service requests
   const [serviceRequests, setServiceRequests] = useState<IServiceRequest[]>([]);
   const [unreadRequestCount, setUnreadRequestCount] = useState<number>(0); // For notification badge
@@ -764,6 +767,19 @@ function ProviderDashboardInner() {
       .eq('status', 'pending')
       .order('claimed_at', { ascending: false })
       .then(({ data }) => { if (data) setWarrantyClaims(data); });
+  }, [userIdFromUrl]);
+
+  // Fetch provider stats (avg rating + completed jobs)
+  useEffect(() => {
+    if (!userIdFromUrl) return;
+    supabase
+      .rpc('get_provider_stats', { p_provider_id: userIdFromUrl })
+      .then(({ data }) => {
+        if (data) {
+          const row = Array.isArray(data) ? data[0] : data;
+          if (row) setProviderStats({ avg_rating: row.avg_rating ?? 0, total_ratings: row.total_ratings ?? 0, completed_jobs: row.completed_jobs ?? 0 });
+        }
+      });
   }, [userIdFromUrl]);
 
   useEffect(() => {
@@ -1890,6 +1906,34 @@ function ProviderDashboardInner() {
                 }}
               />
             )}
+            {/* ── Provider Stats (profile tab) ── */}
+            {providerData && activeTab === 'profile' && providerStats && (
+              <div className="max-w-4xl mx-auto mb-6">
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Avg Rating */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      {[1,2,3,4,5].map(s => (
+                        <svg key={s} className={`w-4 h-4 ${s <= Math.round(providerStats.avg_rating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                      ))}
+                    </div>
+                    <p className="text-2xl font-extrabold text-gray-900">{providerStats.avg_rating > 0 ? providerStats.avg_rating.toFixed(1) : '—'}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Avg Rating</p>
+                  </div>
+                  {/* Total Ratings */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
+                    <p className="text-2xl font-extrabold text-gray-900">{providerStats.total_ratings}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Reviews</p>
+                  </div>
+                  {/* Completed Jobs */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
+                    <p className="text-2xl font-extrabold text-[#db4b0d]">{providerStats.completed_jobs}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Jobs Done</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {providerData && (
               <div className={activeTab === 'profile' ? 'mb-6 max-w-4xl mx-auto' : 'hidden'}>
                 <ProviderLocationTracker
