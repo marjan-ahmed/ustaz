@@ -144,6 +144,7 @@ function ProcessPage() {
   const liveLocationSubscriptionRef = useRef<any>(null); // Ref for live_locations subscription
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for retry timeout
   const [noProvider, setNoProvider] = useState(false); // 👈 NEW state
+  const [isGettingLocation, setIsGettingLocation] = useState(false); // location button only — decoupled from requestStatus
 
 
   // New states for provider selection
@@ -277,7 +278,9 @@ const handlePlaceSelect = useCallback((
   // Function to get current location using browser's Geolocation API
   const getCurrentLocation = useCallback(async () => {
     if (navigator.geolocation) {
-      setRequestStatus('finding_provider'); // Use a more general status for location finding
+      // Use a dedicated flag so ONLY the location button spins —
+      // do NOT touch requestStatus or the whole form shows loading.
+      setIsGettingLocation(true);
       setSearchMessage(t('gettingLocation'));
       setManualPostalCode('');
       setUserLatitude(null); // Clear previous GPS coords
@@ -320,11 +323,11 @@ const handlePlaceSelect = useCallback((
             setAddress(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
           }
 
-          setRequestStatus('idle'); // Back to idle after getting location, ready for search
+          setIsGettingLocation(false); // done — form stays idle/ready
         },
         (error) => {
           console.error('Error getting location:', { code: error.code, message: error.message });
-          setRequestStatus('error'); // Set error status
+          setIsGettingLocation(false);
           let errorMessage = t('locationErrorGeneric');
           switch (error.code) {
             case error.PERMISSION_DENIED:
@@ -342,10 +345,9 @@ const handlePlaceSelect = useCallback((
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      setRequestStatus('error');
       setSearchMessage(t('geolocationNotSupported'));
     }
-  }, [t, setAddress, setService]); // Added setService to dependencies
+  }, [t, setAddress]);
 
   // Function to geocode a manual address using OpenStreetMap Nominatim API
  const geocodeAddress = useCallback(
@@ -1003,10 +1005,10 @@ const handlePlaceSelect = useCallback((
                   </p>
                   <Button
                     onClick={getCurrentLocation}
-                    disabled={requestStatus !== 'idle' && requestStatus !== 'error' && requestStatus !== 'no_ustaz_found'}
+                    disabled={isGettingLocation || (requestStatus !== 'idle' && requestStatus !== 'error' && requestStatus !== 'no_ustaz_found')}
                     className="w-full group bg-[#db4b0d] hover:bg-[#a93a0b] text-white px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
                   >
-                    {(requestStatus === 'finding_provider' && searchMessage === t('gettingLocation')) ? (
+                    {isGettingLocation ? (
                       <Loader2 className="h-5 w-5 mr-3 animate-spin" />
                     ) : (
                       <LocateFixed className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
