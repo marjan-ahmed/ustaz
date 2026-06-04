@@ -170,7 +170,11 @@ const ProviderRequestNotification = ({
               .single();
             if (error) { console.error('Error fetching service request:', error); return; }
             if (serviceRequest && serviceRequest.status === 'notified_multiple') {
-              setActiveRequests(prev => [...prev, serviceRequest as ServiceRequest]);
+              setActiveRequests(prev =>
+                prev.some(r => r.id === serviceRequest.id)
+                  ? prev
+                  : [...prev, serviceRequest as ServiceRequest]
+              );
               setCountdowns((prev) => ({ ...prev, [serviceRequest.id]: acceptTimeoutSeconds }));
               playBeep();
               toast.success(`New ${serviceRequest.service_type} request!`, {
