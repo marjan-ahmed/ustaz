@@ -85,6 +85,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import ProviderRequestNotification from "../components/ProviderRequestNotification";
+import ReactConfetti from "react-confetti";
 import ProviderLocationTracker from "../components/ProviderLocationTracker";
 import ArrivalWorkflow from "../components/ArrivalWorkflow";
 import WalletPanel from "../components/WalletPanel";
@@ -286,6 +287,10 @@ function ProviderDashboardInner() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   // Added 'request' and 'chat' tabs
   const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request" | "chat" | "wallet">("profile");
+
+  // Welcome confetti — shown once per provider on first dashboard visit
+  const [showDashWelcome, setShowDashWelcome] = useState(false);
+  const [runConfetti, setRunConfetti]         = useState(false);
 
   // State for editing profile
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
@@ -734,6 +739,16 @@ function ProviderDashboardInner() {
       return;
     }
   }, [isLoaded, isSignedIn, router]);
+
+  // Show welcome confetti once per provider (keyed in localStorage)
+  useEffect(() => {
+    if (!userIdFromUrl) return;
+    const key = `ustaz_dash_welcomed_${userIdFromUrl}`;
+    if (!localStorage.getItem(key)) {
+      setShowDashWelcome(true);
+      setRunConfetti(true);
+    }
+  }, [userIdFromUrl]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !userIdFromUrl) return;
@@ -1551,7 +1566,71 @@ function ProviderDashboardInner() {
     );
   }
 
+  const dismissWelcome = (goToWallet = false) => {
+    localStorage.setItem(`ustaz_dash_welcomed_${userIdFromUrl}`, "1");
+    setShowDashWelcome(false);
+    setRunConfetti(false);
+    if (goToWallet) setActiveTab("wallet");
+  };
+
   return (
+    <>
+    {/* ── Welcome confetti overlay (profile tab, first visit only) ── */}
+    {showDashWelcome && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        {runConfetti && (
+          <ReactConfetti
+            width={typeof window !== "undefined" ? window.innerWidth : 800}
+            height={typeof window !== "undefined" ? window.innerHeight : 600}
+            numberOfPieces={320} recycle={false} tweenDuration={6000}
+            colors={["#db4b0d","#f59e0b","#25d366","#3b82f6","#8b5cf6","#ec4899","#ffffff"]}
+          />
+        )}
+        <div className="relative z-10 w-full max-w-sm">
+          <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-[#db4b0d] via-[#f59e0b] to-[#db4b0d] opacity-60 blur-xl animate-pulse" />
+          <div className="relative bg-[#111828] rounded-3xl p-8 text-center border border-white/10 shadow-2xl">
+            <div className="relative mx-auto mb-5 w-24 h-24">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#db4b0d] opacity-20 animate-ping" />
+              <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#db4b0d] flex items-center justify-center shadow-lg">
+                <span className="text-4xl select-none">💰</span>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 bg-green-500/20 text-green-400 text-xs font-semibold px-3 py-1 rounded-full">
+              <CheckCircle className="w-3 h-3" /> Welcome Bonus
+            </span>
+            <h2 className="mt-4 text-2xl font-extrabold text-white leading-snug" style={{ fontFamily: "Clash Grotesk, sans-serif" }}>
+              Congrats! You received<br />
+              <span className="text-[#f59e0b]">Rs. 500</span> in your wallet!
+            </h2>
+            <p className="mt-3 text-sm text-white/60 leading-relaxed">
+              Start earning immediately. A <strong className="text-white/80">15% platform commission</strong> is
+              auto-deducted from your wallet per completed job.
+            </p>
+            <div className="mt-5 inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-2xl px-5 py-3">
+              <span className="text-[#f59e0b]">💳</span>
+              <span className="text-white font-bold text-lg" style={{ fontFamily: "Clash Grotesk, sans-serif" }}>Rs. 500</span>
+              <span className="text-white/50 text-xs">available now</span>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => dismissWelcome(false)}
+                className="flex-1 h-12 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/10 text-sm font-semibold transition-all"
+                style={{ fontFamily: "Clash Grotesk, sans-serif" }}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => dismissWelcome(true)}
+                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#db4b0d] to-[#f59e0b] hover:opacity-90 text-white text-sm font-bold shadow-lg active:scale-95 transition-all"
+                style={{ fontFamily: "Clash Grotesk, sans-serif" }}
+              >
+                See It 🚀
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-50">
         <Sidebar className="border-r border-gray-200">
@@ -3016,6 +3095,7 @@ function ProviderDashboardInner() {
         </SidebarInset>
       </div>
     </SidebarProvider>
+    </>
   );
 }
 

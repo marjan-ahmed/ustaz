@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import ReactConfetti from "react-confetti";
 import { supabase } from "../../../client/supabaseClient";
 import {
   Wallet, ArrowUpDown, Clock, CheckCircle, XCircle,
   Upload, Loader2, Banknote, Copy, ImageIcon, Zap,
-  Star, Briefcase, AlertTriangle, ShieldOff,
+  Star, Briefcase, ShieldOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,26 +54,9 @@ const BANK = {
 const fmt = (n: number) =>
   `Rs. ${n.toLocaleString("en-PK", { minimumFractionDigits: 0 })}`;
 
-/* ─── useWindowSize ──────────────────────────────────────────────────────── */
-function useWindowSize() {
-  const [s, setS] = useState({ width: 800, height: 600 });
-  useEffect(() => {
-    const u = () => setS({ width: window.innerWidth, height: window.innerHeight });
-    u(); window.addEventListener("resize", u);
-    return () => window.removeEventListener("resize", u);
-  }, []);
-  return s;
-}
-
 /* ─── Main Component ─────────────────────────────────────────────────────── */
 export default function WalletPanel({ providerId }: WalletPanelProps) {
-  const { width, height } = useWindowSize();
   const fileRef = useRef<HTMLInputElement>(null);
-
-  /* welcome */
-  const welcomeKey = `ustaz_wallet_welcomed_${providerId}`;
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [confettiRun, setConfettiRun] = useState(false);
 
   /* wallet data */
   const [walletData, setWalletData] = useState<WalletData | null>(null);
@@ -88,21 +70,6 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [submitting, setSubmitting]         = useState(false);
   const [copiedField, setCopiedField]       = useState<string | null>(null);
-
-  /* ── welcome logic ───────────────────────────────────────────────────── */
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!localStorage.getItem(welcomeKey)) {
-      setShowWelcome(true);
-      setConfettiRun(true);
-    }
-  }, [welcomeKey]);
-
-  const dismissWelcome = () => {
-    localStorage.setItem(welcomeKey, "1");
-    setShowWelcome(false);
-    setConfettiRun(false);
-  };
 
   /* ── fetch wallet ────────────────────────────────────────────────────── */
   const fetchWallet = useCallback(async () => {
@@ -200,63 +167,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
   );
 
   return (
-    <>
-      {/* ════════════════════════════════════════════════════════════════
-          WELCOME OVERLAY — shows once, confetti included
-      ════════════════════════════════════════════════════════════════ */}
-      {showWelcome && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          {confettiRun && (
-            <ReactConfetti
-              width={width} height={height}
-              numberOfPieces={320} recycle={false} tweenDuration={6000}
-              colors={["#db4b0d","#f59e0b","#25d366","#3b82f6","#8b5cf6","#ec4899","#fff"]}
-            />
-          )}
-          <div className="relative z-10 w-full max-w-sm">
-            <div className="absolute -inset-1 rounded-3xl bg-gradient-to-br from-[#db4b0d] via-[#f59e0b] to-[#db4b0d] opacity-60 blur-xl animate-pulse" />
-            <div className="relative bg-[#111828] rounded-3xl p-8 text-center border border-white/10 shadow-2xl">
-              <div className="relative mx-auto mb-5 w-24 h-24">
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#db4b0d] opacity-20 animate-ping" />
-                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-[#f59e0b] to-[#db4b0d] flex items-center justify-center shadow-lg">
-                  <span className="text-4xl select-none">💰</span>
-                </div>
-              </div>
-
-              <span className="inline-flex items-center gap-1.5 bg-green-500/20 text-green-400 text-xs font-semibold px-3 py-1 rounded-full">
-                <CheckCircle className="w-3 h-3" /> Welcome Bonus
-              </span>
-
-              <h2 className="mt-4 text-2xl font-extrabold text-white leading-snug">
-                Congrats! You received<br />
-                <span className="text-[#f59e0b]">Rs. 500</span> in your wallet!
-              </h2>
-              <p className="mt-3 text-sm text-white/60 leading-relaxed">
-                Get started and earn money immediately. A <strong className="text-white/80">15% platform commission</strong> is
-                automatically deducted per completed job.
-              </p>
-
-              <div className="mt-5 inline-flex items-center gap-2 bg-white/10 border border-white/10 rounded-2xl px-5 py-3">
-                <Wallet className="w-4 h-4 text-[#f59e0b]" />
-                <span className="text-white font-bold text-lg">Rs. 500</span>
-                <span className="text-white/50 text-xs">available now</span>
-              </div>
-
-              <Button
-                onClick={dismissWelcome}
-                className="mt-6 w-full h-12 rounded-xl bg-gradient-to-r from-[#db4b0d] to-[#f59e0b] hover:opacity-90 text-white font-bold text-base shadow-lg active:scale-95 transition-all"
-              >
-                Awesome, Let's Earn! 🚀
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════════════════════════
-          MAIN WALLET UI
-      ════════════════════════════════════════════════════════════════ */}
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
 
         {/* ── Balance Card ── */}
         <Card className="shadow-sm border-0 overflow-hidden" style={{ background: "#111828" }}>
@@ -583,7 +494,6 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
             </Card>
           )}
       </div>
-    </>
   );
 }
 
