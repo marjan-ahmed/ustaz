@@ -123,6 +123,14 @@ function ProcessPage() {
   // Full-screen rating lockout — forces customer to rate before resuming
   const [pendingLockout, setPendingLockout] = useState(false);
 
+  // Warranty claim state
+  const [showWarranty, setShowWarranty]           = useState(false);
+  const [warrantyClaimed, setWarrantyClaimed]     = useState(false);
+  const [warrantyStatus, setWarrantyStatus]       = useState<string | null>(null);
+  const [warrantyDesc, setWarrantyDesc]           = useState('');
+  const [warrantySending, setWarrantySending]     = useState(false);
+  const [completedAt, setCompletedAt]             = useState<Date | null>(null);
+
   // State for chat functionality
   const [showChat, setShowChat] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false); // State to track map initialization
@@ -593,6 +601,7 @@ const handlePlaceSelect = useCallback((
             // Service completed — show mandatory rating lockout
             setPendingLockout(true);
             setShowRating(true);
+            setCompletedAt(new Date());
           } else if (newStatus === 'cancelled') {
             // Request cancelled, clean up
             cancelServiceRequest();
@@ -710,9 +719,9 @@ const handlePlaceSelect = useCallback((
     (async () => {
       const { data, error } = await supabase
         .from('service_requests')
-        .select('id, status, accepted_by_provider_id')
+        .select('id, status, accepted_by_provider_id, updated_at')
         .eq('user_id', user.id)
-        .in('status', ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'])
+        .in('status', ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress', 'completed'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -742,6 +751,19 @@ const handlePlaceSelect = useCallback((
             phoneCountryCode: row.phone_country_code,
             email: row.email,
           });
+        }
+      }
+      // If request is completed, set completedAt and check for existing warranty
+      if (data.status === 'completed') {
+        setCompletedAt(new Date(data.updated_at ?? Date.now()));
+        const { data: wc } = await supabase
+          .from('warranty_claims')
+          .select('status')
+          .eq('request_id', data.id)
+          .maybeSingle();
+        if (wc) {
+          setWarrantyClaimed(true);
+          setWarrantyStatus(wc.status);
         }
       }
     })();
@@ -1349,6 +1371,102 @@ const handlePlaceSelect = useCallback((
             />
           </div>
         </div>
+      )}
+
+      {/* ── Warranty Claim Section ────────────────────────────────────────
+          Shows after job completion, within 3 days, after rating is done.  */}
+      {requestStatus === 'completed' && !showRating && currentRequestId && acceptedProvider && (
+        (() => {
+          const withinWindow = completedAt
+            ? Date.now() - completedAt.getTime() < 3 * 24 * 60 * 60 * 1000
+            : false;
+
+          if (!withinWindow && !warrantyClaimed) return null;
+
+          return (
+            <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-full max-w-sm px-4">
+              {!warrantyClaimed ? (
+                <div className="bg-white rounded-2xl border border-orange-200 shadow-xl overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-500 to-[#db4b0d] px-4 py-3 flex items-center gap-2">
+                    <span className="text-xl">🛡️</span>
+                    <div>
+                      <p className="text-white font-bold text-sm">3-Day Free Warranty</p>
+                      <p className="text-white/80 text-xs">Job completed · claim before warranty expires</p>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    {!showWarranty ? (
+                      <button
+                        onClick={() => setShowWarranty(true)}
+                        className="w-full h-11 rounded-xl bg-[#db4b0d] hover:bg-[#c4420c] text-white font-bold text-sm transition-all active:scale-95 shadow-md"
+                      >
+                        Claim Warranty — Something broke again?
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-gray-600">Describe the issue (optional):</p>
+                        <textarea
+                          value={warrantyDesc}
+                          onChange={e => setWarrantyDesc(e.target.value)}
+                          placeholder="e.g. The pipe started leaking again after 1 day…"
+                          rows={3}
+                          className="w-full text-sm border border-gray-200 rounded-xl p-3 resize-none focus:outline-none focus:border-[#db4b0d]"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowWarranty(false)}
+                            className="flex-1 h-10 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            disabled={warrantySending}
+                            onClick={async () => {
+                              setWarrantySending(true);
+                              try {
+                                const res = await fetch('/api/warranty/claim', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ requestId: currentRequestId, description: warrantyDesc }),
+                                });
+                                const d = await res.json();
+                                if (!res.ok) { toast.error(d.error || 'Failed to file claim'); return; }
+                                setWarrantyClaimed(true);
+                                setWarrantyStatus('pending');
+                                setShowWarranty(false);
+                                toast.success('Warranty claim filed! Provider has been notified.');
+                              } catch { toast.error('Failed to file claim'); }
+                              finally { setWarrantySending(false); }
+                            }}
+                            className="flex-1 h-10 rounded-xl bg-[#db4b0d] hover:bg-[#c4420c] text-white font-bold text-sm disabled:opacity-50 transition"
+                          >
+                            {warrantySending ? 'Filing…' : 'Submit Claim'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                // Claim already filed — show status
+                <div className="bg-white rounded-2xl border shadow-xl p-4 flex items-center gap-3">
+                  <span className="text-2xl">
+                    {warrantyStatus === 'accepted' ? '✅' : warrantyStatus === 'refused' ? '❌' : '⏳'}
+                  </span>
+                  <div>
+                    <p className="font-bold text-sm text-gray-900">Warranty Claim</p>
+                    <p className="text-xs text-gray-500">
+                      {warrantyStatus === 'pending'  && 'Waiting for provider response…'}
+                      {warrantyStatus === 'accepted' && 'Provider accepted — they will return to fix it.'}
+                      {warrantyStatus === 'refused'  && 'Provider refused. USTAZ has penalized their account.'}
+                      {warrantyStatus === 'resolved' && 'Issue resolved. ✓'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()
       )}
 
       {/* Chat Component - Only renders when showChat is true */}
