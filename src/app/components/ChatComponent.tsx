@@ -56,8 +56,8 @@ function Bubble({
           'max-w-[78%] px-3.5 pt-2 pb-1.5 shadow-sm',
           radius,
           mine
-            ? 'bg-[#d9fdd3] text-gray-900'        /* WhatsApp sent green */
-            : 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]',  /* received white */
+            ? 'bg-[#db4b0d] text-white'            /* sent: brand orange */
+            : 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]',  /* received: white */
         ].join(' ')}
       >
         <p className="text-[15px] leading-snug whitespace-pre-wrap break-words">
@@ -66,11 +66,11 @@ function Bubble({
 
         {/* time + tick row */}
         <div className={`flex items-center gap-1 mt-0.5 ${mine ? 'justify-end' : 'justify-start'}`}>
-          <span className="text-[11px] text-gray-400 leading-none">{time}</span>
+          <span className={`text-[11px] leading-none ${mine ? 'text-white/70' : 'text-gray-400'}`}>{time}</span>
           {mine && (
             msg._pending
-              ? <Clock className="w-3 h-3 text-gray-400" />
-              : <CheckCheck className="w-3 h-3 text-[#53bdeb]" /> /* WhatsApp blue double-tick */
+              ? <Clock className="w-3 h-3 text-white/60" />
+              : <CheckCheck className="w-3 h-3 text-white/80" />
           )}
         </div>
       </div>

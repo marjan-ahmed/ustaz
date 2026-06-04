@@ -830,11 +830,19 @@ function ProviderDashboardInner() {
           .order('updated_at', { ascending: false })
           .limit(20);
 
+        // Resolve display names for all unique customer IDs in one pass
+        const customerIds = [...new Set((recentRequests ?? []).map(r => r.user_id))];
+        const nameMap = new Map<string, string>();
+        await Promise.all(customerIds.map(async (uid) => {
+          const { data } = await supabase.rpc('get_user_display_name', { p_user_id: uid });
+          nameMap.set(uid, (data as string) || 'Customer');
+        }));
+
         for (const req of recentRequests ?? []) {
           if (!uniqueConversations.has(req.user_id)) {
             uniqueConversations.set(req.user_id, {
               userId: req.user_id,
-              userName: 'Customer',
+              userName: nameMap.get(req.user_id) ?? 'Customer',
               lastMessage: '',
               lastMessageTime: '',
               unread: 0,
@@ -2737,7 +2745,7 @@ function ProviderDashboardInner() {
                                           'max-w-[78%] px-3.5 pt-2 pb-1.5 shadow-sm',
                                           radius,
                                           mine
-                                            ? 'bg-[#d9fdd3] text-gray-900'
+                                            ? 'bg-[#db4b0d] text-white'
                                             : 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
                                         ].join(' ')}
                                       >
@@ -2745,15 +2753,15 @@ function ProviderDashboardInner() {
                                           {msg.message}
                                         </p>
                                         <div className={`flex items-center gap-1 mt-0.5 ${mine ? 'justify-end' : 'justify-start'}`}>
-                                          <span className="text-[11px] text-gray-400 leading-none">
+                                          <span className={`text-[11px] leading-none ${mine ? 'text-white/70' : 'text-gray-400'}`}>
                                             {new Date(msg.created_at).toLocaleTimeString([], {
                                               hour: '2-digit', minute: '2-digit',
                                             })}
                                           </span>
                                           {mine && (
                                             msg._pending
-                                              ? <Clock className="w-3 h-3 text-gray-400" />
-                                              : <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+                                              ? <Clock className="w-3 h-3 text-white/60" />
+                                              : <CheckCheck className="w-3 h-3 text-white/80" />
                                           )}
                                         </div>
                                       </div>
