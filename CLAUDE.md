@@ -137,10 +137,47 @@ display conditions.
   RPC — `SECURITY DEFINER`; requires `status='completed'` and caller is a party.
   ON CONFLICT does an UPDATE so re-rating is allowed.
 - `get_provider_stats(p_provider_id)` — avg rating, total ratings, completed jobs.
+  Rendered as a 3-tile stats card at the top of the dashboard **profile tab**
+  (Avg Rating / Reviews / Jobs Done).
+- The actual submit RPC the client calls is **`rate_user(p_request_id,
+  p_rater_id, p_rating, p_comment)`** (not `rate_service`). `RatingModal` props:
+  `requestId, raterId, ratedUserId, ratedUserName, onComplete, onClose`.
+- **Rating push**: after a successful submit, `RatingModal` fires
+  `POST /api/chat/notify` to the **rated provider** (`recipientId = ratedUserId`)
+  with a `⭐ You received a N/5 star rating` preview — reuses the chat push
+  pipeline. The push *title* falls back to the chat sender-name logic (customer
+  isn't in `ustaz_registrations`), only the body carries the rating text.
 - `RatingModal` is rendered on the customer's `/process` page when
-  `requestStatus === 'completed'` and on the provider's dashboard via
-  `existingRatings` guard. **Skip / dismiss does NOT mutate DB** — purely
-  client-side state cleanup.
+  `requestStatus === 'completed'`. The **× / close button is always available**
+  (no lockout) — skip / dismiss does NOT mutate DB, purely client-side cleanup.
+  Title has NO star icon (kept clean).
+
+## Warranty (3-day free re-fix)
+
+If a job breaks again within 3 days of completion, the customer can claim a
+free return visit; refusing penalizes the provider.
+
+- **Table `warranty_claims`**: `(request_id UNIQUE, customer_id, provider_id,
+  status, description, claimed_at, provider_responded_at, resolved_at)`.
+  `status`: `pending → accepted | refused | resolved`. One claim per request.
+- **`ustaz_registrations.warranty_strikes`** int column — incremented on refuse.
+- **`respond_to_warranty(p_claim_id, p_response)`** `SECURITY DEFINER` RPC —
+  on `'refused'`: deducts **Rs. 200** from `provider_wallets` (floored at 0),
+  writes a `penalty` row to `wallet_transactions`, increments
+  `warranty_strikes`. RLS: customer insert is validated to a `completed` request
+  owned by them within 3 days; both parties read; provider updates.
+- **Routes**: `POST /api/warranty/claim` (customer files; server re-validates the
+  3-day window; FCM to provider) and `POST /api/warranty/respond` (provider
+  accept/refuse via the RPC; FCM back to customer).
+- **Customer UI** (`/process`): floating warranty card appears after completion +
+  rating-dismissed, gated by **`warrantyRequestId`** state — a SEPARATE id from
+  `currentRequestId`. **Never set `currentRequestId` to a completed request** or
+  the page renders the "service complete / no provider assigned" tracker. The
+  resume `useEffect` does a dedicated completed-≤3-days query that sets only
+  `warrantyRequestId` + `completedAt`, never `requestStatus`.
+- **Provider UI**: pending claims render at the top of the dashboard request tab
+  with Accept ("I'll Return & Fix It") / Refuse buttons; fetched via a
+  `status='pending'` query keyed on `provider_id`.
 
 ## Wallet / Escrow / Commission
 
@@ -223,6 +260,17 @@ aligned for the ToC to navigate correctly.
   `unreadChatCount` on inbound INSERTs that aren't from us and aren't the
   currently-focused conversation; the badge clears the instant the Chat
   tab opens.
+- **Bubble colours (WhatsApp model, both surfaces)**: own/sent messages =
+  brand orange `#db4b0d` white text; received = white bubble dark text. So each
+  party sees their own messages orange and the other's white. Timestamps/ticks
+  switch to `text-white/70` on the orange bubble.
+- **Provider's conversation list** is seeded from recent `service_requests`
+  (accepted, or completed/cancelled ≤7 days) so the provider can open a chat
+  even before any message exists — NOT only from existing `chat_messages`.
+  Customer display names come from the **`get_user_display_name(p_user_id)`**
+  `SECURITY DEFINER` RPC (reads `auth.users.raw_user_meta_data`:
+  `full_name → name → firstName → phone → 'Customer'`), since customers are not
+  in `ustaz_registrations` or `profiles`.
 
 ## Provider tracking card
 
@@ -245,9 +293,29 @@ when adding states.
 
 ## Testing Gotchas (don't skip)
 
-- **Cookie collision**: customer + provider in the same Chrome profile share
-  cookies → server routes see the wrong `auth.uid()`. Test with two profiles
-  (one regular, one Incognito).
+- **Cookie collision / self-requests**: customer + provider in the same Chrome
+  profile share cookies → server routes see the wrong `auth.uid()`. Symptom in
+  data: `service_requests.user_id == accepted_by_provider_id` (a provider both
+  created and accepted a request). These self-requests corrupt test flows and
+  leave the provider stuck `busy`. Test with two profiles (one regular, one
+  Incognito) where the customer signs in with a phone number that is **NOT**
+  registered as a provider.
+- **Request tab vs popup (two surfaces)**: incoming requests appear in BOTH the
+  `ProviderRequestNotification` floating popup (driven by the `notifications`
+  table realtime) AND the dashboard request tab (`serviceRequests`, driven by a
+  no-filter `service_requests` realtime sub + `fetchServiceRequests`). The
+  no-filter `service_requests` sub can MISS the first INSERT, so the popup fires
+  but the tab stays empty. Mitigation: the dashboard also re-fetches
+  `serviceRequests` on every `notifications` INSERT for this provider, plus an
+  8 s reconcile poll. `fetchServiceRequests` filters to `ACTIVE_REQUEST_STATUSES`
+  only (`notified_multiple → work_in_progress`) so finished jobs don't linger.
+- **`find_providers_nearby` filters on `online_status` only** — NOT
+  `provider_status`. A `busy` provider is still notified of new requests. Matching
+  also requires `service_type` match + `location` within radius (PostGIS
+  `ST_DWithin`); if a provider has no `location` or is offline they're skipped and
+  the request goes `no_ustaz_found`. `provider_status` flips `available → busy`
+  on accept and back on complete/cancel — a stuck `accepted` request keeps them
+  `busy` forever.
 - **Provider geolocation**: `ProviderLocationTracker` needs browser location
   permission. On localhost it works; on a non-localhost HTTP origin it silently
   fails (HTTPS required).
