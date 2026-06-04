@@ -717,49 +717,62 @@ const handlePlaceSelect = useCallback((
     if (!isLoaded || !isSignedIn || !user?.id) return;
     if (currentRequestId) return; // already tracking
     (async () => {
+      // ── 1. Resume active in-flight request (never includes 'completed') ──
       const { data, error } = await supabase
         .from('service_requests')
         .select('id, status, accepted_by_provider_id, updated_at')
         .eq('user_id', user.id)
-        .in('status', ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress', 'completed'])
+        .in('status', ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (error || !data) return;
-      console.log('[customer] resuming open request', data.id, data.status);
-      setCurrentRequestId(data.id);
-      setRequestStatus(data.status as RequestStatus);
 
-      // Inline RPC call — DO NOT delegate to fetchAcceptedProviderDetails here.
-      // That function checks `currentRequestId` from its closure, which is
-      // still null at this exact moment (setCurrentRequestId hasn't committed
-      // yet). Bypassing it ensures the provider card renders on resume.
-      if (data.accepted_by_provider_id) {
-        const { data: prov, error: provErr } = await supabase
-          .rpc('get_assigned_provider', { p_request_id: data.id });
-        if (provErr) {
-          console.warn('[customer] get_assigned_provider on resume failed', provErr);
-          return;
-        }
-        const row = Array.isArray(prov) ? prov[0] : prov;
-        if (row) {
-          setAcceptedProvider({
-            user_id: row.user_id,
-            firstName: row.first_name,
-            lastName: row.last_name,
-            phoneNumber: row.phone_number,
-            phoneCountryCode: row.phone_country_code,
-            email: row.email,
-          });
+      if (!error && data) {
+        console.log('[customer] resuming open request', data.id, data.status);
+        setCurrentRequestId(data.id);
+        setRequestStatus(data.status as RequestStatus);
+
+        if (data.accepted_by_provider_id) {
+          const { data: prov, error: provErr } = await supabase
+            .rpc('get_assigned_provider', { p_request_id: data.id });
+          if (provErr) {
+            console.warn('[customer] get_assigned_provider on resume failed', provErr);
+          } else {
+            const row = Array.isArray(prov) ? prov[0] : prov;
+            if (row) {
+              setAcceptedProvider({
+                user_id: row.user_id,
+                firstName: row.first_name,
+                lastName: row.last_name,
+                phoneNumber: row.phone_number,
+                phoneCountryCode: row.phone_country_code,
+                email: row.email,
+              });
+            }
+          }
         }
       }
-      // If request is completed, set completedAt and check for existing warranty
-      if (data.status === 'completed') {
-        setCompletedAt(new Date(data.updated_at ?? Date.now()));
+
+      // ── 2. Separately check for warranty eligibility (completed ≤3 days) ──
+      // Does NOT set requestStatus/currentRequestId — page stays on idle view.
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: completedReq } = await supabase
+        .from('service_requests')
+        .select('id, updated_at')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .gte('updated_at', threeDaysAgo)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (completedReq) {
+        setCompletedAt(new Date(completedReq.updated_at));
+        setCurrentRequestId(prev => prev ?? completedReq.id); // only set if no active request
         const { data: wc } = await supabase
           .from('warranty_claims')
           .select('status')
-          .eq('request_id', data.id)
+          .eq('request_id', completedReq.id)
           .maybeSingle();
         if (wc) {
           setWarrantyClaimed(true);
