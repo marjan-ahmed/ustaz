@@ -817,69 +817,63 @@ function ProviderDashboardInner() {
 
     const fetchConversations = async () => {
       try {
-        // First, get all messages where this provider is the recipient
-        const { data: receivedMessages, error: receivedError } = await supabase
+        const uniqueConversations = new Map<string, { userId: string; userName: string; lastMessage: string; lastMessageTime: string; unread: number }>();
+
+        // ── Step 1: seed from recent service_requests (accepted/completed/cancelled ≤7d)
+        // This allows the provider to initiate chat even when no messages exist yet.
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { data: recentRequests } = await supabase
+          .from('service_requests')
+          .select('user_id, status, updated_at')
+          .eq('accepted_by_provider_id', userIdFromUrl)
+          .or(`status.in.(accepted,provider_enroute,arriving,arrived,in_progress,work_in_progress),and(status.in.(completed,cancelled),updated_at.gte.${sevenDaysAgo})`)
+          .order('updated_at', { ascending: false })
+          .limit(20);
+
+        for (const req of recentRequests ?? []) {
+          if (!uniqueConversations.has(req.user_id)) {
+            uniqueConversations.set(req.user_id, {
+              userId: req.user_id,
+              userName: 'Customer',
+              lastMessage: '',
+              lastMessageTime: '',
+              unread: 0,
+            });
+          }
+        }
+
+        // ── Step 2: overlay with real message data (last message + timestamp)
+        const { data: receivedMessages } = await supabase
           .from('chat_messages')
           .select('*')
           .eq('recipient_id', userIdFromUrl)
           .order('created_at', { ascending: false })
           .limit(50);
 
-        if (receivedError) throw receivedError;
-
-        // Then, get messages where this provider is the sender
-        const { data: sentMessages, error: sentError } = await supabase
+        const { data: sentMessages } = await supabase
           .from('chat_messages')
           .select('*')
           .eq('sender_id', userIdFromUrl)
           .order('created_at', { ascending: false })
           .limit(50);
 
-        if (sentError) throw sentError;
-
-        // Combine both sets of messages
-        const allMessages = [...receivedMessages, ...sentMessages];
-
-        // Group by the other participant's ID to create conversations
-        const uniqueConversations = new Map();
-
-        for (const msg of allMessages) {
-          // Determine the other participant (not the current provider)
+        for (const msg of [...(receivedMessages ?? []), ...(sentMessages ?? [])]) {
           const otherUserId = msg.sender_id === userIdFromUrl ? msg.recipient_id : msg.sender_id;
+          const existing = uniqueConversations.get(otherUserId);
+          const msgTime = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-          if (!uniqueConversations.has(otherUserId)) {
-            // Get user info for the other participant
-            let userName = 'User';
-
-            // Try to get from profiles table first (for consumers)
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('full_name, email')
-              .eq('id', otherUserId)
-              .single();
-
-            if (profileData && !profileError) {
-              userName = profileData.full_name || 'User';
-            } else {
-              // If not in profiles, try ustaz_registrations (for other providers)
-              const { data: providerData, error: providerError } = await supabase
-                .from('ustaz_registrations')
-                .select('firstName, lastName')
-                .eq('userId', otherUserId)
-                .single();
-
-              if (providerData && !providerError) {
-                userName = `${providerData.firstName} ${providerData.lastName}`;
-              }
-            }
-
+          if (!existing) {
             uniqueConversations.set(otherUserId, {
               userId: otherUserId,
-              userName: userName,
+              userName: 'Customer',
               lastMessage: msg.message,
-              lastMessageTime: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              unread: 0 // Could calculate unread messages
+              lastMessageTime: msgTime,
+              unread: 0,
             });
+          } else if (!existing.lastMessage) {
+            // enrich the seed entry with real message preview
+            existing.lastMessage = msg.message;
+            existing.lastMessageTime = msgTime;
           }
         }
 
