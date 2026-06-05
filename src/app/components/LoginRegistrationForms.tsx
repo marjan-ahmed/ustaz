@@ -46,31 +46,81 @@ const LoginRegisterForm: React.FC = () => {
     }
   };
 
+  const siteOrigin =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : '');
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     clearMessages();
-    setLoading(true);
 
+    if (isSignUp) {
+      // Basic password policy (Supabase hashes with bcrypt server-side).
+      if (password.length < 8) {
+        setError('Password must be at least 8 characters.');
+        return;
+      }
+      if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+        setError('Password must include at least one letter and one number.');
+        return;
+      }
+    }
+
+    setLoading(true);
     try {
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            // Confirmation link returns here and exchanges for a session.
+            emailRedirectTo: `${siteOrigin}/auth/callback?next=/`,
+          },
         });
         if (error) throw error;
-        setMessage("Registration successful! Please check your email to verify your account.");
+        // If "Confirm email" is enabled, identities is empty until verified.
+        const needsVerify = !data.session;
+        setMessage(
+          needsVerify
+            ? `Almost there! We've sent a verification link to ${email}. Click it to activate your account.`
+            : 'Registration successful! Redirecting…',
+        );
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        setMessage("Login successful! Redirecting...");
-        // Handle successful login, e.g., redirect to dashboard
-        // window.location.href = '/dashboard'; // Example redirection
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          // Surface the unverified-email case clearly + allow a resend.
+          if (/email not confirmed|not confirmed/i.test(error.message)) {
+            setError('Your email is not verified yet. Check your inbox, or resend the link below.');
+            return;
+          }
+          throw error;
+        }
+        setMessage('Login successful! Redirecting…');
       }
     } catch (err: any) {
       setError(`Authentication failed: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    clearMessages();
+    if (!email) {
+      setError('Enter your email above first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: `${siteOrigin}/auth/callback?next=/` },
+      });
+      if (error) throw error;
+      setMessage(`Verification link re-sent to ${email}.`);
+    } catch (err: any) {
+      setError(`Could not resend: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -191,6 +241,21 @@ const LoginRegisterForm: React.FC = () => {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : isSignUp ? "Sign Up" : "Log In"}
             </Button>
+            {isSignUp && (
+              <p className="text-xs text-gray-500 text-center">
+                Min 8 characters, with at least one letter and one number.
+              </p>
+            )}
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={loading}
+                className="w-full text-center text-xs text-[#db4b0d] hover:underline"
+              >
+                Didn&apos;t get the verification email? Resend it
+              </button>
+            )}
           </form>
         )}
 
