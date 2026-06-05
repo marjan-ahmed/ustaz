@@ -9,7 +9,7 @@ export const metadata = {
     'Terms of Use for the Ustaz platform connecting customers with trust-professionals in Pakistan.',
 };
 
-const LAST_UPDATED = '31 May 2026';
+const LAST_UPDATED = '6 June 2026';
 
 const sections = [
   ['acceptance', '1. Acceptance & Modification'],
@@ -23,18 +23,19 @@ const sections = [
   ['pricing-fees', '9. Pricing, Fees & Commission'],
   ['wallet-settlement', '10. Provider Wallet, Top-ups & Settlement'],
   ['ratings', '11. Ratings & Reviews'],
-  ['tracking', '12. Real-time Location Tracking'],
-  ['communications', '13. Communications (Chat, Calls, Push)'],
-  ['prohibited', '14. Prohibited Conduct'],
-  ['suspension', '15. Suspension & Termination'],
-  ['warranties', '16. Disclaimer of Warranties'],
-  ['liability', '17. Limitation of Liability'],
-  ['indemnity', '18. Indemnification'],
-  ['dispute', '19. Dispute Resolution'],
-  ['law', '20. Governing Law'],
-  ['sharia', '21. Sharia Compliance'],
-  ['misc', '22. Miscellaneous'],
-  ['contact', '23. Contact'],
+  ['warranty', '12. Service Warranty — 3-Day Free Re-fix'],
+  ['tracking', '13. Real-time Location Tracking'],
+  ['communications', '14. Communications (Chat, Calls, Push)'],
+  ['prohibited', '15. Prohibited Conduct'],
+  ['suspension', '16. Suspension, Strikes & Termination'],
+  ['warranties', '17. Disclaimer of Warranties'],
+  ['liability', '18. Limitation of Liability'],
+  ['indemnity', '19. Indemnification'],
+  ['dispute', '20. Dispute Resolution'],
+  ['law', '21. Governing Law'],
+  ['sharia', '22. Sharia Compliance'],
+  ['misc', '23. Miscellaneous'],
+  ['contact', '24. Contact'],
 ] as const;
 
 export default function TermsOfUse() {
@@ -209,6 +210,8 @@ export default function TermsOfUse() {
               <li>Top-ups may be made via JazzCash, EasyPaisa, bank transfer (Raast / IBAN), or designated cash agents.</li>
               <li>Top-ups are reviewed by Ustaz operations and credited to the Wallet typically within <strong>24 hours</strong> of receipt verification.</li>
               <li>Wallet balances are non-refundable except where a Provider closes their account in good standing with no outstanding fees, in which case the remaining balance is paid out via the Provider&apos;s registered method within 30 days.</li>
+              <li><strong>Deductions.</strong> The Wallet may be debited for (a) per-job platform commission on completion, and (b) a <strong>warranty-refusal penalty of PKR 200</strong> where a Provider declines a valid warranty claim (see &sect; 12). All deductions are recorded in the Provider&apos;s in-app transaction ledger.</li>
+              <li>A Provider whose Wallet balance reaches <strong>zero</strong> is automatically taken offline and will not receive new Service Requests until the Wallet is topped up.</li>
             </ul>
 
             <h2 className='text-2xl font-extrabold mt-6' id="ratings">11. Ratings &amp; Reviews</h2>
@@ -220,7 +223,33 @@ export default function TermsOfUse() {
               law.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="tracking">12. Real-time Location Tracking</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="warranty">12. Service Warranty &mdash; 3-Day Free Re-fix</h2>
+            <p>
+              To protect Customers, every completed Service Request carries a{' '}
+              <strong>3-day workmanship warranty</strong>. If the same issue that was serviced
+              recurs within <strong>three (3) calendar days</strong> of the job being marked{' '}
+              <code>completed</code>, the Customer may submit a <strong>warranty claim</strong>{' '}
+              from their <Link href="/history" className="text-[#db4b0d] underline">My Jobs</Link>{' '}
+              history page.
+            </p>
+            <h3>How a claim works</h3>
+            <ul>
+              <li>The Customer files the claim within the 3-day window, optionally describing the recurring problem. One claim may be filed per completed Service Request.</li>
+              <li>The matched Provider is notified immediately and must <strong>Accept</strong> (agree to return and re-fix the issue at no additional labour charge) or <strong>Refuse</strong> the claim.</li>
+              <li>The re-fix covers the <strong>original workmanship only</strong>. New problems, unrelated faults, damage caused by misuse, third-party tampering, or the cost of genuinely new parts/materials are <strong>not</strong> covered and may be charged separately by agreement.</li>
+            </ul>
+            <h3>Provider obligations &amp; penalties</h3>
+            <ul>
+              <li>A Provider who <strong>accepts</strong> a valid claim must return within a reasonable time and remedy the recurring issue free of labour charge.</li>
+              <li>A Provider who <strong>refuses</strong> a valid claim incurs a <strong>PKR 200 penalty</strong>, deducted from their Wallet (floored at zero), and a <strong>warranty strike</strong> recorded against their account. Accumulated strikes may lead to reduced visibility, suspension, or removal under &sect; 16.</li>
+              <li>Ustaz is a facilitator of the warranty process, not the performer of the re-fix. The warranty is an obligation <strong>between the Customer and the Provider</strong>; Ustaz does not itself guarantee the quality or outcome of any re-fix work (see &sect; 17).</li>
+            </ul>
+            <p className="text-sm bg-amber-50 border border-amber-200 px-4 py-3 rounded">
+              <strong>Note:</strong> the warranty window is fixed at 3 days from completion and cannot be
+              extended retroactively. Filing a claim after the window has elapsed is not possible.
+            </p>
+
+            <h2 className='text-2xl font-extrabold mt-6' id="tracking">13. Real-time Location Tracking</h2>
             <p>
               <strong>Customer.</strong> When you create a Service Request, you consent to the
               Provider seeing your service address. After a Provider accepts, you consent to seeing
@@ -233,7 +262,7 @@ export default function TermsOfUse() {
               request is not collected by Ustaz.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="communications">13. Communications (Chat, Calls, Push)</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="communications">14. Communications (Chat, Calls, Push)</h2>
             <ul>
               <li>
                 <strong>In-app chat</strong> messages between Customer and Provider are visible to
@@ -252,7 +281,7 @@ export default function TermsOfUse() {
               </li>
             </ul>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="prohibited">14. Prohibited Conduct</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="prohibited">15. Prohibited Conduct</h2>
             <p>You may not:</p>
             <ul>
               <li>Misrepresent your identity, qualifications, or service category;</li>
@@ -264,16 +293,22 @@ export default function TermsOfUse() {
               <li>Scrape, reverse-engineer, or otherwise misuse the Platform&apos;s infrastructure.</li>
             </ul>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="suspension">15. Suspension &amp; Termination</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="suspension">16. Suspension, Strikes &amp; Termination</h2>
             <p>
               Ustaz may, at its sole discretion, suspend or permanently terminate your account for
               violating these Terms, sustained low ratings (below 3.0 over a meaningful sample),
-              fraudulent top-ups, false KYC information, non-payment of platform fees, or any
-              activity that endangers other users. You may close your account at any time via the
-              account settings.
+              <strong>repeated warranty strikes</strong> (see &sect; 12), fraudulent top-ups, false
+              KYC information, non-payment of platform fees, or any activity that endangers other
+              users. You may close your account at any time via the account settings.
+            </p>
+            <p>
+              <strong>Warranty strikes.</strong> Each refusal of a valid warranty claim adds a strike
+              to a Provider&apos;s record. A pattern of strikes signals unreliable workmanship and may
+              result in reduced search visibility, temporary suspension, or permanent removal,
+              independent of any monetary penalty already applied.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="warranties">16. Disclaimer of Warranties</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="warranties">17. Disclaimer of Warranties</h2>
             <p className="uppercase text-sm bg-gray-50 border border-gray-200 px-4 py-3 rounded">
               The Platform is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo; without
               warranties of any kind, either express or implied. Ustaz expressly disclaims all
@@ -283,7 +318,7 @@ export default function TermsOfUse() {
               of any Provider&apos;s services.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="liability">17. Limitation of Liability</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="liability">18. Limitation of Liability</h2>
             <p>
               To the maximum extent permitted by Pakistani law, Ustaz&apos;s total aggregate
               liability to any user shall not exceed the higher of (a){' '}
@@ -294,7 +329,7 @@ export default function TermsOfUse() {
               personal injury sustained during a service.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="indemnity">18. Indemnification</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="indemnity">19. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless Ustaz, its directors, employees,
               and contractors from and against any claims, liabilities, damages, losses, and
@@ -304,7 +339,7 @@ export default function TermsOfUse() {
               privacy right.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="dispute">19. Dispute Resolution</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="dispute">20. Dispute Resolution</h2>
             <p>
               <strong>Step 1 — Internal resolution.</strong> Any dispute shall first be raised in
               writing to Ustaz support at{' '}
@@ -321,13 +356,13 @@ export default function TermsOfUse() {
               the exclusive jurisdiction of the courts of Karachi, Sindh, Pakistan.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="law">20. Governing Law</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="law">21. Governing Law</h2>
             <p>
               These Terms are governed by and construed in accordance with the laws of the Islamic
               Republic of Pakistan, without regard to conflict-of-law principles.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="sharia">21. Sharia Compliance</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="sharia">22. Sharia Compliance</h2>
             <p>
               Ustaz fees and transactions are structured to align with Islamic commercial
               principles. Service fees paid by Customers to Providers represent bay&apos;i (direct
@@ -336,7 +371,7 @@ export default function TermsOfUse() {
               gharar (excessive uncertainty), or financing of haram goods or services.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="misc">22. Miscellaneous</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="misc">23. Miscellaneous</h2>
             <ul>
               <li><strong>Entire agreement.</strong> These Terms, together with our Privacy Policy, constitute the entire agreement between you and Ustaz.</li>
               <li><strong>Severability.</strong> If any provision is held unenforceable, the remaining provisions shall remain in full force.</li>
@@ -345,7 +380,7 @@ export default function TermsOfUse() {
               <li><strong>Force majeure.</strong> Ustaz is not liable for any failure or delay caused by events beyond its reasonable control.</li>
             </ul>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="contact">23. Contact</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="contact">24. Contact</h2>
             <p>
               For questions regarding these Terms, please contact us at{' '}
               <a href="mailto:legal@ustaz.app" className="text-[#db4b0d] underline">legal@ustaz.app</a>{' '}

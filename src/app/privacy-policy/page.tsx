@@ -10,7 +10,7 @@ export const metadata = {
     'How Ustaz collects, uses, stores, and protects your personal data on our trust-professional platform.',
 };
 
-const LAST_UPDATED = '31 May 2026';
+const LAST_UPDATED = '6 June 2026';
 
 const sections = [
   ['scope', '1. Scope & Acceptance'],
@@ -114,16 +114,17 @@ export default function PrivacyPolicy() {
             <h3>From Customers</h3>
             <ul>
               <li><strong>Service address</strong>: street address, postal code, geographic coordinates.</li>
-              <li><strong>Service history</strong>: categories requested, status timeline, ratings given.</li>
+              <li><strong>Service history</strong>: categories requested, status timeline, completion timestamps, ratings given &mdash; surfaced to you on your <Link href="/history" className="text-[#db4b0d] underline">My Jobs</Link> page.</li>
+              <li><strong>Warranty claims</strong>: where you claim the 3-day warranty on a completed job, we store the claim, its status, and any description of the recurring issue you provide.</li>
               <li><strong>Approximate location</strong>: only during active Service Requests for matching purposes.</li>
             </ul>
             <h3>From Providers (Ustaz)</h3>
             <ul>
               <li><strong>CNIC number and photograph</strong>: for identity verification.</li>
               <li><strong>Service category</strong>, experience details, optional certifications.</li>
-              <li><strong>Wallet &amp; financial</strong>: JazzCash/EasyPaisa/IBAN identifiers, top-up receipts, transaction history.</li>
+              <li><strong>Wallet &amp; financial</strong>: JazzCash/EasyPaisa/IBAN identifiers, top-up receipts, transaction ledger (commissions, penalties, top-ups).</li>
               <li><strong>Real-time GPS coordinates</strong>: only during active accepted Service Requests.</li>
-              <li><strong>Rating history</strong>, completed-jobs count, online/offline status.</li>
+              <li><strong>Rating history</strong>, completed-jobs count, <strong>warranty strikes</strong>, online/offline status.</li>
             </ul>
 
             <h2 className='text-2xl font-extrabold mt-6' id="how-collected">4. How We Collect Data</h2>
@@ -262,6 +263,7 @@ export default function PrivacyPolicy() {
             <ul>
               <li><strong>Account profile</strong>: retained while the account is active; deleted within 90 days of account closure, except where required by law.</li>
               <li><strong>Service Requests</strong>: retained for <strong>3 years</strong> after completion (financial-record requirement).</li>
+              <li><strong>Warranty claims</strong>: retained for the lifetime of the related Service Request record, as evidence of the workmanship guarantee and any associated penalty.</li>
               <li><strong>CNIC &amp; KYC documents</strong>: up to <strong>5 years</strong> after Provider account closure.</li>
               <li><strong>Wallet ledger &amp; topup receipts</strong>: up to <strong>7 years</strong> for tax and audit compliance.</li>
               <li><strong>Real-time location pings</strong>: deleted upon request completion; aggregated analytics retained up to <strong>90 days</strong>.</li>
