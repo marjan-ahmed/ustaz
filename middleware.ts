@@ -68,24 +68,52 @@ const PROVIDER_AUTH = '/auth/provider-login';
 const CUSTOMER_AUTH = '/auth/login';
 
 /**
- * Verify the admin session cookie in Edge Runtime.
- * Parses the JSON payload (before the last '.') and checks expiry + email match.
- * Full HMAC signature verification happens in API routes (Node.js runtime).
+ * Verify the admin session cookie in Edge Runtime using Web Crypto.
+ * Performs FULL HMAC-SHA256 signature verification (constant-time), then
+ * checks expiry and that the embedded email still matches the configured
+ * admin. Fails closed if the signing secret is absent.
+ *
+ * Cookie format: `base64url(JSON payload).hexHmac` (see src/lib/adminAuth.ts).
  */
-function verifyAdminCookieEdge(cookieValue: string | undefined): boolean {
+async function verifyAdminCookieEdge(cookieValue: string | undefined): Promise<boolean> {
   if (!cookieValue) return false;
 
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret || secret.length < 16) return false; // fail closed
+
+  const lastDot = cookieValue.lastIndexOf('.');
+  if (lastDot === -1) return false;
+
+  const payload = cookieValue.slice(0, lastDot);
+  const sigHex = cookieValue.slice(lastDot + 1);
+
   try {
-    const lastDot = cookieValue.lastIndexOf('.');
-    if (lastDot === -1) return false;
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      enc.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+    const expected = Array.from(new Uint8Array(sigBuf))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
 
-    const payload = cookieValue.slice(0, lastDot);
-    const parsed = JSON.parse(payload);
+    // Constant-time comparison.
+    if (sigHex.length !== expected.length) return false;
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) {
+      diff |= sigHex.charCodeAt(i) ^ expected.charCodeAt(i);
+    }
+    if (diff !== 0) return false;
 
-    // Verify expiry
+    let b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const parsed = JSON.parse(atob(b64));
     if (!parsed.exp || parsed.exp < Date.now()) return false;
 
-    // Verify email matches configured admin
     const adminEmail = process.env.ADMIN_EMAIL;
     if (!adminEmail || parsed.email !== adminEmail) return false;
 
@@ -105,9 +133,9 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    // Verify admin session cookie (payload expiry + email check)
+    // Verify admin session cookie — FULL HMAC signature + expiry + email
     const adminSession = req.cookies.get('admin_session')?.value;
-    if (!verifyAdminCookieEdge(adminSession)) {
+    if (!(await verifyAdminCookieEdge(adminSession))) {
       const url = req.nextUrl.clone();
       url.pathname = '/admin/login';
       return NextResponse.redirect(url);

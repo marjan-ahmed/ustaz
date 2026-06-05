@@ -1,55 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-
-function signToken(payload: string): string {
-  const secret = process.env.INTERNAL_API_SECRET || 'admin-secret-fallback';
-  const hmac = crypto.createHmac('sha256', secret);
-  hmac.update(payload);
-  return `${payload}.${hmac.digest('hex')}`;
-}
+import { createAuthedClient } from '@/lib/server';
+import { signAdminToken, checkAdminCredentials } from '@/lib/adminAuth';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
-
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    if (!adminEmail || !adminPassword) {
-      return NextResponse.json(
-        { error: 'Admin credentials not configured on server' },
-        { status: 500 },
-      );
+    // Require admin config up front — fail closed.
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'Admin login is not configured' }, { status: 500 });
+    }
+    if (!process.env.INTERNAL_API_SECRET) {
+      // No signing secret → cannot mint a trustworthy session. Refuse.
+      return NextResponse.json({ error: 'Admin auth is not configured' }, { status: 500 });
     }
 
-    if (email !== adminEmail || password !== adminPassword) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 },
-      );
+    // ── Rate limit by client IP (5 attempts / 15 min) ──
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      req.headers.get('x-real-ip') ??
+      'unknown';
+    try {
+      const supabase = await createAuthedClient();
+      const { data: allowed, error } = await supabase.rpc('check_admin_login_rate', { p_ip: ip });
+      if (error) {
+        console.error('[admin/login] rate-limit check failed', error.message);
+        return NextResponse.json({ error: 'Login temporarily unavailable' }, { status: 503 });
+      }
+      if (allowed === false) {
+        return NextResponse.json(
+          { error: 'Too many login attempts. Try again in 15 minutes.' },
+          { status: 429 },
+        );
+      }
+    } catch (e: any) {
+      console.error('[admin/login] rate-limit error', e?.message);
+      return NextResponse.json({ error: 'Login temporarily unavailable' }, { status: 503 });
     }
 
-    // Create a signed session cookie (valid for 24 hours)
-    const expiry = Date.now() + 24 * 60 * 60 * 1000;
-    const payload = JSON.stringify({ email: adminEmail, exp: expiry });
-    const token = signToken(payload);
+    const { email, password } = await req.json().catch(() => ({}));
+
+    // Constant-time credential check (no field-specific timing leak).
+    if (!checkAdminCredentials(email, password)) {
+      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
+
+    const { token, ttlSeconds } = signAdminToken(process.env.ADMIN_EMAIL);
 
     const response = NextResponse.json({ success: true });
-
     response.cookies.set('admin_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict', // admin portal is first-party only
       path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: ttlSeconds,
     });
-
     return response;
   } catch (e: any) {
-    return NextResponse.json(
-      { error: 'Internal server error', details: e.message },
-      { status: 500 },
-    );
+    console.error('[admin/login] unexpected', e?.message);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -58,7 +65,7 @@ export async function DELETE() {
   response.cookies.set('admin_session', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
     maxAge: 0,
   });

@@ -1,41 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAuthedClient } from '@/lib/server';
 import { sendPush } from '@/lib/sendPush';
-import crypto from 'crypto';
-
-/** Verify the HMAC signature of the admin session cookie (Node.js runtime). */
-function verifyAdminCookieHMAC(cookieValue: string | undefined): boolean {
-  if (!cookieValue) return false;
-
-  const secret = process.env.INTERNAL_API_SECRET || 'admin-secret-fallback';
-
-  try {
-    const lastDot = cookieValue.lastIndexOf('.');
-    if (lastDot === -1) return false;
-
-    const payload = cookieValue.slice(0, lastDot);
-    const signature = cookieValue.slice(lastDot + 1);
-
-    const hmac = crypto.createHmac('sha256', secret);
-    hmac.update(payload);
-    const expected = hmac.digest('hex');
-
-    if (signature !== expected) return false;
-
-    // Verify expiry
-    const parsed = JSON.parse(payload);
-    if (parsed.exp && parsed.exp < Date.now()) return false;
-
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { verifyAdminToken } from '@/lib/adminAuth';
 
 export async function POST(req: NextRequest) {
-  // Verify admin session cookie with full HMAC signature check
+  // Verify admin session cookie: HMAC signature + expiry + email, fail-closed.
   const adminCookie = req.cookies.get('admin_session')?.value;
-  if (!verifyAdminCookieHMAC(adminCookie)) {
+  if (!verifyAdminToken(adminCookie)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

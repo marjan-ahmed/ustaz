@@ -42,3 +42,16 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+testsprite_tests\tmp\config.json
+
+# AI agent / MCP local configs — MAY CONTAIN SECRETS (e.g. service-role keys)
+.gemini/
+.agent/
+.agents/
+.opencode/
+.playwright-mcp/
+.playwright-cli/
+.claude-browser/
+claude-browser/
+skills-lock.json
