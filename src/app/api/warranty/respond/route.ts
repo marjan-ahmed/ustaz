@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to process response.' }, { status: 500 });
   }
 
-  const result = data as { success: boolean; error?: string; status?: string };
+  const result = data as { success: boolean; error?: string; status?: string; penalty_applied?: number };
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
@@ -59,5 +59,5 @@ export async function POST(req: NextRequest) {
     ).catch(() => {});
   }
 
-  return NextResponse.json({ ok: true, status: response });
+  return NextResponse.json({ ok: true, status: response, penaltyApplied: result.penalty_applied ?? 0 });
 }

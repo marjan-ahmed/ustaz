@@ -26,6 +26,7 @@ import {
   MessageSquare,
   Info, // Added for chat/message icon
   Wallet as WalletIcon,
+  ShieldCheck,
   CheckCheck,
   ArrowLeft,
   Send,
@@ -286,7 +287,7 @@ function ProviderDashboardInner() {
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   // Added 'request' and 'chat' tabs
-  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request" | "chat" | "wallet">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "settings" | "phone-verification" | "request" | "chat" | "wallet" | "warranty">("profile");
 
   // Welcome confetti — shown once per provider on first dashboard visit
   const [showDashWelcome, setShowDashWelcome] = useState(false);
@@ -470,6 +471,11 @@ function ProviderDashboardInner() {
       title: "Wallet",
       tab: "wallet",
       icon: WalletIcon,
+    },
+    {
+      title: "Warranty",
+      tab: "warranty",
+      icon: ShieldCheck,
     },
   ];
 
@@ -757,17 +763,31 @@ function ProviderDashboardInner() {
     }
   }, [userIdFromUrl]);
 
-  // Fetch pending warranty claims for this provider
-  useEffect(() => {
+  // Fetch pending warranty claims for this provider (enriched w/ customer name + service)
+  const fetchWarrantyClaims = useCallback(async () => {
     if (!userIdFromUrl) return;
-    supabase
+    const { data } = await supabase
       .from('warranty_claims')
-      .select('id, request_id, customer_id, status, description, claimed_at')
+      .select('id, request_id, customer_id, status, description, claimed_at, service_requests(service_type, address, service_completed_at)')
       .eq('provider_id', userIdFromUrl)
       .eq('status', 'pending')
-      .order('claimed_at', { ascending: false })
-      .then(({ data }) => { if (data) setWarrantyClaims(data); });
+      .order('claimed_at', { ascending: false });
+    if (!data) return;
+    // Resolve customer display names in parallel
+    const enriched = await Promise.all(data.map(async (c: any) => {
+      const { data: name } = await supabase.rpc('get_user_display_name', { p_user_id: c.customer_id });
+      return {
+        ...c,
+        customer_name: (name as string) || 'Customer',
+        service_type: c.service_requests?.service_type ?? null,
+        address: c.service_requests?.address ?? null,
+        completed_at: c.service_requests?.service_completed_at ?? null,
+      };
+    }));
+    setWarrantyClaims(enriched);
   }, [userIdFromUrl]);
+
+  useEffect(() => { fetchWarrantyClaims(); }, [fetchWarrantyClaims]);
 
   // Fetch provider stats (avg rating + completed jobs)
   useEffect(() => {
@@ -1112,12 +1132,33 @@ function ProviderDashboardInner() {
           });
         }
       )
+      // Piggyback on the notifications realtime (proven reliable — it powers the
+      // popup toast). The service_requests no-filter subscription above can miss
+      // the very first INSERT; a notification INSERT for us means a brand-new
+      // request exists, so re-fetch the list to guarantee the request tab fills.
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `recipient_user_id=eq.${userIdFromUrl}`,
+        },
+        () => {
+          fetchServiceRequests(userIdFromUrl);
+        }
+      )
       .subscribe();
 
+    // Safety-net poll: every 8s reconcile the request list with the DB so a
+    // dropped realtime frame never leaves the tab permanently stale.
+    const pollId = setInterval(() => fetchServiceRequests(userIdFromUrl), 8000);
+
     return () => {
+      clearInterval(pollId);
       supabase.removeChannel(channel);
     };
-  }, [userIdFromUrl]); // phone_verified gate removed — auth is the verification
+  }, [userIdFromUrl, fetchServiceRequests]); // phone_verified gate removed — auth is the verification
 
   // Handler for form changes
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1819,6 +1860,11 @@ function ProviderDashboardInner() {
                               {unreadChatCount > 99 ? '99+' : unreadChatCount}
                             </Badge>
                           )}
+                          {item.tab === "warranty" && warrantyClaims.length > 0 && (
+                            <Badge className="absolute right-3 top-1/2 -translate-y-1/2 bg-amber-500 text-white rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-bold animate-pulse">
+                              {warrantyClaims.length}
+                            </Badge>
+                          )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     );
@@ -1880,6 +1926,7 @@ function ProviderDashboardInner() {
                     {activeTab === "settings" && "Settings"}
                     {activeTab === "phone-verification" && "Phone Verification"}
                     {activeTab === "wallet" && "Wallet"}
+                    {activeTab === "warranty" && "Warranty Claims"}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -1963,85 +2010,6 @@ function ProviderDashboardInner() {
           floating popup persists across every tab. See above. */}
 
       <CardContent className="space-y-4">
-
-        {/* ── Warranty Claims (shown at top of requests tab) ── */}
-        {warrantyClaims.length > 0 && (
-          <div className="space-y-3">
-            {warrantyClaims.map(claim => (
-              <div key={claim.id} className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden">
-                <div className="bg-gradient-to-r from-amber-500 to-[#db4b0d] px-4 py-3 flex items-center gap-2">
-                  <span className="text-lg">🛡️</span>
-                  <div className="flex-1">
-                    <p className="text-white font-bold text-sm">Warranty Claim</p>
-                    <p className="text-white/80 text-xs">
-                      Claimed {new Date(claim.claimed_at).toLocaleDateString()} · You must return and fix this for free
-                    </p>
-                  </div>
-                </div>
-                <div className="p-4 space-y-3">
-                  {claim.description && (
-                    <div className="bg-white rounded-xl p-3 border border-amber-200">
-                      <p className="text-xs text-gray-500 mb-1">Customer reported:</p>
-                      <p className="text-sm text-gray-800">{claim.description}</p>
-                    </div>
-                  )}
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                    <p className="text-xs text-red-700 font-semibold">
-                      ⚠️ Refusing will result in a Rs. 200 penalty deducted from your wallet and a strike on your account.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      disabled={warrantyResponding === claim.id}
-                      onClick={async () => {
-                        setWarrantyResponding(claim.id);
-                        try {
-                          const res = await fetch('/api/warranty/respond', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ claimId: claim.id, response: 'accepted' }),
-                          });
-                          const d = await res.json();
-                          if (!res.ok) { toast.error(d.error || 'Failed'); return; }
-                          setWarrantyClaims(prev => prev.filter(c => c.id !== claim.id));
-                          toast.success('Warranty accepted. Please return to fix the issue.');
-                        } catch { toast.error('Failed to respond'); }
-                        finally { setWarrantyResponding(null); }
-                      }}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl h-10"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1.5" />
-                      I'll Return &amp; Fix It
-                    </Button>
-                    <Button
-                      disabled={warrantyResponding === claim.id}
-                      variant="outline"
-                      onClick={async () => {
-                        setWarrantyResponding(claim.id);
-                        try {
-                          const res = await fetch('/api/warranty/respond', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ claimId: claim.id, response: 'refused' }),
-                          });
-                          const d = await res.json();
-                          if (!res.ok) { toast.error(d.error || 'Failed'); return; }
-                          setWarrantyClaims(prev => prev.filter(c => c.id !== claim.id));
-                          toast.warning('Claim refused. Rs. 200 penalty applied and strike recorded.');
-                        } catch { toast.error('Failed to respond'); }
-                        finally { setWarrantyResponding(null); }
-                      }}
-                      className="flex-1 border-red-300 text-red-600 hover:bg-red-50 rounded-xl h-10"
-                    >
-                      <XCircle className="w-4 h-4 mr-1.5" />
-                      Refuse
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {serviceRequests.length === 0 ? (
           <div className="text-center py-12">
@@ -2725,6 +2693,121 @@ function ProviderDashboardInner() {
                         Additional settings and preferences will be available here in future updates.
                       </p>
                     </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === "warranty" && (
+              <div className="max-w-4xl mx-auto">
+                <Card className="shadow-sm border-gray-200">
+                  <CardHeader>
+                    <CardTitle className="text-2xl font-bold text-gray-900 flex items-center">
+                      <ShieldCheck className="mr-3 h-6 w-6 text-[#db4b0d]" />
+                      Warranty Claims
+                    </CardTitle>
+                    <CardDescription className="text-gray-600">
+                      Customers who claimed the 3-day free warranty. You must return and fix the issue, or refuse and accept a penalty.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {warrantyClaims.length === 0 ? (
+                      <div className="text-center py-12">
+                        <ShieldCheck className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Warranty Claims</h3>
+                        <p className="text-gray-600">When a customer claims a warranty within 3 days, it will appear here.</p>
+                      </div>
+                    ) : (
+                      warrantyClaims.map((claim: any) => (
+                        <div key={claim.id} className="rounded-2xl border-2 border-amber-300 bg-amber-50 overflow-hidden">
+                          <div className="bg-gradient-to-r from-amber-500 to-[#db4b0d] px-4 py-3 flex items-center gap-2">
+                            <span className="text-lg">🛡️</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-bold text-sm truncate">
+                                {claim.service_type || 'Service'} · {claim.customer_name}
+                              </p>
+                              <p className="text-white/80 text-xs">
+                                Claimed {new Date(claim.claimed_at).toLocaleString('en-PK', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="p-4 space-y-3">
+                            {claim.address && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5" /> {claim.address}
+                              </p>
+                            )}
+                            {claim.completed_at && (
+                              <p className="text-xs text-gray-500 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" /> Originally completed {new Date(claim.completed_at).toLocaleString('en-PK', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })}
+                              </p>
+                            )}
+                            {claim.description && (
+                              <div className="bg-white rounded-xl p-3 border border-amber-200">
+                                <p className="text-xs text-gray-500 mb-1">Customer reported:</p>
+                                <p className="text-sm text-gray-800">{claim.description}</p>
+                              </div>
+                            )}
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                              <p className="text-xs text-red-700 font-semibold">
+                                ⚠️ Refusing deducts a Rs. 200 penalty from your wallet and adds a strike to your account.
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                disabled={warrantyResponding === claim.id}
+                                onClick={async () => {
+                                  setWarrantyResponding(claim.id);
+                                  try {
+                                    const res = await fetch('/api/warranty/respond', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ claimId: claim.id, response: 'accepted' }),
+                                    });
+                                    const d = await res.json();
+                                    if (!res.ok) { toast.error(d.error || 'Failed'); return; }
+                                    setWarrantyClaims(prev => prev.filter((c: any) => c.id !== claim.id));
+                                    toast.success('Warranty accepted. Please return to fix the issue.');
+                                  } catch { toast.error('Failed to respond'); }
+                                  finally { setWarrantyResponding(null); }
+                                }}
+                                className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl h-10"
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1.5" />
+                                I'll Return &amp; Fix It
+                              </Button>
+                              <Button
+                                disabled={warrantyResponding === claim.id}
+                                variant="outline"
+                                onClick={async () => {
+                                  setWarrantyResponding(claim.id);
+                                  try {
+                                    const res = await fetch('/api/warranty/respond', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ claimId: claim.id, response: 'refused' }),
+                                    });
+                                    const d = await res.json();
+                                    if (!res.ok) { toast.error(d.error || 'Failed'); return; }
+                                    setWarrantyClaims(prev => prev.filter((c: any) => c.id !== claim.id));
+                                    toast.warning(
+                                      d.penaltyApplied > 0
+                                        ? `Claim refused. Rs. ${d.penaltyApplied} penalty applied and strike recorded.`
+                                        : 'Claim refused. Wallet was empty (no deduction) — strike recorded.'
+                                    );
+                                  } catch { toast.error('Failed to respond'); }
+                                  finally { setWarrantyResponding(null); }
+                                }}
+                                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 rounded-xl h-10"
+                              >
+                                <XCircle className="w-4 h-4 mr-1.5" />
+                                Refuse
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </CardContent>
                 </Card>
               </div>

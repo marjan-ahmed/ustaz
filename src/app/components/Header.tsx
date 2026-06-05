@@ -18,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User as UserIcon, Settings } from "lucide-react";
+import { LogOut, User as UserIcon, Settings, Clock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { usePathname } from "next/navigation";
 
@@ -103,6 +103,7 @@ export default function Header() {
 
   const navItems = [
     { label: t('findprovider'), href: "/process" },
+    { label: "My Jobs", href: "/history" },
     { label: t("becomeUstaz"), href: "/become-ustaz" },
     { label: t("about"), href: "/about" },
     { label: t("contact"), href: "/contact" },
@@ -184,6 +185,12 @@ export default function Header() {
                   <Link href="/dashboard" className="flex items-center">
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>Profile</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/history" className="flex items-center">
+                    <Clock className="mr-2 h-4 w-4" />
+                    <span>My Jobs</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

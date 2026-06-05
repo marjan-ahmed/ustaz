@@ -37,7 +37,7 @@ interface TopupRequest {
 interface WalletPanelProps { providerId: string; }
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
-const MIN_BALANCE = 200;   // Rs. — must maintain to stay online
+const MIN_BALANCE = 0;   // Rs. — blocked only when wallet is fully empty
 
 const PACKAGES = [
   { id: "starter",  label: "Starter",  amount: 500,  tag: "Just testing",  Icon: Zap,       color: "#f59e0b" },
@@ -154,7 +154,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
     return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
   };
 
-  const isInsufficient = !loading && walletData !== null && walletData.balance < MIN_BALANCE;
+  const isInsufficient = !loading && walletData !== null && walletData.balance <= MIN_BALANCE;
   const activeBank = BANK[activeMethod];
 
   /* ── Loading ─────────────────────────────────────────────────────────── */
@@ -229,7 +229,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
               <div>
                 <p className="text-white font-bold text-sm">Job Requests Blocked</p>
                 <p className="text-white/80 text-xs">
-                  Your balance is below Rs. {MIN_BALANCE}. Top up to resume receiving jobs.
+                  Your wallet is empty (Rs. 0). Top up to start receiving service requests again.
                 </p>
               </div>
             </div>

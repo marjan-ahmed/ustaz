@@ -131,11 +131,15 @@ display conditions.
 
 ## Ratings (two-way after completion)
 
-- `ratings` table: `(request_id, rater_id, rated_user_id, rating, comment)` with
-  `UNIQUE(request_id, rater_id)` — one rating per party per request.
-- `rate_service(p_request_id, p_rater_id, p_rated_user_id, p_rating, p_comment)`
-  RPC — `SECURITY DEFINER`; requires `status='completed'` and caller is a party.
-  ON CONFLICT does an UPDATE so re-rating is allowed.
+- **There is NO `ratings` table.** Ratings are stored as columns ON
+  `service_requests`: `customer_rated` / `customer_rating_value` /
+  `customer_rating_comment` and `provider_rated` / `provider_rating_value`.
+  The target's aggregate lives on `ustaz_registrations` (`rating_sum`,
+  `rating_count`, `rating_avg`) for providers, `profiles` for customers.
+- `rate_user(p_request_id, p_rater_id, p_rating, p_comment)` `SECURITY DEFINER`
+  RPC — requires `status='completed'`, caller is a party, blocks double-rating
+  via the `*_rated` booleans, updates both the tracking columns and the
+  aggregate. Returns `(success, message, both_rated)`.
 - `get_provider_stats(p_provider_id)` — avg rating, total ratings, completed jobs.
   Rendered as a 3-tile stats card at the top of the dashboard **profile tab**
   (Avg Rating / Reviews / Jobs Done).
@@ -169,15 +173,18 @@ free return visit; refusing penalizes the provider.
 - **Routes**: `POST /api/warranty/claim` (customer files; server re-validates the
   3-day window; FCM to provider) and `POST /api/warranty/respond` (provider
   accept/refuse via the RPC; FCM back to customer).
-- **Customer UI** (`/process`): floating warranty card appears after completion +
-  rating-dismissed, gated by **`warrantyRequestId`** state — a SEPARATE id from
-  `currentRequestId`. **Never set `currentRequestId` to a completed request** or
-  the page renders the "service complete / no provider assigned" tracker. The
-  resume `useEffect` does a dedicated completed-≤3-days query that sets only
-  `warrantyRequestId` + `completedAt`, never `requestStatus`.
-- **Provider UI**: pending claims render at the top of the dashboard request tab
-  with Accept ("I'll Return & Fix It") / Refuse buttons; fetched via a
-  `status='pending'` query keyed on `provider_id`.
+- **Customer UI** = the **`/history` page** ("My Jobs", linked in the header nav
+  + user dropdown). Lists past requests via the
+  **`get_customer_history()`** `SECURITY DEFINER` RPC (joins provider name +
+  warranty status + `customer_rated` in one call, `user_id = auth.uid()`). Each
+  completed job shows exact completion date/time, a live 3-day countdown, and a
+  `🛡️ Claim Warranty` button (or the existing claim's status). The old floating
+  warranty card on `/process` was REMOVED (intrusive, disappeared on dismiss).
+- **Provider UI** = a dedicated **Warranty tab** in the dashboard sidebar (amber
+  count badge). Claims are fetched enriched (customer name via
+  `get_user_display_name`, service type/address/completion time via the embedded
+  `service_requests` FK join) with Accept ("I'll Return & Fix It") / Refuse
+  buttons. Provider is alerted by the FCM push from `/api/warranty/claim`.
 
 ## Wallet / Escrow / Commission
 
