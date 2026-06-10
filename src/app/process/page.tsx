@@ -17,16 +17,35 @@ import Link from 'next/link';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser'; // Using your custom Supabase user hook
 import { useFcmToken } from '@/hooks/useFcmToken';
 import { useServiceContext } from '../context/ServiceContext';
-import GoogleAutocomplete from '../components/GoogleAutocomplete';
 import { toast } from 'sonner';
-import MapComponent from '../components/MapComponent';
-import EnhancedMapComponent from '../components/EnhancedMapComponent';
-import UserRequestTracker from '../components/UserRequestTracker';
-import ProviderTrackingInfo from '../components/ProviderTrackingInfo';
-import ChatComponent from '../components/ChatComponent';
-import LifecycleMapWrapper from '../components/LifecycleMapWrapper';
-import RatingModal from '../components/RatingModal';
-// Removed Loader import as Google Maps API is no longer directly integrated here
+import dynamic from 'next/dynamic';
+
+// ── Code-split heavy / conditional UI off the initial bundle ──────────────
+// The Google-Maps map, chat, rating modal and request trackers are NOT needed
+// for the first paint of this page. Loading them lazily (separate client-only
+// chunks) is the single biggest win for TBT / main-thread time here.
+// NOTE: MapComponent + EnhancedMapComponent were imported but never rendered —
+// they pulled @react-google-maps/api into the bundle for nothing. Removed.
+const GoogleAutocomplete = dynamic(() => import('../components/GoogleAutocomplete'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm bg-gray-50 text-gray-400">
+      Loading address search…
+    </div>
+  ),
+});
+const LifecycleMapWrapper = dynamic(() => import('../components/LifecycleMapWrapper'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400 text-sm">
+      <Loader2 className="h-5 w-5 mr-2 animate-spin text-[#db4b0d]" /> Loading map…
+    </div>
+  ),
+});
+const UserRequestTracker = dynamic(() => import('../components/UserRequestTracker'), { ssr: false });
+const ProviderTrackingInfo = dynamic(() => import('../components/ProviderTrackingInfo'), { ssr: false });
+const ChatComponent = dynamic(() => import('../components/ChatComponent'), { ssr: false });
+const RatingModal = dynamic(() => import('../components/RatingModal'), { ssr: false });
 
 
 // Define types for service request status and provider info
@@ -801,6 +820,14 @@ const handlePlaceSelect = useCallback((
   // Determine if the "Cancel Request" button should be enabled
   const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'finding_provider' || requestStatus === 'accepted');
 
+  // Only mount the Google-Maps map (which loads the heavy Maps JS API) once the
+  // customer actually has a location or an active request. On a cold page load
+  // with nothing selected the map stays a lightweight placeholder, keeping the
+  // entire Maps payload off the first-paint / TBT critical path.
+  const showMap =
+    (userLatitude !== null && userLongitude !== null) ||
+    (!!currentRequestId && ACTIVE_STATUSES.includes(requestStatus));
+
   // Set up real-time subscription when request ID changes
   useEffect(() => {
     if (currentRequestId) {
@@ -1299,9 +1326,10 @@ const handlePlaceSelect = useCallback((
   </h3>
 
   {/* Google Maps Component */}
-  <div className="w-full h-[400px] lg:h-[calc(100vh - 150px)] border-gray-900 rounded-xl shadow-xl overflow-hidden">
-    {/* Use LifecycleMapWrapper to handle the different search phases */}
-    {typeof window !== 'undefined' && (
+  <div className="w-full h-[400px] lg:h-[calc(100vh-150px)] border-gray-900 rounded-xl shadow-xl overflow-hidden">
+    {/* Map (and the Google Maps JS API) is only mounted once we actually have a
+        location / active request — see `showMap`. Otherwise a static placeholder. */}
+    {showMap ? (
       <LifecycleMapWrapper
         userLat={userLatitude ?? undefined}
         userLng={userLongitude ?? undefined}
@@ -1309,20 +1337,20 @@ const handlePlaceSelect = useCallback((
         providerLng={providerLiveLocation?.longitude ?? undefined}
         providerInfo={acceptedProvider}
         userAddress={address}
-        liveLocations={providerLiveLocation ? (() => {
-          console.log('Passing live location to map:', providerLiveLocation);
-          return [providerLiveLocation];
-        })() : []} // Pass as is with logging
+        liveLocations={providerLiveLocation ? [providerLiveLocation] : []}
         searchPhase={
           requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? 'finding_providers' :
           ACTIVE_STATUSES.includes(requestStatus) ? 'provider_accepted' :
           'address_selection'
         }
-        onRouteCalculated={(route) => {
-          // Handle route calculation if needed
-          console.log('Route calculated:', route);
-        }}
+        onRouteCalculated={() => { /* route handled inside the map */ }}
       />
+    ) : (
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-center px-6">
+        <MapPin className="w-10 h-10 text-[#db4b0d] mb-3" />
+        <p className="text-gray-600 font-medium text-sm">{t('yourLocation')}</p>
+        <p className="text-gray-400 text-xs mt-1">{t('selectServiceAndLocation')}</p>
+      </div>
     )}
   </div>
 

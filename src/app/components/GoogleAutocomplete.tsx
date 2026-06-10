@@ -94,14 +94,19 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
   const [apiError, setApiError] = useState(false);
   const [internalValue, setInternalValue] = useState(value);
   const [focused, setFocused] = useState(false);
+  // Defer loading the (heavy) Google Places library until the user actually
+  // interacts with the field, so it stays off the page's first-paint / TBT path.
+  const [shouldLoad, setShouldLoad] = useState(false);
 
   /* sync external value → internal */
   useEffect(() => {
     setInternalValue(value);
   }, [value]);
 
-  /* load Google Maps once */
+  /* load Google Maps once — but only after the first focus (shouldLoad) so the
+     Places library is not fetched/executed on the initial render. */
   useEffect(() => {
+    if (!shouldLoad) return;
     injectPacStyles();
     const loader = new Loader({
       apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
@@ -112,7 +117,7 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
       .load()
       .then(() => setApiLoaded(true))
       .catch(() => setApiError(true));
-  }, []);
+  }, [shouldLoad]);
 
   /* init Autocomplete after API loads */
   useEffect(() => {
@@ -141,6 +146,7 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      setShouldLoad(true); // ensure suggestions kick in even if typing before focus fires
       setInternalValue(e.target.value);
       onPlaceSelect(e.target.value, null, null);
     },
@@ -152,22 +158,6 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
     onPlaceSelect("", null, null);
     inputRef.current?.focus();
   }, [onPlaceSelect]);
-
-  /* ── Loading state ── */
-  if (!apiLoaded && !apiError) {
-    return (
-      <div className="relative w-full">
-        <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-          <Loader2 className="w-4 h-4 text-[#db4b0d] animate-spin" />
-        </div>
-        <input
-          disabled
-          placeholder="Loading map services…"
-          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
-        />
-      </div>
-    );
-  }
 
   /* ── Error state ── */
   if (apiError) {
@@ -206,7 +196,7 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
         value={internalValue}
         onChange={handleChange}
         disabled={disabled}
-        onFocus={() => setFocused(true)}
+        onFocus={() => { setFocused(true); setShouldLoad(true); }}
         onBlur={() => setFocused(false)}
         placeholder={t("enterStreetAddress")}
         className={[
@@ -222,6 +212,13 @@ const GoogleAutocomplete: React.FC<GoogleAutocompleteProps> = ({
           .filter(Boolean)
           .join(" ")}
       />
+
+      {/* Inline loading spinner while the Places library initialises (no value yet) */}
+      {shouldLoad && !apiLoaded && !apiError && !internalValue && (
+        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+          <Loader2 className="w-4 h-4 text-[#db4b0d] animate-spin" />
+        </div>
+      )}
 
       {/* Clear button */}
       {internalValue && !disabled && (
