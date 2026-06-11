@@ -1,6 +1,6 @@
 <div align="center">
 
-# USTAZ — استاد
+# USTAZ — استاذ
 
 ### Trusted home-service professionals, on demand.
 
