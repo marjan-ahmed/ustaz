@@ -10,7 +10,7 @@
 [![Stack](https://img.shields.io/badge/Next.js%2015-%20Supabase%20%2B%20PostGIS-111828?style=for-the-badge)](#-tech-stack)
 [![Stage](https://img.shields.io/badge/Stage-Pre--revenue%20pilot%20(Karachi)-f59e0b?style=for-the-badge)](#-traction)
 
-📊 **Full pitch deck:** [`USTAZ-Pitch-Deck.pptx`](./USTAZ-Pitch-Deck.pptx)  ·  🌐 **Try it:** [ustaz-bice.vercel.app](https://ustaz-bice.vercel.app)
+📊 **Full pitch deck:** [`USTAZ-Pitch-Deck.pdf`](./USTAZ-Pitch-Deck.pdf)  ·  🌐 **Try it:** [ustaz-bice.vercel.app](https://ustaz-bice.vercel.app)
 
 </div>
 
