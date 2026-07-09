@@ -10,7 +10,7 @@ const sharedPackage = path.resolve(workspaceRoot, 'packages/shared');
 
 const config = getDefaultConfig(projectRoot);
 
-config.watchFolders = [sharedPackage, rootNodeModules];
+config.watchFolders = [projectRoot, sharedPackage, rootNodeModules];
 config.resolver.nodeModulesPaths = [projectNodeModules, rootNodeModules];
 config.resolver.extraNodeModules = {
   react: path.resolve(rootNodeModules, 'react'),
