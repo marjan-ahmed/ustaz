@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, LayoutAnimation, UIManager } from 'react-native';
+import { Platform, LayoutAnimation } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Dimensions, PanResponder, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -84,10 +84,6 @@ export default function BookScreen() {
 
   const [sheetHeight, setSheetHeight] = useState(MIDDLE_HEIGHT);
   const lastSnap = useRef(MIDDLE_HEIGHT);
-
-  if (Platform.OS === 'android') {
-    UIManager.setLayoutAnimationEnabledExperimental?.(true);
-  }
 
   function snapTo(height: number) {
     lastSnap.current = height;
