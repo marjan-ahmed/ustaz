@@ -7,11 +7,11 @@ export const homeCopy = {
 };
 
 export const serviceCategories = [
-  { name: 'Electrician Service', short: 'EL', tone: '#FFF7ED', accent: '#DB4B0D', iconBg: '#DB4B0D', iconFg: '#FFFFFF', note: 'Wiring, fans, panels' },
-  { name: 'Plumbing', short: 'PL', tone: '#111828', accent: '#FF6B4A', iconBg: '#FF6B4A', iconFg: '#FFFFFF', note: 'Leaks, tanks, fittings' },
-  { name: 'Carpentry', short: 'CP', tone: '#FFF7ED', accent: '#DB4B0D', iconBg: '#FEF3C7', iconFg: '#DB4B0D', note: 'Doors, shelves, repairs' },
-  { name: 'AC Maintenance', short: 'AC', tone: '#111828', accent: '#DB4B0D', iconBg: '#DB4B0D', iconFg: '#FFFFFF', note: 'Service, cooling, gas' },
-  { name: 'Solar Technician', short: 'SO', tone: '#FFF7ED', accent: '#FF6B4A', iconBg: '#FF4521', iconFg: '#FFFFFF', note: 'Panels, inverter help' },
+  { name: 'Electrician Service', short: 'EL', tone: '#FFF7ED', accent: '#DB4B0D', note: 'Wiring, fans, panels' },
+  { name: 'Plumbing', short: 'PL', tone: '#EFF6FF', accent: '#2563EB', note: 'Leaks, tanks, fittings' },
+  { name: 'Carpentry', short: 'CP', tone: '#F7FEE7', accent: '#4D7C0F', note: 'Doors, shelves, repairs' },
+  { name: 'AC Maintenance', short: 'AC', tone: '#ECFEFF', accent: '#0891B2', note: 'Service, cooling, gas' },
+  { name: 'Solar Technician', short: 'SO', tone: '#FEF3C7', accent: '#B45309', note: 'Panels, inverter help' },
 ] as const;
 
 export const webNavShortcuts = [
