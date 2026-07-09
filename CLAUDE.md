@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Next.js application called "Ustaz" that connects users with home service providers (electricians, plumbers, carpenters) in Pakistan. The app allows users to request services, find nearby providers, and track their service requests in real-time.
+This is an npm workspaces monorepo for "Ustaz", a Pakistani home-services marketplace. The production web app lives in `apps/web`; it lets users request services, find nearby providers, and track service requests in real time.
 
 ## Architecture
 
-Next.js 15 (App Router, Turbopack) frontend, Supabase backend.
+Monorepo layout: `apps/web` is the Next.js 15 (App Router, Turbopack) frontend, `apps/mobile` is the Expo React Native app, and `packages/shared` holds cross-platform theme tokens, shared types, and utilities. Supabase remains the backend.
 
 - **Auth**: Supabase phone OTP via custom Edge Functions (`send-otp` + `verify-otp`).
   Sessions stored in **cookies** via `@supabase/ssr` (NOT localStorage —
@@ -22,12 +22,12 @@ Next.js 15 (App Router, Turbopack) frontend, Supabase backend.
 - **Maps**: Google Maps via `@react-google-maps/api`.
 - **i18n**: next-intl (EN/UR/AR with RTL).
 - **Twilio Verify**: SMS provider for OTP, called from Edge Functions only.
-- **Mobile target**: Capacitor (`capacitor.config.ts`) — re-uses same Supabase
-  JWT, RPCs, and Realtime channels; no auth re-implementation needed.
+- **Mobile target**: Expo React Native in `apps/mobile`; no Capacitor setup remains.
+  Mobile reuses the same Supabase JWT, RPCs, Realtime channels, and FCM token table with platform-appropriate secure storage.
 
 ### Key Components
 - **ServiceContext**: Manages service request state (address, service type, coordinates).
-- **API Routes (`src/app/api/`)**: ALL routes use `createServerClient` from
+- **API Routes (`apps/web/src/app/api/`)**: ALL routes use `createServerClient` from
   `@supabase/ssr` and derive `user.id` from `auth.getUser()` — never trust
   `userId` or `providerId` from the request body.
 - **`ProviderLocationTracker`**: Always-mounted at top of dashboard `<main>`;
@@ -39,7 +39,7 @@ Next.js 15 (App Router, Turbopack) frontend, Supabase backend.
 ## Critical Invariants — Do Not Violate
 
 1. **Browser session storage is cookies, NOT localStorage.**
-   `client/supabaseClient.ts` MUST use `createBrowserClient` from `@supabase/ssr`.
+   `apps/web/client/supabaseClient.ts` MUST use `createBrowserClient` from `@supabase/ssr`.
    Reverting to plain `@supabase/supabase-js` breaks every server route.
 2. **Provider `userId` = `auth.uid()`.** Registration is gated by phone OTP;
    no random UUIDs. RLS on `ustaz_registrations` enforces this.
@@ -54,10 +54,10 @@ Next.js 15 (App Router, Turbopack) frontend, Supabase backend.
 ## Development Commands
 
 ```bash
-npm run dev           # Turbopack dev server on :3000
-npm run build         # production build
-npm run start         # serve the build
-npm run lint          # eslint
+npm run dev:web       # Next.js Turbopack dev server from apps/web on :3000
+npm run build:web     # production web build
+npm run dev:mobile    # Expo dev server from apps/mobile
+npm run build:mobile  # Expo export/build script
 ```
 
 ## Supabase
@@ -95,16 +95,16 @@ Supabase secret store.
 
 ## Key Directories
 
-- `src/app/` — Next.js App Router pages and layouts.
-- `src/app/components/` — Reusable UI components for the main application.
-- `src/components/ui/` — Shadcn UI components.
-- `src/app/context/` — React Context providers.
-- `src/app/api/` — API routes.
-- `src/hooks/` — Custom React hooks.
-- `src/lib/` — Utility functions and validations.
-- `src/actions/` — Server actions.
+- `apps/web/src/app/` — Next.js App Router pages and layouts.
+- `apps/web/src/app/components/` — Reusable UI components for the main application.
+- `apps/web/src/components/ui/` — Shadcn UI components.
+- `apps/web/src/app/context/` — React Context providers.
+- `apps/web/src/app/api/` — API routes.
+- `apps/web/src/hooks/` — Custom React hooks.
+- `apps/web/src/lib/` — Utility functions and validations.
+- `apps/web/src/actions/` — Server actions.
 - `client/supabaseClient.ts` — **lives outside `src/`**.
-  Import as `'../../../client/supabaseClient'` (no path alias).
+- `apps/web/client/supabaseClient.ts` � **lives outside `apps/web/src/`**.
 - `supabase/functions/` — Edge Function source mirrors (deploy via MCP).
 - `supabase/migrations/` — DDL history. Always use `apply_migration`, not raw SQL.
 
@@ -342,24 +342,15 @@ when adding states.
 
 ## E2E Tests
 
-Playwright suite in `e2e/` (`playwright.config.ts` at root): `cancellation`,
+Playwright suite in `apps/web/e2e/` (`apps/web/playwright.config.ts`): `cancellation`,
 `rating`, `refresh-resilience`, `state-machine`. Helpers in
-`e2e/helpers/{auth,db}.ts`. Run with `npx playwright test` against a running
+`apps/web/e2e/helpers/{auth,db}.ts`. Run with `npx playwright test` against a running
 dev server. Useful for end-to-end smoke before deploy — covers the
 arrival → in_progress → completed → rating loop and refresh-state recovery.
 
-## Mobile (Capacitor) — upcoming
+## Mobile (Expo)
 
-`capacitor.config.ts` is the seed for the Android shell. The web app is
-designed so the mobile port reuses everything:
-- Same Supabase JWT (cookies on web, `localStorage` on mobile is acceptable).
-- Same `SECURITY DEFINER` RPCs over PostgREST.
-- Same Realtime channel names (`location-update:{requestId}`, `chat:{requestId}`, …).
-- FCM tokens registered through the same `fcm_tokens` table; the native FCM
-  SDK provides the token, the rest of the pipeline is identical.
-
-Do **not** invent mobile-specific RPCs or auth flows — if it doesn't work on
-web first, it shouldn't ship to mobile.
+The native mobile app lives in `apps/mobile` and uses Expo React Native. Capacitor has been removed entirely. Mobile should import brand tokens/types/utilities from `packages/shared`, call the same Supabase Edge Functions and `SECURITY DEFINER` RPCs as web, and register push tokens into the existing `fcm_tokens` table. Web keeps cookie-backed Supabase sessions; mobile may use platform-appropriate secure storage for the same Supabase JWT. Do **not** invent mobile-specific RPCs or auth flows.
 
 ## Video Generation (ustaz-visuals)
 

@@ -87,8 +87,21 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json(405, { error: 'method not allowed' });
 
   const internalSecret = Deno.env.get('INTERNAL_API_SECRET');
-  if (!internalSecret || req.headers.get('x-internal-secret') !== internalSecret) {
-    return json(401, { error: 'unauthorized' });
+  const hasInternalSecret = internalSecret && req.headers.get('x-internal-secret') === internalSecret;
+
+  if (!hasInternalSecret) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return json(401, { error: 'unauthorized' });
+    }
+    const jwt = authHeader.slice(7);
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? req.headers.get('apikey');
+    if (!supabaseAnonKey) return json(401, { error: 'unauthorized' });
+    const verifyRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${jwt}`, apikey: supabaseAnonKey },
+    });
+    if (!verifyRes.ok) return json(401, { error: 'unauthorized' });
   }
 
   const saRaw = Deno.env.get('FCM_SERVICE_ACCOUNT_JSON');

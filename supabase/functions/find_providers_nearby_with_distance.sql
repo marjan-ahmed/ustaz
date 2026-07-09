@@ -13,13 +13,9 @@ RETURNS TABLE (
   lastName TEXT,
   email TEXT,
   phoneNumber TEXT,
-  phoneCountryCode TEXT,
   service_type TEXT,
   city TEXT,
-  country TEXT,
   avatarUrl TEXT,
-  experienceYears INTEGER,
-  experienceDetails TEXT,
   distance FLOAT
 )
 LANGUAGE plpgsql
@@ -32,13 +28,9 @@ BEGIN
     ur.lastName,
     ur.email,
     ur.phoneNumber,
-    ur.phoneCountryCode,
     ur.service_type,
     ur.city,
-    ur.country,
     ur.avatarUrl,
-    ur.experienceYears,
-    ur.experienceDetails,
     ST_Distance(
       ur.location,
       ST_SetSRID(ST_MakePoint(lng_input, lat_input), 4326)::GEOGRAPHY
