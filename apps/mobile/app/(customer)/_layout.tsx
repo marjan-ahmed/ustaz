@@ -5,7 +5,7 @@ import CustomTabBar from '@/components/CustomTabBar';
 
 const customerTabs = [
   { name: 'index', icon: 'home', label: 'Home' },
-  { name: 'book', icon: 'search', label: 'Find' },
+  { name: 'find', icon: 'search', label: 'Find' },
   { name: 'history', icon: 'document-text', label: 'Jobs' },
   { name: 'chat', icon: 'chatbubble-ellipses', label: 'Chat' },
   { name: 'profile', icon: 'person', label: 'Profile' },
@@ -31,7 +31,7 @@ export default function CustomerTabLayout() {
       )}
     >
       <Tabs.Screen name="index" options={{ tabBarButton: () => null }} />
-      <Tabs.Screen name="book" options={{ tabBarButton: () => null }} />
+      <Tabs.Screen name="find" options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="history" options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="chat" options={{ tabBarButton: () => null }} />
       <Tabs.Screen name="profile" options={{ tabBarButton: () => null }} />

@@ -48,7 +48,7 @@ export default function RootLayout() {
           const senderId = data?.senderId as string | undefined;
           if (senderId) router.push(`/(customer)/chat?peer=${senderId}`);
         } else if (requestId) {
-          router.push('/(customer)');
+          router.push({ pathname: '/process', params: { requestId } });
         } else if (url) {
           router.push(url as any);
         }
@@ -83,6 +83,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="(customer)" options={{ animation: 'none' }} />
         <Stack.Screen name="(provider)" options={{ animation: 'none' }} />
+        <Stack.Screen name="process" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="provider-register" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
       </Stack>
