@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +53,7 @@ export default function AuthScreen() {
   const [countdown, setCountdown] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastSendRef = useRef(0);
+  const phoneInputRef = useRef<TextInput>(null);
 
   const [busy, setBusy] = useState(false);
   const [busyProvider, setBusyProvider] = useState<OAuthProvider | null>(null);
@@ -82,6 +83,13 @@ export default function AuthScreen() {
   useEffect(() => {
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
   }, []);
+
+  useEffect(() => {
+    if (phoneStep === 'phone') {
+      const t = setTimeout(() => phoneInputRef.current?.focus(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [phoneStep]);
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -444,6 +452,7 @@ export default function AuthScreen() {
                         <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#1B1B27' }}>+92</Text>
                       </View>
                       <TextInput
+                        ref={phoneInputRef}
                         value={phone.replace('+92', '')}
                         onChangeText={(v: string) => setPhone('+92' + v.replace(/\D/g, ''))}
                         placeholder="300 123 4567"
@@ -496,7 +505,7 @@ export default function AuthScreen() {
                     )}
                   </View>
 
-                  <Pressable onPress={() => { setPhoneStep('phone'); setCode(''); setOtpError(false); clearMessages(); }} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  <Pressable onPress={() => { setPhoneStep('phone'); setCode(''); setOtpError(false); clearMessages(); Keyboard.dismiss(); }} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#9CA3AF' }}>Use a different number</Text>
                   </Pressable>
                 </>
