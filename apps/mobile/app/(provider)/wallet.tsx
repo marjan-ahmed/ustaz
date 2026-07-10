@@ -48,15 +48,17 @@ export default function WalletScreen() {
   useEffect(() => { if (user) load(); }, [user, load]);
 
   async function pickReceipt() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setReceiptUri(result.assets[0].uri);
-      setReceiptFile(result.assets[0]);
-    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setReceiptUri(result.assets[0].uri);
+        setReceiptFile(result.assets[0]);
+      }
+    } catch {}
   }
 
   function copyText(text: string, field: string) {
@@ -80,7 +82,8 @@ export default function WalletScreen() {
     }
     setSubmitting(true); setError(null);
     try {
-      const pkg = PACKAGES.find((p) => p.id === selectedPkg)!;
+      const pkg = PACKAGES.find((p) => p.id === selectedPkg);
+      if (!pkg) { Alert.alert('Error', 'Invalid package selected.'); return; }
       const upload = await uploadTopupReceipt({
         providerId: user.id,
         uri: receiptFile.uri,

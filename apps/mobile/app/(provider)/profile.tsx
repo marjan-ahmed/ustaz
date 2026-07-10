@@ -43,24 +43,29 @@ export default function ProviderProfile() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
       setLoading(true);
-      const [profileRes, statsRes] = await Promise.all([
-        supabase.from('ustaz_registrations').select('*').eq('userId', user.id).maybeSingle(),
-        getProviderStats(user.id).catch(() => null),
-      ]);
-      if (profileRes.data) {
-        const p = profileRes.data as ProviderProfile;
-        setProfile(p);
-        setFirstName(p.firstName ?? '');
-        setLastName(p.lastName ?? '');
-        setEmail(p.email ?? '');
-        setCity(p.city ?? '');
-        setServiceType(p.service_type ?? '');
-      }
-      if (statsRes) setStats(statsRes);
-      setLoading(false);
+      try {
+        const [profileRes, statsRes] = await Promise.all([
+          supabase.from('ustaz_registrations').select('*').eq('userId', user.id).maybeSingle(),
+          getProviderStats(user.id).catch(() => null),
+        ]);
+        if (cancelled) return;
+        if (profileRes.data) {
+          const p = profileRes.data as ProviderProfile;
+          setProfile(p);
+          setFirstName(p.firstName ?? '');
+          setLastName(p.lastName ?? '');
+          setEmail(p.email ?? '');
+          setCity(p.city ?? '');
+          setServiceType(p.service_type ?? '');
+        }
+        if (statsRes) setStats(statsRes);
+      } catch {}
+      finally { if (!cancelled) setLoading(false); }
     })();
+    return () => { cancelled = true; };
   }, [user]);
 
   function startEditing() {

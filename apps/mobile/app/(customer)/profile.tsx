@@ -12,19 +12,21 @@ export default function CustomerProfile() {
   const router = useRouter();
 
   async function switchRole() {
-    await setStoredRole('provider');
-    if (!isSignedIn || !user?.phone) {
-      router.replace({ pathname: '/auth', params: { intent: 'provider' } });
-      return;
-    }
+    try {
+      await setStoredRole('provider');
+      if (!isSignedIn || !user?.phone) {
+        router.replace({ pathname: '/auth', params: { intent: 'provider' } });
+        return;
+      }
 
-    const { data } = await supabase
-      .from('ustaz_registrations')
-      .select('userId')
-      .eq('userId', user.id)
-      .maybeSingle();
+      const { data } = await supabase
+        .from('ustaz_registrations')
+        .select('userId')
+        .eq('userId', user.id)
+        .maybeSingle();
 
-    router.replace(data ? '/(provider)' : '/provider-register');
+      router.replace(data ? '/(provider)' : '/provider-register');
+    } catch {}
   }
 
   async function handleSignOut() {

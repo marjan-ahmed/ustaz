@@ -93,72 +93,77 @@ export function useProviderLocationTracker({
       return;
     }
 
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      setError('Location permission is required to share your position.');
-      return;
-    }
-
-    setError(null);
-    setIsSharing(true);
-
-    const channel = supabase.channel(`location-update:${requestId}`, {
-      config: { broadcast: { self: false, ack: false } },
-    });
-    channel.subscribe((status: string) => {
-      if (status === 'SUBSCRIBED') {
-        subscribedRef.current = true;
-        const queued = pendingRef.current;
-        if (queued) {
-          pendingRef.current = null;
-          channel.send({
-            type: 'broadcast',
-            event: 'location-update',
-            payload: { ...queued, providerId, requestId },
-          });
-        }
-      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        subscribedRef.current = false;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Location permission is required to share your position.');
+        return;
       }
-    });
-    channelRef.current = channel;
 
-    subscriptionRef.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 2500 },
-      (position) => {
-        const { latitude: lat, longitude: lng } = position.coords;
-        const now = Date.now();
+      setError(null);
+      setIsSharing(true);
+
+      const channel = supabase.channel(`location-update:${requestId}`, {
+        config: { broadcast: { self: false, ack: false } },
+      });
+      channel.subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          subscribedRef.current = true;
+          const queued = pendingRef.current;
+          if (queued) {
+            pendingRef.current = null;
+            channel.send({
+              type: 'broadcast',
+              event: 'location-update',
+              payload: { ...queued, providerId, requestId },
+            });
+          }
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          subscribedRef.current = false;
+        }
+      });
+      channelRef.current = channel;
+
+      subscriptionRef.current = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 2500 },
+        (position) => {
+          const { latitude: lat, longitude: lng } = position.coords;
+          const now = Date.now();
+          const last = lastSentRef.current;
+
+          if (last) {
+            if (now - last.t < MIN_INTERVAL_MS) return;
+            if (haversine(last.lat, last.lng, lat, lng) < MIN_MOVE_M) return;
+          }
+          lastSentRef.current = { lat, lng, t: now };
+
+          const payload = { lat, lng, ts: now };
+
+          if (subscribedRef.current) {
+            channel.send({
+              type: 'broadcast',
+              event: 'location-update',
+              payload: { ...payload, providerId, requestId },
+            });
+          } else {
+            pendingRef.current = payload;
+          }
+
+          persistToDb(lat, lng);
+          setCurrentLocation({ latitude: lat, longitude: lng });
+          setLastUpdateTime(new Date().toLocaleTimeString());
+          onLocationUpdate?.({ latitude: lat, longitude: lng });
+        }
+      );
+
+      dbTimerRef.current = setInterval(() => {
         const last = lastSentRef.current;
-
-        if (last) {
-          if (now - last.t < MIN_INTERVAL_MS) return;
-          if (haversine(last.lat, last.lng, lat, lng) < MIN_MOVE_M) return;
-        }
-        lastSentRef.current = { lat, lng, t: now };
-
-        const payload = { lat, lng, ts: now };
-
-        if (subscribedRef.current) {
-          channel.send({
-            type: 'broadcast',
-            event: 'location-update',
-            payload: { ...payload, providerId, requestId },
-          });
-        } else {
-          pendingRef.current = payload;
-        }
-
-        persistToDb(lat, lng);
-        setCurrentLocation({ latitude: lat, longitude: lng });
-        setLastUpdateTime(new Date().toLocaleTimeString());
-        onLocationUpdate?.({ latitude: lat, longitude: lng });
-      }
-    );
-
-    dbTimerRef.current = setInterval(() => {
-      const last = lastSentRef.current;
-      if (last) persistToDb(last.lat, last.lng);
-    }, DB_PERSIST_MS);
+        if (last) persistToDb(last.lat, last.lng);
+      }, DB_PERSIST_MS);
+    } catch (err: any) {
+      setError('Location tracking failed. Please check GPS is enabled.');
+      setIsSharing(false);
+    }
   }, [requestId, providerId, onLocationUpdate, persistToDb, stopLocationTracking]);
 
   useEffect(() => {

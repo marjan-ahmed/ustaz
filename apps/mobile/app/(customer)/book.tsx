@@ -268,17 +268,19 @@ export default function BookScreen() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('service_requests')
-        .select('id, status, accepted_by_provider_id, request_latitude, request_longitude, request_details')
-        .eq('user_id', user.id)
-        .in('status', [...ACTIVE_STATUSES, 'completed'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        const { data } = await supabase
+          .from('service_requests')
+          .select('id, status, accepted_by_provider_id, request_latitude, request_longitude, request_details')
+          .eq('user_id', user.id)
+          .in('status', [...ACTIVE_STATUSES, 'completed'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (data) {
+        if (cancelled || !data) return;
         setCurrentRequestId(data.id);
         setRequestStatus(data.status as RequestStatusDB);
         if (typeof data.request_latitude === 'number' && typeof data.request_longitude === 'number') {
@@ -301,8 +303,9 @@ export default function BookScreen() {
             setShowRating(true);
           }
         }
-      }
+      } catch {}
     })();
+    return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
@@ -524,7 +527,7 @@ export default function BookScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
       <View style={{ flex: 1 }}>
         {/* Map */}
-        {showMap && Platform.OS !== 'web' ? (
+        {showMap && Platform.OS !== 'web' && GOOGLE_MAPS_API_KEY ? (
           <MapView ref={mapRef} style={{ flex: 1 }} provider={PROVIDER_GOOGLE} initialRegion={mapRegion}
             showsUserLocation={!userLat} showsMyLocationButton={false}>
             {routeCoordinates.length > 1 && (

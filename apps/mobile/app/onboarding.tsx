@@ -31,17 +31,23 @@ export default function OnboardingScreen() {
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const [navigating, setNavigating] = useState(false);
+
   async function handleNext() {
+    if (navigating) return;
     if (currentIndex < slides.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      await markOnboarded();
+      setNavigating(true);
+      try { await markOnboarded(); } catch {}
       router.replace('/role-select');
     }
   }
 
   async function handleSkip() {
-    await markOnboarded();
+    if (navigating) return;
+    setNavigating(true);
+    try { await markOnboarded(); } catch {}
     router.replace('/role-select');
   }
 

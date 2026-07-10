@@ -32,7 +32,12 @@ export function useServiceTimer(startedAt: string | null | undefined): ServiceTi
     return { elapsedMs: 0, elapsedFormatted: '00:00:00', isRunning: false };
   }
 
-  const elapsedMs = now - new Date(startedAt).getTime();
+  const startedMs = new Date(startedAt).getTime();
+  if (Number.isNaN(startedMs)) {
+    return { elapsedMs: 0, elapsedFormatted: '00:00:00', isRunning: false };
+  }
+
+  const elapsedMs = Math.max(0, now - startedMs);
   const totalSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);

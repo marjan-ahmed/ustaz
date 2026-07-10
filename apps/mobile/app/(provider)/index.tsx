@@ -100,7 +100,7 @@ export default function ProviderHome() {
   }
 
   async function dismissWelcome(goToWallet = false) {
-    if (user) await AsyncStorage.removeItem(DASH_WELCOME_KEY_PREFIX + user.id);
+    try { if (user) await AsyncStorage.removeItem(DASH_WELCOME_KEY_PREFIX + user.id); } catch {}
     setShowWelcomeCard(false);
     if (goToWallet) router.push('/(provider)/wallet');
   }
