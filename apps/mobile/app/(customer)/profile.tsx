@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,6 +10,14 @@ import { supabase } from '@/lib/supabase';
 export default function CustomerProfile() {
   const { user, isSignedIn, signOut } = useAuth();
   const router = useRouter();
+
+  const userName = user?.user_metadata?.full_name
+    || user?.user_metadata?.name
+    || user?.email
+    || user?.phone
+    || 'Customer';
+  const userEmail = user?.user_metadata?.email || user?.email || '';
+  const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
 
   async function switchRole() {
     try {
@@ -41,12 +49,16 @@ export default function CustomerProfile() {
 
         <View style={{ marginBottom: 24, borderRadius: 20, backgroundColor: '#F9FAFB', padding: 20, borderWidth: 1, borderColor: '#F3F4F6' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontFamily: 'Anton', fontSize: 22, color: colors.primary }}>{isSignedIn ? (user?.phone?.charAt(0) ?? 'U') : '?'}</Text>
-            </View>
+            {userAvatar ? (
+              <Image source={{ uri: userAvatar }} style={{ width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: colors.primary }} />
+            ) : (
+              <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary }}>
+                <Text style={{ fontFamily: 'Anton', fontSize: 22, color: colors.primary }}>{userName.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 17, fontWeight: '700', color: '#1B1B27' }}>{isSignedIn ? (user?.phone ?? user?.email ?? 'Customer') : 'Not signed in'}</Text>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>{isSignedIn ? 'Customer account' : 'Sign in to book services'}</Text>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 17, fontWeight: '700', color: '#1B1B27' }}>{isSignedIn ? userName : 'Not signed in'}</Text>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>{isSignedIn ? (userEmail || 'Customer account') : 'Sign in to book services'}</Text>
             </View>
           </View>
         </View>
