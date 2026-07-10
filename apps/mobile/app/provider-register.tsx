@@ -195,7 +195,7 @@ export default function ProviderRegisterScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}>
           {/* Header */}
           <View style={s.header}>
