@@ -52,8 +52,8 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
   const slideX = useRef(new Animated.Value(0)).current;
   const pillScale = useRef(new Animated.Value(1)).current;
 
-  const BAR_PADDING = 4;
-  const barContentWidth = SCREEN_WIDTH - 32 - BAR_PADDING * 2;
+  const BAR_MARGIN = 7;
+  const barContentWidth = SCREEN_WIDTH - 32 - BAR_MARGIN * 2;
   const tabWidth = barContentWidth / tabs.length;
   const PILL_SIZE = 46;
 
@@ -62,7 +62,7 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
     if (idx < 0) return;
 
     const tabCenter = idx * tabWidth + tabWidth / 2;
-    const targetX = BAR_PADDING + tabCenter - PILL_SIZE / 2;
+    const targetX = BAR_MARGIN + tabCenter - PILL_SIZE / 2;
 
     Animated.sequence([
       Animated.timing(pillScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 32,
-    marginHorizontal: 16,
+    marginHorizontal: 7,
     height: 76,
     paddingHorizontal: 4,
     shadowColor: '#000',
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: 'absolute',
-    top: 10,
+    top: 7,
     left: 0,
     width: 46,
     height: 46,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 14,
+    paddingTop: 13,
     paddingBottom: 10,
     zIndex: 1,
   },
