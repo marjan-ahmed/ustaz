@@ -378,7 +378,6 @@ export default function BookScreen() {
       } catch {}
 
       mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 300);
-      setSearchMessage('Location captured!');
     } catch (err: any) {
       setSearchMessage(err.message ?? 'Could not get location.');
     }
@@ -613,18 +612,13 @@ export default function BookScreen() {
                   <ActivityIndicator color={colors.primary} size="small" />
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280' }}>Detecting your location...</Text>
                 </View>
-              ) : userLat && userLng ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#ECFDF5', paddingVertical: 12 }}>
-                  <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#10B981' }}>Location detected</Text>
-                </View>
-              ) : (
+              ) : !userLat && !userLng ? (
                 <Pressable onPress={getCurrentLocation} disabled={isGettingLocation}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#FEF2F2', paddingVertical: 12 }}>
                   <Ionicons name="refresh" size={16} color="#EF4444" />
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#EF4444' }}>Tap to retry location</Text>
                 </Pressable>
-              )}
+              ) : null}
               {userLat && userLng && (
                 <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginTop: 4 }}>
                   {userLat.toFixed(4)}, {userLng.toFixed(4)}
@@ -634,41 +628,22 @@ export default function BookScreen() {
                 <TextInput value={address} onChangeText={handleAddressChange} editable={isIdle} placeholder="Search or enter address manually" placeholderTextColor="#D1D5DB"
                   returnKeyType="search" onSubmitEditing={() => { if (isIdle) resolveManualAddress(); }}
                   style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: userLat && userLng ? `${colors.primary}55` : '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27' }} />
-                {isIdle && address.trim().length >= 3 && (isLoadingAddressSuggestions || addressSuggestions.length > 0 || addressAutocompleteError) && (
+                {isIdle && address.trim().length >= 3 && addressSuggestions.length > 0 && (
                   <View style={{ overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: '#F3F4F6', backgroundColor: '#FFFFFF' }}>
-                    {isLoadingAddressSuggestions ? (
-                      <View style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
-                        <ActivityIndicator color={colors.primary} size="small" />
-                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280' }}>Loading Google suggestions...</Text>
-                      </View>
-                    ) : addressSuggestions.length > 0 ? (
-                      addressSuggestions.map((item, index) => (
-                        <Pressable key={item.placeId} onPress={() => selectPlaceSuggestion(item)}
-                          style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: '#F3F4F6' }}>
-                          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center' }}>
-                            <Ionicons name="location" size={14} color={colors.primary} />
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text numberOfLines={1} style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#1B1B27' }}>{item.mainText}</Text>
-                            {!!item.secondaryText && <Text numberOfLines={1} style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{item.secondaryText}</Text>}
-                          </View>
-                        </Pressable>
-                      ))
-                    ) : (
-                      <View style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
-                        <Ionicons name="alert-circle-outline" size={16} color="#F59E0B" />
-                        <Text style={{ flex: 1, fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#92400E' }}>{addressAutocompleteError}</Text>
-                      </View>
-                    )}
+                    {addressSuggestions.map((item, index) => (
+                      <Pressable key={item.placeId} onPress={() => selectPlaceSuggestion(item)}
+                        style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: '#F3F4F6' }}>
+                        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name="location" size={14} color={colors.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text numberOfLines={1} style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#1B1B27' }}>{item.mainText}</Text>
+                          {!!item.secondaryText && <Text numberOfLines={1} style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{item.secondaryText}</Text>}
+                        </View>
+                      </Pressable>
+                    ))}
                   </View>
                 )}
-                <Pressable onPress={resolveManualAddress} disabled={!isIdle || isResolvingAddress || !address.trim()}
-                  style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: !isIdle || isResolvingAddress || !address.trim() ? '#E5E7EB' : '#FFF7ED', borderWidth: 1, borderColor: !isIdle || isResolvingAddress || !address.trim() ? '#E5E7EB' : `${colors.primary}33` }}>
-                  {isResolvingAddress ? <ActivityIndicator color={colors.primary} size="small" /> : <Ionicons name="map" size={16} color={!isIdle || !address.trim() ? '#9CA3AF' : colors.primary} />}
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: !isIdle || !address.trim() ? '#9CA3AF' : colors.primary }}>
-                    {isResolvingAddress ? 'Finding address...' : userLat && userLng ? 'Update map pin from address' : 'Use this address'}
-                  </Text>
-                </Pressable>
               </View>
             </View>
 
