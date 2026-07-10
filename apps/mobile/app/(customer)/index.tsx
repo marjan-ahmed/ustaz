@@ -52,7 +52,7 @@ export default function CustomerHome() {
 
         {/* Active Request */}
         {activeRequest && (
-          <Link href="/find" asChild>
+          <Link href="/book" asChild>
             <Pressable style={{ marginBottom: 24, borderRadius: 20, backgroundColor: colors.primary, padding: 20, overflow: 'hidden' }}>
               <View style={{ position: 'absolute', right: -24, top: -24, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.1)' }} />
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -69,7 +69,7 @@ export default function CustomerHome() {
         <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 17, fontWeight: '700', color: '#1B1B27', marginBottom: 12 }}>Quick find</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
           {quickActions.map((action) => (
-            <Link key={action.service} href={{ pathname: '/find', params: { service: action.service } }} asChild>
+            <Link key={action.service} href={{ pathname: '/book', params: { service: action.service } }} asChild>
               <Pressable
                 style={{
                   width: '47%',
@@ -96,7 +96,7 @@ export default function CustomerHome() {
         <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 17, fontWeight: '700', color: '#1B1B27', marginBottom: 12 }}>All services</Text>
         <View style={{ gap: 10 }}>
           {serviceCategories.map((service) => (
-            <Link key={service.name} href={{ pathname: '/find', params: { service: service.name } }} asChild>
+            <Link key={service.name} href={{ pathname: '/book', params: { service: service.name } }} asChild>
               <Pressable
                 style={{
                   flexDirection: 'row',

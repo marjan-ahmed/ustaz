@@ -7,10 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@ustaz/shared/theme';
 import { serviceCategories } from '@/content/home';
-import { createServiceRequest } from '@/lib/ustaz-api';
+import { cancelRequest, createServiceRequest, type ServiceRequest } from '@/lib/ustaz-api';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
-import { MapView, Marker, PROVIDER_GOOGLE } from '@/components/MapComponents';
+import { useCustomerLocationSubscription } from '@/hooks/useCustomerLocationSubscription';
+import ProviderTrackingCard from '@/components/ProviderTrackingCard';
+import RatingModal from '@/components/RatingModal';
+import { MapView, Marker, Polyline, PROVIDER_GOOGLE } from '@/components/MapComponents';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -18,6 +21,9 @@ const COLLAPSED_HEIGHT = SCREEN_HEIGHT * 0.30;
 const MIDDLE_HEIGHT = SCREEN_HEIGHT * 0.55;
 const EXPANDED_HEIGHT = SCREEN_HEIGHT * 0.85;
 const SNAP_THRESHOLD = 50;
+
+type RequestStatus = 'idle' | 'finding_provider' | RequestStatusDB | 'error';
+type RequestStatusDB = 'notified_multiple' | 'accepted' | 'provider_enroute' | 'arriving' | 'arrived' | 'in_progress' | 'work_in_progress' | 'completed' | 'cancelled' | 'no_ustaz_found' | 'rejected';
 
 const ACTIVE_STATUSES = ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'];
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -29,7 +35,46 @@ type PlacePrediction = {
   secondaryText: string;
 };
 
-export default function FindScreen() {
+type MapCoordinate = {
+  latitude: number;
+  longitude: number;
+};
+
+function decodeGooglePolyline(encoded: string): MapCoordinate[] {
+  const points: MapCoordinate[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < encoded.length) {
+    let result = 0;
+    let shift = 0;
+    let byte = 0;
+
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index < encoded.length);
+
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+    result = 0;
+    shift = 0;
+
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index < encoded.length);
+
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+    points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+  }
+
+  return points;
+}
+
+export default function BookScreen() {
   const params = useLocalSearchParams<{ service?: string }>();
   const initialService = typeof params.service === 'string' ? params.service : serviceCategories[0].name;
   const { user, loading: authLoading, isSignedIn } = useAuth();
@@ -75,19 +120,28 @@ export default function FindScreen() {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [markerCoords, setMarkerCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [routeCoordinates, setRouteCoordinates] = useState<MapCoordinate[]>([]);
+
+  const [requestStatus, setRequestStatus] = useState<RequestStatus>('idle');
+  const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
+  const [acceptedProvider, setAcceptedProvider] = useState<any>(null);
+  const [serviceStartedAt, setServiceStartedAt] = useState<string | null>(null);
+  const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [showRating, setShowRating] = useState(false);
 
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [searchMessage, setSearchMessage] = useState<string | null>(null);
+
+  const isIdle = requestStatus === 'idle' || requestStatus === 'error';
+
+  const { providerLocation } = useCustomerLocationSubscription(currentRequestId);
 
   useEffect(() => {
     const query = address.trim();
-    if (!selectedAddressRef.current || query.length < 3) {
-      if (!selectedAddressRef.current) {
-        setAddressSuggestions([]);
-        setIsLoadingAddressSuggestions(false);
-      }
+    if (!isIdle || selectedAddressRef.current || query.length < 3) {
+      setAddressSuggestions([]);
+      setIsLoadingAddressSuggestions(false);
       return;
     }
 
@@ -129,7 +183,7 @@ export default function FindScreen() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [address]);
+  }, [address, isIdle]);
 
   async function selectPlaceSuggestion(prediction: PlacePrediction) {
     if (!GOOGLE_MAPS_API_KEY) return;
@@ -169,9 +223,11 @@ export default function FindScreen() {
 
   function handleAddressChange(value: string) {
     setAddress(value);
-    setUserLat(null);
-    setUserLng(null);
-    setMarkerCoords(null);
+    if (isIdle) {
+      setUserLat(null);
+      setUserLng(null);
+      setMarkerCoords(null);
+    }
   }
 
   async function resolveManualAddress(): Promise<{ lat: number; lng: number } | null> {
@@ -217,7 +273,7 @@ export default function FindScreen() {
       try {
         const { data } = await supabase
           .from('service_requests')
-          .select('id, status, request_latitude, request_longitude, request_details')
+          .select('id, status, accepted_by_provider_id, request_latitude, request_longitude, request_details')
           .eq('user_id', user.id)
           .in('status', [...ACTIVE_STATUSES, 'completed'])
           .order('created_at', { ascending: false })
@@ -225,17 +281,28 @@ export default function FindScreen() {
           .maybeSingle();
 
         if (cancelled || !data) return;
-
-        router.replace({
-          pathname: '/process',
-          params: {
-            requestId: data.id,
-            serviceType: serviceCategories[0].name,
-            address: data.request_details ?? '',
-            lat: String(data.request_latitude ?? ''),
-            lng: String(data.request_longitude ?? ''),
-          },
-        });
+        setCurrentRequestId(data.id);
+        setRequestStatus(data.status as RequestStatusDB);
+        if (typeof data.request_latitude === 'number' && typeof data.request_longitude === 'number') {
+          setUserLat(data.request_latitude);
+          setUserLng(data.request_longitude);
+          setMarkerCoords({ lat: data.request_latitude, lng: data.request_longitude });
+          mapRef.current?.animateToRegion({ latitude: data.request_latitude, longitude: data.request_longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 300);
+        }
+        if (data.request_details) setAddress(data.request_details);
+        if (data.accepted_by_provider_id) {
+          fetchAcceptedProvider(data.id, data.accepted_by_provider_id);
+        }
+        if (data.status === 'completed') {
+          const { data: sr } = await supabase
+            .from('service_requests')
+            .select('customer_rated')
+            .eq('id', data.id)
+            .single();
+          if (sr && !sr.customer_rated) {
+            setShowRating(true);
+          }
+        }
       } catch {}
     })();
     return () => { cancelled = true; };
@@ -246,6 +313,43 @@ export default function FindScreen() {
     if (userLat && userLng) return;
     getCurrentLocation();
   }, [user, authLoading]);
+
+  useEffect(() => {
+    if (!currentRequestId) return;
+    const channel = supabase
+      .channel(`service_request:${currentRequestId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'service_requests', filter: `id=eq.${currentRequestId}` }, (payload) => {
+        const newStatus = (payload.new as any).status;
+        const acceptedBy = (payload.new as any).accepted_by_provider_id;
+        const startedAt = (payload.new as any).service_started_at;
+        setRequestStatus(newStatus);
+        if (startedAt) setServiceStartedAt(startedAt);
+        if (newStatus === 'completed') {
+          setShowRating(true);
+        } else if (acceptedBy) {
+          fetchAcceptedProvider(currentRequestId, acceptedBy);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentRequestId]);
+
+  async function fetchAcceptedProvider(requestId: string, providerId: string) {
+    try {
+      const { data } = await supabase.rpc('get_assigned_provider', { p_request_id: requestId });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) {
+        setAcceptedProvider({
+          id: row.user_id,
+          firstName: row.first_name,
+          lastName: row.last_name,
+          phoneNumber: row.phone_number,
+          rating_avg: row.rating_avg,
+          rating_count: row.rating_count,
+        });
+      }
+    } catch {}
+  }
 
   async function getCurrentLocation() {
     setIsGettingLocation(true);
@@ -297,6 +401,7 @@ export default function FindScreen() {
     }
 
     setIsSending(true);
+    setRequestStatus('finding_provider');
     setSearchMessage('Finding nearby providers...');
 
     try {
@@ -309,25 +414,35 @@ export default function FindScreen() {
       });
 
       if (!result.requestId) {
+        setRequestStatus('idle');
+        setServiceStartedAt(null);
         setSearchMessage('No providers found nearby. Try again later.');
         setIsSending(false);
         return;
       }
 
-      router.replace({
-        pathname: '/process',
-        params: {
-          requestId: result.requestId,
-          serviceType,
-          address: address.trim() || '',
-          lat: String(requestLat),
-          lng: String(requestLng),
-        },
-      });
+      setCurrentRequestId(result.requestId);
+      setRequestStatus('notified_multiple');
+      setSearchMessage(`Request sent to ${result.providersNotified} providers. Waiting for response...`);
     } catch (err: any) {
+      setRequestStatus('error');
       setSearchMessage(err.message || 'Failed to send request');
     }
     setIsSending(false);
+  }
+
+  async function cancelActive() {
+    if (!currentRequestId || !user) return;
+    try {
+      await cancelRequest(currentRequestId, user.id, false);
+      setCurrentRequestId(null);
+      setRequestStatus('idle');
+      setAcceptedProvider(null);
+      setServiceStartedAt(null);
+      setSearchMessage('Request cancelled.');
+    } catch (err: any) {
+      setSearchMessage(err.message);
+    }
   }
 
   function onMarkerDragEnd(e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) {
@@ -347,6 +462,63 @@ export default function FindScreen() {
     ? { latitude: userLat, longitude: userLng, latitudeDelta: 0.01, longitudeDelta: 0.01 }
     : { latitude: 33.6844, longitude: 73.0479, latitudeDelta: 0.1, longitudeDelta: 0.1 };
 
+  const customerCoordinate = userLat != null && userLng != null
+    ? { latitude: userLat, longitude: userLng }
+    : markerCoords
+      ? { latitude: markerCoords.lat, longitude: markerCoords.lng }
+      : null;
+  const providerCoordinate = providerLocation
+    ? { latitude: providerLocation.latitude, longitude: providerLocation.longitude }
+    : null;
+  useEffect(() => {
+    if (!customerCoordinate || !providerCoordinate || !GOOGLE_MAPS_API_KEY || !ACTIVE_STATUSES.includes(requestStatus)) {
+      setRouteCoordinates([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const origin = `${providerCoordinate.latitude},${providerCoordinate.longitude}`;
+        const destination = `${customerCoordinate.latitude},${customerCoordinate.longitude}`;
+        const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving&alternatives=false&key=${GOOGLE_MAPS_API_KEY}`;
+        const response = await fetch(url, { signal: controller.signal });
+        const json = await response.json();
+        const encoded = json.routes?.[0]?.overview_polyline?.points;
+        if (json.status !== 'OK' || !encoded) {
+          setRouteCoordinates([]);
+          return;
+        }
+        setRouteCoordinates(decodeGooglePolyline(encoded));
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') setRouteCoordinates([]);
+      }
+    }, 700);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [customerCoordinate?.latitude, customerCoordinate?.longitude, providerCoordinate?.latitude, providerCoordinate?.longitude, requestStatus]);
+
+  useEffect(() => {
+    const coords = routeCoordinates.length > 1
+      ? routeCoordinates
+      : customerCoordinate && providerCoordinate
+        ? [customerCoordinate, providerCoordinate]
+        : [];
+
+    if (coords.length < 2) return;
+    mapRef.current?.fitToCoordinates(coords, {
+      edgePadding: { top: 80, right: 60, bottom: 260, left: 60 },
+      animated: true,
+    });
+  }, [routeCoordinates, customerCoordinate?.latitude, customerCoordinate?.longitude, providerCoordinate?.latitude, providerCoordinate?.longitude]);
+
+  const showTrackingCard = currentRequestId && acceptedProvider && ACTIVE_STATUSES.includes(requestStatus);
+  const showMap = userLat !== null || (currentRequestId && ACTIVE_STATUSES.includes(requestStatus));
+  const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'accepted' || requestStatus === 'finding_provider');
+
   if (authLoading) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.primary} /></View></SafeAreaView>;
   if (!isSignedIn) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><Text style={{ fontFamily: 'Anton', fontSize: 28, color: '#1B1B27', textAlign: 'center' }}>Sign in required</Text><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#9CA3AF', textAlign: 'center', marginTop: 12 }}>Go to Profile tab to sign in first.</Text></View></SafeAreaView>;
 
@@ -354,12 +526,19 @@ export default function FindScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
       <View style={{ flex: 1 }}>
         {/* Map */}
-        {userLat !== null && Platform.OS !== 'web' && GOOGLE_MAPS_API_KEY ? (
+        {showMap && Platform.OS !== 'web' && GOOGLE_MAPS_API_KEY ? (
           <MapView ref={mapRef} style={{ flex: 1 }} provider={PROVIDER_GOOGLE} initialRegion={mapRegion}
             showsUserLocation={!userLat} showsMyLocationButton={false}>
-            {markerCoords && <Marker coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }} draggable onDragEnd={onMarkerDragEnd} pinColor={colors.primary} />}
+            {routeCoordinates.length > 1 && (
+              <>
+                <Polyline coordinates={routeCoordinates} strokeColor="#FFFFFF" strokeWidth={9} zIndex={1} />
+                <Polyline coordinates={routeCoordinates} strokeColor="#EF4444" strokeWidth={6} zIndex={2} />
+              </>
+            )}
+            {markerCoords && <Marker coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }} draggable={isIdle} onDragEnd={onMarkerDragEnd} pinColor={colors.primary} />}
+            {providerLocation && <Marker coordinate={{ latitude: providerLocation.latitude, longitude: providerLocation.longitude }} pinColor="#10B981" />}
           </MapView>
-        ) : userLat !== null ? (
+        ) : showMap ? (
           <View style={{ flex: 1, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="map" size={48} color="#9CA3AF" />
             <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#6B7280', marginTop: 8 }}>Map available on mobile</Text>
@@ -397,8 +576,17 @@ export default function FindScreen() {
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
             {/* Search Message */}
             {searchMessage && (
-              <View style={{ marginBottom: 12, borderRadius: 12, backgroundColor: '#FEF2F2', padding: 12 }}>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#EF4444' }}>{searchMessage}</Text>
+              <View style={{ marginBottom: 12, borderRadius: 12, backgroundColor: requestStatus === 'error' ? '#FEF2F2' : requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? '#EFF6FF' : '#ECFDF5', padding: 12 }}>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: requestStatus === 'error' ? '#EF4444' : requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? '#2563EB' : '#10B981' }}>{searchMessage}</Text>
+              </View>
+            )}
+
+            {/* Provider Tracking Card */}
+            {showTrackingCard && acceptedProvider && (
+              <View style={{ marginBottom: 12 }}>
+                <ProviderTrackingCard status={requestStatus} provider={acceptedProvider} liveLocation={providerLocation} userLat={userLat} userLng={userLng}
+                  serviceStartedAt={serviceStartedAt}
+                  onChat={() => router.push(`/(customer)/chat?peer=${acceptedProvider.id}`)} />
               </View>
             )}
 
@@ -407,7 +595,7 @@ export default function FindScreen() {
               <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, marginBottom: 8 }}>SERVICE TYPE</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {serviceCategories.map((service) => (
-                  <Pressable key={service.name} onPress={() => setServiceType(service.name)}
+                  <Pressable key={service.name} onPress={() => { if (isIdle) setServiceType(service.name); }}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: serviceType === service.name ? colors.primary : '#F3F4F6', borderWidth: 1, borderColor: serviceType === service.name ? colors.primary : '#E5E7EB' }}>
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: service.accent }} />
                     <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: serviceType === service.name ? '#FFFFFF' : '#374151' }}>{service.name}</Text>
@@ -437,10 +625,10 @@ export default function FindScreen() {
                 </Text>
               )}
               <View style={{ marginTop: 10, gap: 8 }}>
-                <TextInput value={address} onChangeText={handleAddressChange} editable placeholder="Search or enter address manually" placeholderTextColor="#D1D5DB"
-                  returnKeyType="search" onSubmitEditing={() => resolveManualAddress()}
+                <TextInput value={address} onChangeText={handleAddressChange} editable={isIdle} placeholder="Search or enter address manually" placeholderTextColor="#D1D5DB"
+                  returnKeyType="search" onSubmitEditing={() => { if (isIdle) resolveManualAddress(); }}
                   style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: userLat && userLng ? `${colors.primary}55` : '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27' }} />
-                {address.trim().length >= 3 && addressSuggestions.length > 0 && (
+                {isIdle && address.trim().length >= 3 && addressSuggestions.length > 0 && (
                   <View style={{ overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: '#F3F4F6', backgroundColor: '#FFFFFF' }}>
                     {addressSuggestions.map((item, index) => (
                       <Pressable key={item.placeId} onPress={() => selectPlaceSuggestion(item)}
@@ -459,25 +647,46 @@ export default function FindScreen() {
               </View>
             </View>
 
-            {/* Action Button */}
-            <Pressable onPress={handleFindProviders}
-              disabled={isSending || isResolvingAddress}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: (isSending || isResolvingAddress) ? '#D1D5DB' : colors.primary, paddingVertical: 14 }}>
-              {isSending || isResolvingAddress ? (
-                <>
-                  <ActivityIndicator color="#FFF" size="small" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>{isResolvingAddress ? 'Finding Address...' : 'Finding Providers...'}</Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="search" size={16} color="#FFFFFF" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Find Available Providers</Text>
-                </>
+            {/* Action Buttons */}
+            <View style={{ gap: 10 }}>
+              <Pressable onPress={handleFindProviders}
+                disabled={isSending || isResolvingAddress || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: (isSending || isResolvingAddress || requestStatus === 'notified_multiple' || requestStatus === 'accepted') ? '#D1D5DB' : colors.primary, paddingVertical: 14 }}>
+                {isSending || isResolvingAddress || requestStatus === 'finding_provider' ? (
+                  <>
+                    <ActivityIndicator color="#FFF" size="small" />
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>{isResolvingAddress ? 'Finding Address...' : 'Finding Providers...'}</Text>
+                  </>
+                ) : requestStatus === 'notified_multiple' ? (
+                  <>
+                    <ActivityIndicator color="#FFF" size="small" />
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Waiting for Response...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="search" size={16} color="#FFFFFF" />
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Find Available Providers</Text>
+                  </>
+                )}
+              </Pressable>
+
+              {canCancel && (
+                <Pressable onPress={cancelActive}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', paddingVertical: 12 }}>
+                  <Ionicons name="close-circle" size={16} color="#6B7280" />
+                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151' }}>Cancel Request</Text>
+                </Pressable>
               )}
-            </Pressable>
+            </View>
           </ScrollView>
         </View>
       </View>
+
+      {/* Rating Modal */}
+      <RatingModal visible={showRating} requestId={currentRequestId ?? ''} raterId={user?.id ?? ''} ratedUserId={acceptedProvider?.id ?? ''}
+        ratedUserName={acceptedProvider ? `${acceptedProvider.firstName ?? ''} ${acceptedProvider.lastName ?? ''}`.trim() || 'Provider' : 'Provider'}
+        onComplete={() => setShowRating(false)} onClose={() => setShowRating(false)} />
     </SafeAreaView>
   );
 }
+
