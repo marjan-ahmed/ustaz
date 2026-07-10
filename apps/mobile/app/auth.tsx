@@ -10,6 +10,7 @@ import { colors } from '@ustaz/shared/theme';
 import { sendPhoneOtp, verifyPhoneOtp } from '@/lib/ustaz-api';
 import { getStoredRole, setStoredRole } from '@/lib/role';
 import { supabase } from '@/lib/supabase';
+import OtpInput from '@/components/OtpInput';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -48,6 +49,9 @@ export default function AuthScreen() {
   const [phone, setPhone] = useState('+92');
   const [code, setCode] = useState('');
   const [phoneStep, setPhoneStep] = useState<'phone' | 'code'>('phone');
+  const [otpError, setOtpError] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [busyProvider, setBusyProvider] = useState<OAuthProvider | null>(null);
@@ -57,7 +61,26 @@ export default function AuthScreen() {
   function clearMessages() {
     setError(null);
     setMessage(null);
+    setOtpError(false);
   }
+
+  function startCountdown() {
+    setCountdown(60);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  useEffect(() => {
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, []);
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -261,7 +284,8 @@ export default function AuthScreen() {
     try {
       await sendPhoneOtp(phone);
       setPhoneStep('code');
-      setMessage('Code sent. Check your SMS.');
+      setCode('');
+      startCountdown();
     } catch (err: any) {
       setError(err?.message ?? 'Could not send code. Try again.');
     } finally {
@@ -281,7 +305,24 @@ export default function AuthScreen() {
       setMessage('Verified. Redirecting...');
       await navigateToApp();
     } catch (err: any) {
-      setError(err?.message ?? 'Verification failed. Try again.');
+      setOtpError(true);
+      setError(err?.message ?? 'Invalid code. Try again.');
+      setCode('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendCode() {
+    clearMessages();
+    setCode('');
+    setOtpError(false);
+    setBusy(true);
+    try {
+      await sendPhoneOtp(phone);
+      startCountdown();
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not resend code.');
     } finally {
       setBusy(false);
     }
@@ -292,7 +333,7 @@ export default function AuthScreen() {
     : tab === 'email'
       ? emailMode === 'signup' ? 'Create your\nUstaz account' : 'Welcome\nback'
       : tab === 'phone'
-        ? phoneStep === 'phone' ? 'Enter your\nphone number' : 'Verify your\nnumber'
+        ? phoneStep === 'phone' ? 'What\'s your\nphone number?' : ''
         : 'Sign in to\nUstaz';
 
   return (
@@ -307,9 +348,13 @@ export default function AuthScreen() {
           </Pressable>
 
           <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, color: colors.primary }}>Secure access</Text>
-            <Text style={{ fontFamily: 'Anton', fontSize: 36, lineHeight: 44, color: '#1B1B27', marginTop: 8 }}>{title}</Text>
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, lineHeight: 22, color: '#9CA3AF', marginTop: 12 }}>
+            {title ? (
+              <>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, color: colors.primary }}>Secure access</Text>
+                <Text style={{ fontFamily: 'Anton', fontSize: 36, lineHeight: 44, color: '#1B1B27', marginTop: 8 }}>{title}</Text>
+              </>
+            ) : null}
+            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, lineHeight: 22, color: '#9CA3AF', marginTop: title ? 12 : 0 }}>
               {providerIntent ? 'Verify your phone number with OTP before provider registration. This protects customers and keeps earnings tied to a real mobile number.' : 'Continue with social login, email/password, or the existing phone OTP flow.'}
             </Text>
           </View>
@@ -379,14 +424,66 @@ export default function AuthScreen() {
             <View style={{ gap: 14 }}>
               {phoneStep === 'phone' ? (
                 <>
-                  <AuthField label="Phone number" value={phone} onChangeText={(v: string) => setPhone(v.trim())} placeholder="+923001234567" keyboardType="phone-pad" />
+                  <View>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Phone number</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 54, borderRadius: 18, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', overflow: 'hidden' }}>
+                      <View style={{ paddingHorizontal: 16, height: 54, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', borderRightWidth: 1, borderRightColor: '#E5E7EB' }}>
+                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#1B1B27' }}>+92</Text>
+                      </View>
+                      <TextInput
+                        value={phone.replace('+92', '')}
+                        onChangeText={(v: string) => setPhone('+92' + v.replace(/\D/g, ''))}
+                        placeholder="300 123 4567"
+                        placeholderTextColor="#D1D5DB"
+                        keyboardType="phone-pad"
+                        maxLength={11}
+                        style={{ flex: 1, minHeight: 52, paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#1B1B27' }}
+                      />
+                    </View>
+                  </View>
                   <PrimaryButton busy={busy} label="Send code" onPress={sendCode} />
                 </>
               ) : (
                 <>
-                  <AuthField label={`Code sent to ${phone}`} value={code} onChangeText={(v: string) => setCode(v.replace(/\D/g, ''))} placeholder="123456" keyboardType="number-pad" textAlign="center" />
-                  <PrimaryButton busy={busy} label="Verify and continue" onPress={verifyCode} />
-                  <Pressable onPress={() => { setPhoneStep('phone'); setCode(''); clearMessages(); }} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ alignItems: 'center', marginBottom: 4 }}>
+                    <Text style={{ fontFamily: 'Anton', fontSize: 28, color: '#1B1B27', textAlign: 'center' }}>Enter the code</Text>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#9CA3AF', marginTop: 6, textAlign: 'center' }}>
+                      We sent a 6-digit code to{'\n'}
+                      <Text style={{ fontWeight: '700', color: '#1B1B27' }}>{phone}</Text>
+                    </Text>
+                  </View>
+
+                  {busy && !code ? (
+                    <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                      <ActivityIndicator color={colors.primary} size="large" />
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginTop: 12 }}>Sending code...</Text>
+                    </View>
+                  ) : (
+                    <OtpInput
+                      length={6}
+                      value={code}
+                      onChange={(v) => { setCode(v); setOtpError(false); clearMessages(); }}
+                      onComplete={(v) => { setCode(v); verifyCode(); }}
+                      autoFocus
+                      error={otpError}
+                    />
+                  )}
+
+                  <View style={{ alignItems: 'center', marginTop: 8, minHeight: 44, justifyContent: 'center' }}>
+                    {countdown > 0 ? (
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#9CA3AF' }}>
+                        Resend code in <Text style={{ fontWeight: '700', color: colors.primary }}>{countdown}s</Text>
+                      </Text>
+                    ) : (
+                      <Pressable onPress={resendCode} disabled={busy} style={{ minHeight: 44, justifyContent: 'center' }}>
+                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: colors.primary }}>
+                          {busy ? 'Sending...' : 'Resend code'}
+                        </Text>
+                      </Pressable>
+                    )}
+                  </View>
+
+                  <Pressable onPress={() => { setPhoneStep('phone'); setCode(''); setOtpError(false); clearMessages(); }} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#9CA3AF' }}>Use a different number</Text>
                   </Pressable>
                 </>
