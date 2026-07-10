@@ -53,7 +53,9 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
   const pillScale = useRef(new Animated.Value(1)).current;
 
   const BAR_MARGIN = 7;
-  const barContentWidth = SCREEN_WIDTH - 32 - BAR_MARGIN * 2;
+  const BAR_PADDING = 4;
+  const barWidth = SCREEN_WIDTH - BAR_MARGIN * 2;
+  const barContentWidth = barWidth - BAR_PADDING * 2;
   const tabWidth = barContentWidth / tabs.length;
   const PILL_SIZE = 46;
 
@@ -61,8 +63,8 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
     const idx = tabs.findIndex((t) => t.name === activeTab);
     if (idx < 0) return;
 
-    const tabCenter = idx * tabWidth + tabWidth / 2;
-    const targetX = BAR_MARGIN + tabCenter - PILL_SIZE / 2;
+    const tabCenter = BAR_PADDING + idx * tabWidth + tabWidth / 2;
+    const targetX = tabCenter - PILL_SIZE / 2;
 
     Animated.sequence([
       Animated.timing(pillScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
