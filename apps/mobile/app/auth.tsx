@@ -52,6 +52,7 @@ export default function AuthScreen() {
   const [otpError, setOtpError] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastSendRef = useRef(0);
 
   const [busy, setBusy] = useState(false);
   const [busyProvider, setBusyProvider] = useState<OAuthProvider | null>(null);
@@ -280,6 +281,12 @@ export default function AuthScreen() {
       setError('Enter phone in E.164 format, e.g. +923001234567');
       return;
     }
+    const now = Date.now();
+    if (now - lastSendRef.current < 30000) {
+      setError('Please wait before requesting another code.');
+      return;
+    }
+    lastSendRef.current = now;
     setBusy(true);
     try {
       await sendPhoneOtp(phone);
@@ -315,6 +322,12 @@ export default function AuthScreen() {
 
   async function resendCode() {
     clearMessages();
+    const now = Date.now();
+    if (now - lastSendRef.current < 30000) {
+      setError('Please wait before requesting another code.');
+      return;
+    }
+    lastSendRef.current = now;
     setCode('');
     setOtpError(false);
     setBusy(true);
