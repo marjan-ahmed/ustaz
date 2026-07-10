@@ -4,7 +4,10 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError(error: any) {
+    console.error('[MapErrorBoundary] map crashed:', error?.message ?? error);
+    return { hasError: true };
+  }
   render() {
     if (this.state.hasError) {
       return (

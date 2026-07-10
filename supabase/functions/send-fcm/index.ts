@@ -159,6 +159,13 @@ Deno.serve(async (req: Request) => {
           token,
           notification: { title, body: notifBody },
           data: stringData,
+          android: {
+            priority: 'high' as const,
+            notification: {
+              channelId: 'default',
+              clickAction: 'ustaz://',
+            },
+          },
           webpush: {
             notification: {
               title,

@@ -57,6 +57,12 @@
         {
           "cameraPermission": "Allow Ustaz to capture receipt and warranty photos."
         }
+      ],
+      [
+        "react-native-maps",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Ustaz to show maps and track providers."
+        }
       ]
     ],
     "experiments": {
