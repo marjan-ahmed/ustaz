@@ -1,11 +1,10 @@
-import { useEffect } from 'react';
 import { FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { colors } from '@ustaz/shared/theme';
-import { useNotifications, type AppNotification } from '@/hooks/useNotifications';
-import { useAuth } from '@/lib/useAuth';
+import { type AppNotification } from '@/hooks/useNotifications';
+import { useNotificationsContext } from '@/context/NotificationsContext';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -52,9 +51,8 @@ function NotifItem({ item, isRead, onPress }: { item: AppNotification; isRead: b
 }
 
 export default function NotificationsScreen() {
-  const { user } = useAuth();
   const router = useRouter();
-  const { notifications, readIds, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, readIds, markAsRead, markAllAsRead } = useNotificationsContext();
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -225,4 +223,3 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
-

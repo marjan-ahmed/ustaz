@@ -1,33 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/useAuth';
+import {
+  DEFAULT_NOTIFICATION_CHANNEL_ID,
+  ensureDefaultNotificationChannel,
+  getExpoProjectId,
+  getNotificationsModule,
+  isAndroidExpoGo,
+} from '@/lib/notifications';
 
 const READ_KEY = 'ustaz_read_notifications';
-const isAndroidExpoGo = Platform.OS === 'android' && Constants.appOwnership === 'expo';
-
-let notificationsModulePromise: Promise<any> | null = null;
-
-async function getNotificationsModule() {
-  if (isAndroidExpoGo) return null;
-
-  notificationsModulePromise ??= import('expo-notifications').then((Notifications) => {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
-    return Notifications;
-  });
-
-  return notificationsModulePromise;
-}
 
 export interface AppNotification {
   id: string;
@@ -82,15 +66,22 @@ export function useNotifications() {
     await saveReadIds(allIds);
   }, [notifications, saveReadIds]);
 
-  const registerPushToken = useCallback(async (userId: string) => {
-    if (isAndroidExpoGo) {
-      console.info('Remote push token registration is skipped in Android Expo Go. Use a development build to test FCM.');
-      return;
-    }
-
+  const registerPushToken = useCallback(async (_userId: string) => {
     try {
+      console.info('[notifications] runtime', {
+        platform: Platform.OS,
+        appOwnership: isAndroidExpoGo ? 'expo-go-android' : 'native-or-non-android',
+      });
+
       const Notifications = await getNotificationsModule();
-      if (!Notifications) return;
+      if (!Notifications) {
+        if (isAndroidExpoGo) {
+          console.info('[notifications] remote push skipped: Android Expo Go cannot register remote push tokens. Install/open a development build.');
+        }
+        return;
+      }
+
+      await ensureDefaultNotificationChannel(Notifications);
 
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
@@ -100,17 +91,33 @@ export function useNotifications() {
         finalStatus = status;
       }
 
+      console.info('[notifications] permission status:', finalStatus);
       if (finalStatus !== 'granted') return;
 
-      const tokenData = await Notifications.getDevicePushTokenAsync();
+      const projectId = getExpoProjectId();
+      if (!projectId) {
+        console.warn('[notifications] EAS projectId not found; cannot register an Expo push token.');
+        return;
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       const token = tokenData.data;
 
-      await supabase.rpc('upsert_fcm_token', {
+      console.info('[notifications] got Expo push token:', token.slice(0, 30) + '...');
+
+      const { error } = await supabase.rpc('upsert_fcm_token', {
         p_token: token,
         p_user_agent: `expo-${Platform.OS}-${Platform.Version}`,
       });
+
+      if (error) {
+        console.warn('[notifications] failed to save push token:', error.message);
+        return;
+      }
+
+      console.info('[notifications] push token saved to Supabase');
     } catch (err) {
-      console.warn('Failed to register push token:', err);
+      console.warn('[notifications] failed to register push token:', err);
     }
   }, []);
 
@@ -159,13 +166,18 @@ export function useNotifications() {
           const Notifications = await getNotificationsModule();
           if (!Notifications) return;
 
+          await ensureDefaultNotificationChannel(Notifications);
+
           Notifications.scheduleNotificationAsync({
             content: {
               title: notif.service_type || 'New Notification',
               body: notif.message,
               data: { notificationId: notif.id, requestId: notif.request_id },
+              sound: 'default',
             },
-            trigger: null,
+            trigger: Platform.OS === 'android'
+              ? { channelId: DEFAULT_NOTIFICATION_CHANNEL_ID, seconds: 1 }
+              : null,
           }).catch((err: unknown) => console.warn('Failed to show local notification:', err));
         },
       )
