@@ -104,7 +104,7 @@ Supabase secret store.
 - `apps/web/src/lib/` — Utility functions and validations.
 - `apps/web/src/actions/` — Server actions.
 - `client/supabaseClient.ts` — **lives outside `src/`**.
-- `apps/web/client/supabaseClient.ts` � **lives outside `apps/web/src/`**.
+- `apps/web/client/supabaseClient.ts` � **lives outside `apps/web/src/`**.
 - `supabase/functions/` — Edge Function source mirrors (deploy via MCP).
 - `supabase/migrations/` — DDL history. Always use `apply_migration`, not raw SQL.
 
@@ -351,6 +351,48 @@ arrival → in_progress → completed → rating loop and refresh-state recovery
 ## Mobile (Expo)
 
 The native mobile app lives in `apps/mobile` and uses Expo React Native. Capacitor has been removed entirely. Mobile should import brand tokens/types/utilities from `packages/shared`, call the same Supabase Edge Functions and `SECURITY DEFINER` RPCs as web, and register push tokens into the existing `fcm_tokens` table. Web keeps cookie-backed Supabase sessions; mobile may use platform-appropriate secure storage for the same Supabase JWT. Do **not** invent mobile-specific RPCs or auth flows.
+
+### Mobile Navigation (partially refactored)
+
+**Customer tabs** (5): Home | Find | Jobs | Chat | Profile
+**Provider tabs** (5): Home | Requests | Wallet | Chat | Profile
+
+- `book.tsx` was split into `find.tsx` (service selection, address, map) + `process.tsx` (tracking, status, rating). Both are root-level Stack screens.
+- Provider `index.tsx` is pending split into `index.tsx` (dashboard) + `requests.tsx`.
+- `CustomTabBar.tsx` handles bottom tab bar with floating pill indicator. Pill position is computed from actual tab bar dimensions.
+- Swipe gesture between tabs is NOT yet implemented (planned).
+- Shared chat component extraction from `(customer)/chat.tsx` and `(provider)/chat.tsx` is NOT yet done.
+
+### Mobile Key Files
+
+- `app/process.tsx` — process/tracking screen, accepts optional params with DB fallback, realtime subscription
+- `app/(customer)/find.tsx` — service selection, Google Places, map, existing-request recovery
+- `app/auth.tsx` — phone OTP with segmented `OtpInput` (auto-submit, 60s countdown, paste support), Google OAuth, email sign-in
+- `src/components/OtpInput.tsx` — segmented 6-digit OTP input
+- `src/components/CustomTabBar.tsx` — bottom tab bar with floating pill
+- `src/components/MapComponents.native.tsx` — real react-native-maps with ErrorBoundary
+- `src/components/MapComponents.web.tsx` — stub for web
+- `src/hooks/useServiceTimer.ts` — timer hook with NaN guard
+- `src/lib/ustaz-api.ts` — `sendPhoneOtp()`, `verifyPhoneOtp()`, `setProviderOnlineStatus()`
+
+### Mobile Build Requirements
+
+- `EAS_SKIP_AUTO_FINGERPRINT=1` env var required (avoids `expo-dev-launcher` ENOENT)
+- `.env.local` must be in `eas.json` preview profile `env` field (gitignored)
+- `android/` directory must be committed for EAS builds
+- `metro.config.cjs` uses `moduleSuffixes: [".web", ""]` for web platform split
+- `react-native-maps` does NOT have an Expo config plugin — API key goes in `AndroidManifest.xml` manually
+- `expo-notifications` must be lazy-imported (dynamic `import()`) guarded by `Constants.appOwnership === 'expo'` to prevent Expo Go crash in SDK 53+
+
+### Mobile Gotchas
+
+- **Node.js 22 on Windows** has ESM import bug with drive-letter paths (`E:\...`). Use Node 20 at `C:\node20\node-v20.19.0-win-x64`.
+- **Supabase email confirmation** must be disabled for development (Dashboard → Auth → Providers → Email → uncheck "Confirm email").
+- **Google user metadata** lives in `user.user_metadata` — fields: `full_name`, `name`, `email`, `avatar_url`, `picture`.
+- **KeyboardAvoidingView on Android** needs `behavior='height'` (not `undefined`).
+- **Bottom tab bar centering** — pill position computed from `barContentWidth`, `tabCenter`, `targetX` with corrected math.
+- **Twilio OTP** — Pakistan geo-permission must be enabled in Twilio Console → Verify Service → Geo Permissions. Trial accounts can only send to verified caller IDs.
+- **`send-otp` Edge Function v8** — returns friendly error messages for 400/401/429/502 status codes.
 
 ## Video Generation (ustaz-visuals)
 

@@ -169,7 +169,17 @@ Deno.serve(async (req: Request) => {
   if (!tw.ok) {
     const detail = await tw.text();
     console.error('twilio send failed', tw.status, detail);
-    return json(502, { error: 'failed to send OTP' });
+    let friendlyError = 'Failed to send OTP.';
+    if (tw.status === 400) {
+      if (detail.includes('unverified')) friendlyError = 'This phone number is not verified in Twilio. Add it as a Verified Caller ID in the Twilio Console.';
+      else if (detail.includes('geo')) friendlyError = 'SMS not available for this country. Enable it in Twilio Verify → Geo Permissions.';
+      else friendlyError = `Invalid request: ${detail.slice(0, 200)}`;
+    } else if (tw.status === 401) {
+      friendlyError = 'Twilio authentication failed. Check credentials.';
+    } else if (tw.status === 429) {
+      friendlyError = 'Too many attempts. Wait a minute and try again.';
+    }
+    return json(502, { error: friendlyError });
   }
 
   return json(200, { ok: true });

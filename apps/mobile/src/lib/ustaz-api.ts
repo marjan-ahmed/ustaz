@@ -122,8 +122,21 @@ export const ACTIVE_STATUSES: ServiceRequestStatus[] = [
 ];
 
 export async function sendPhoneOtp(phone: string) {
-  const { error } = await supabase.functions.invoke('send-otp', { body: { phone } });
-  if (error) throw error;
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${supabaseKey}`,
+    },
+    body: JSON.stringify({ phone }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = data?.error || `Server error (${res.status})`;
+    throw new Error(msg);
+  }
 }
 
 export async function verifyPhoneOtp(phone: string, code: string) {

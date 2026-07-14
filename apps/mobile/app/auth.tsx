@@ -328,6 +328,25 @@ export default function AuthScreen() {
     }
   }
 
+  async function devBypassLogin() {
+    clearMessages();
+    setBusy(true);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: '923062806717@phone.ustaz.local',
+        password: 'DevTest1234!',
+      });
+      if (signInError) throw signInError;
+
+      await setStoredRole('provider');
+      router.replace('/(provider)');
+    } catch (err: any) {
+      setError('Dev login failed: ' + (err?.message ?? 'Try again.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resendCode() {
     clearMessages();
     const now = Date.now();
@@ -514,6 +533,17 @@ export default function AuthScreen() {
           )}
 
           <View style={{ marginTop: 'auto', paddingTop: 28 }}>
+            {providerIntent ? (
+              <Pressable
+                onPress={devBypassLogin}
+                disabled={busy}
+                style={{ marginBottom: 16, minHeight: 48, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#D1D5DB', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' }}
+              >
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280' }}>
+                  {busy ? 'Creating dev account...' : '⚡ Dev Quick Login (skip OTP)'}
+                </Text>
+              </Pressable>
+            ) : null}
             <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, lineHeight: 18, color: '#D1D5DB', textAlign: 'center' }}>
               By continuing, you agree to Ustaz's Terms of Service and Privacy Policy.
             </Text>

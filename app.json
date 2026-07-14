@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "a1792892-8961-4682-bb4f-4ab977c118d7"
+      }
+    },
+    "android": {
+      "package": "com.marjanahmed.ustaz"
+    }
+  }
+}
