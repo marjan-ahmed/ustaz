@@ -140,16 +140,14 @@ export default function ProviderProfile() {
   }
 
   async function handleSubmitAppeal() {
-    if (!appealReason.trim()) return;
+    if (!appealReason.trim() || !user) return;
     setSubmittingAppeal(true);
     try {
-      const res = await fetch('/api/provider/submit-appeal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ appeal_type: 'general', reason: appealReason }),
+      const { error } = await supabase.rpc('submit_appeal', {
+        p_appeal_type: 'general',
+        p_reason: appealReason,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (error) throw error;
       setShowAppealModal(false);
       setAppealReason('');
     } catch {}
@@ -157,14 +155,13 @@ export default function ProviderProfile() {
   }
 
   async function handleSubmitVerification() {
+    if (!user) return;
     try {
-      const res = await fetch('/api/provider/submit-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+      const { error } = await supabase.rpc('submit_verification', {
+        p_provider_id: user.id,
       });
-      const data = await res.json();
-      if (data.success && profile) {
+      if (error) throw error;
+      if (profile) {
         setProfile({ ...profile, verification_status: 'pending_review' });
       }
     } catch {}
