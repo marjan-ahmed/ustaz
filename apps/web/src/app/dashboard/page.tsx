@@ -1673,16 +1673,27 @@ function ProviderDashboardInner() {
                     {providerData.firstName} {providerData.lastName}
                   </h3>
                   <p className="text-sm text-gray-500">{providerData.service_type}</p>
-                  <div className="mt-1">
+                  <div className="mt-1 flex flex-wrap gap-1">
                     {providerData.phone_verified ? (
                       <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        Verified
+                        Phone Verified
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                         <CircleDashed className="w-3 h-3 mr-1" />
-                        Pending
+                        Phone Pending
+                      </Badge>
+                    )}
+                    {providerData.verification_status === 'verified' && (
+                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        ID Verified
+                      </Badge>
+                    )}
+                    {providerData.verification_status === 'pending_review' && (
+                      <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                        ID Under Review
                       </Badge>
                     )}
                   </div>
@@ -1960,7 +1971,7 @@ function ProviderDashboardInner() {
                   {/* Verification Card */}
                   <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Verification</span>
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Identity Verification</span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         providerData.verification_status === 'verified' ? 'bg-green-100 text-green-800' :
                         providerData.verification_status === 'pending_review' ? 'bg-yellow-100 text-yellow-800' :
@@ -1977,7 +1988,9 @@ function ProviderDashboardInner() {
                       </p>
                     )}
                     {(!providerData.verification_status || providerData.verification_status === 'unverified') && (
-                      <button
+                      <div>
+                        <p className="text-xs text-gray-400 mb-2">Submit CNIC and documents for admin review</p>
+                        <button
                         onClick={() => fetch('/api/provider/submit-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
                           .then(r => r.json())
                           .then(d => { if (d.success) toast.success('Verification submitted'); else toast.error(d.error); })
@@ -1987,6 +2000,7 @@ function ProviderDashboardInner() {
                       >
                         Submit for verification →
                       </button>
+                      </div>
                     )}
                   </div>
                 </div>

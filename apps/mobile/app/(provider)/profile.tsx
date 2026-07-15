@@ -155,16 +155,7 @@ export default function ProviderProfile() {
   }
 
   async function handleSubmitVerification() {
-    if (!user) return;
-    try {
-      const { error } = await supabase.rpc('submit_verification', {
-        p_provider_id: user.id,
-      });
-      if (error) throw error;
-      if (profile) {
-        setProfile({ ...profile, verification_status: 'pending_review' });
-      }
-    } catch {}
+    router.push('/(provider)/verify-identity');
   }
 
   const name = profile ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() : '';
@@ -288,7 +279,7 @@ export default function ProviderProfile() {
 
               {/* Verification Card */}
               <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#FFFFFF', padding: 14, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Verification</Text>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>ID Verification</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text style={{ fontFamily: 'Anton', fontSize: 14, color: '#1B1B27', textTransform: 'capitalize' }}>
                     {profile?.verification_status === 'verified' ? 'Verified' :
@@ -313,10 +304,13 @@ export default function ProviderProfile() {
                   </View>
                 </View>
                 {(!profile?.verification_status || profile?.verification_status === 'unverified') && (
-                  <Pressable onPress={handleSubmitVerification}
-                    style={{ marginTop: 8, paddingVertical: 6, borderRadius: 8, backgroundColor: `${colors.primary}10`, alignItems: 'center' }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: colors.primary }}>Submit for verification</Text>
-                  </Pressable>
+                  <View>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, color: '#9CA3AF', marginBottom: 6 }}>Submit CNIC for admin review</Text>
+                    <Pressable onPress={handleSubmitVerification}
+                      style={{ paddingVertical: 6, borderRadius: 8, backgroundColor: `${colors.primary}10`, alignItems: 'center' }}>
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: colors.primary }}>Submit for verification</Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
             </View>
