@@ -1935,19 +1935,19 @@ function ProviderDashboardInner() {
                         {providerStanding?.tier || 'standard'}
                       </span>
                     </div>
-                    {providerStanding?.reliability_score != null && (
+                    {providerStanding?.overall_rating_avg != null && providerStanding.overall_rating_avg > 0 && (
                       <div className="mt-2">
                         <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>Reliability</span>
-                          <span>{Math.round(providerStanding.reliability_score * 100)}%</span>
+                          <span>Rating</span>
+                          <span>{Number(providerStanding.overall_rating_avg).toFixed(1)}/5</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${
-                              providerStanding.reliability_score >= 0.8 ? 'bg-green-500' :
-                              providerStanding.reliability_score >= 0.6 ? 'bg-amber-500' : 'bg-red-500'
+                              providerStanding.overall_rating_avg >= 4.0 ? 'bg-green-500' :
+                              providerStanding.overall_rating_avg >= 3.0 ? 'bg-amber-500' : 'bg-red-500'
                             }`}
-                            style={{ width: `${providerStanding.reliability_score * 100}%` }}
+                            style={{ width: `${(providerStanding.overall_rating_avg / 5) * 100}%` }}
                           />
                         </div>
                       </div>
@@ -1962,20 +1962,21 @@ function ProviderDashboardInner() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Verification</span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        providerData.verification_status === 'approved' ? 'bg-green-100 text-green-800' :
-                        providerData.verification_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        providerData.verification_status === 'verified' ? 'bg-green-100 text-green-800' :
+                        providerData.verification_status === 'pending_review' ? 'bg-yellow-100 text-yellow-800' :
                         providerData.verification_status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        providerData.verification_status === 'expired' ? 'bg-orange-100 text-orange-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {providerData.verification_status || 'not_submitted'}
+                        {providerData.verification_status || 'unverified'}
                       </span>
                     </div>
-                    {providerData.verification_status === 'approved' && providerData.verification_expires_at && (
+                    {providerData.verification_status === 'verified' && providerData.verification_expires_at && (
                       <p className="text-xs text-gray-500 mt-1">
                         Expires: {new Date(providerData.verification_expires_at).toLocaleDateString()}
                       </p>
                     )}
-                    {(!providerData.verification_status || providerData.verification_status === 'not_submitted') && (
+                    {(!providerData.verification_status || providerData.verification_status === 'unverified') && (
                       <button
                         onClick={() => fetch('/api/provider/submit-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
                           .then(r => r.json())
