@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,14 @@ interface ProviderProfile {
   registrationDate: string | null;
   phone_verified: boolean | null;
   avatarUrl: string | null;
+  verification_status: string | null;
+  verification_expires_at: string | null;
+}
+
+interface ProviderStanding {
+  tier: string | null;
+  overall_rating_avg: number | null;
+  total_completed_jobs: number | null;
 }
 
 export default function ProviderProfile() {
@@ -29,10 +37,14 @@ export default function ProviderProfile() {
   const router = useRouter();
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [standing, setStanding] = useState<ProviderStanding | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAppealModal, setShowAppealModal] = useState(false);
+  const [appealReason, setAppealReason] = useState('');
+  const [submittingAppeal, setSubmittingAppeal] = useState(false);
 
   // Editable fields
   const [firstName, setFirstName] = useState('');
@@ -47,9 +59,10 @@ export default function ProviderProfile() {
     (async () => {
       setLoading(true);
       try {
-        const [profileRes, statsRes] = await Promise.all([
+        const [profileRes, statsRes, standingRes] = await Promise.all([
           supabase.from('ustaz_registrations').select('*').eq('userId', user.id).maybeSingle(),
           getProviderStats(user.id).catch(() => null),
+          supabase.from('provider_standing').select('tier, overall_rating_avg, total_completed_jobs').eq('provider_id', user.id).maybeSingle(),
         ]);
         if (cancelled) return;
         if (profileRes.data) {
@@ -62,6 +75,7 @@ export default function ProviderProfile() {
           setServiceType(p.service_type ?? '');
         }
         if (statsRes) setStats(statsRes);
+        if (standingRes.data) setStanding(standingRes.data as ProviderStanding);
       } catch {}
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -123,6 +137,37 @@ export default function ProviderProfile() {
   async function handleSignOut() {
     await signOut();
     router.replace('/splash');
+  }
+
+  async function handleSubmitAppeal() {
+    if (!appealReason.trim()) return;
+    setSubmittingAppeal(true);
+    try {
+      const res = await fetch('/api/provider/submit-appeal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appeal_type: 'general', reason: appealReason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setShowAppealModal(false);
+      setAppealReason('');
+    } catch {}
+    setSubmittingAppeal(false);
+  }
+
+  async function handleSubmitVerification() {
+    try {
+      const res = await fetch('/api/provider/submit-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.success && profile) {
+        setProfile({ ...profile, verification_status: 'pending_review' });
+      }
+    } catch {}
   }
 
   const name = profile ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() : '';
@@ -203,6 +248,113 @@ export default function ProviderProfile() {
                 </View>
               </View>
             )}
+
+            {/* Tier & Verification */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+              {/* Tier Card */}
+              <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#FFFFFF', padding: 14, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Tier</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontFamily: 'Anton', fontSize: 18, color: '#1B1B27', textTransform: 'capitalize' }}>{standing?.tier || 'Standard'}</Text>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor:
+                    standing?.tier === 'elite' ? '#F3E8FF' :
+                    standing?.tier === 'trusted' ? '#ECFDF5' :
+                    standing?.tier === 'probation' ? '#FEF2F2' : '#F3F4F6'
+                  }}>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, fontWeight: '700', color:
+                      standing?.tier === 'elite' ? '#7C3AED' :
+                      standing?.tier === 'trusted' ? '#10B981' :
+                      standing?.tier === 'probation' ? '#EF4444' : '#6B7280'
+                    }}>
+                      {standing?.tier === 'elite' ? 'ELITE' :
+                       standing?.tier === 'trusted' ? 'TRUSTED' :
+                       standing?.tier === 'probation' ? 'PROBATION' : 'STANDARD'}
+                    </Text>
+                  </View>
+                </View>
+                {standing?.overall_rating_avg != null && standing.overall_rating_avg > 0 && (
+                  <View style={{ marginTop: 8 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, color: '#9CA3AF' }}>Avg Rating</Text>
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, color: '#9CA3AF' }}>{Number(standing.overall_rating_avg).toFixed(1)}/5</Text>
+                    </View>
+                    <View style={{ height: 4, borderRadius: 2, backgroundColor: '#E5E7EB', overflow: 'hidden' }}>
+                      <View style={{ height: 4, borderRadius: 2, backgroundColor:
+                        standing.overall_rating_avg >= 4.0 ? '#10B981' :
+                        standing.overall_rating_avg >= 3.0 ? '#F59E0B' : '#EF4444',
+                        width: `${(standing.overall_rating_avg / 5) * 100}%`
+                      }} />
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Verification Card */}
+              <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#FFFFFF', padding: 14, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Verification</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontFamily: 'Anton', fontSize: 14, color: '#1B1B27', textTransform: 'capitalize' }}>
+                    {profile?.verification_status === 'verified' ? 'Verified' :
+                     profile?.verification_status === 'pending_review' ? 'Pending' :
+                     profile?.verification_status === 'rejected' ? 'Rejected' :
+                     profile?.verification_status === 'expired' ? 'Expired' : 'Unverified'}
+                  </Text>
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor:
+                    profile?.verification_status === 'verified' ? '#ECFDF5' :
+                    profile?.verification_status === 'pending_review' ? '#FEF3C7' :
+                    profile?.verification_status === 'rejected' ? '#FEF2F2' : '#F3F4F6'
+                  }}>
+                    <Ionicons name={
+                      profile?.verification_status === 'verified' ? 'checkmark-circle' :
+                      profile?.verification_status === 'pending_review' ? 'time' :
+                      profile?.verification_status === 'rejected' ? 'close-circle' : 'help-circle'
+                    } size={14} color={
+                      profile?.verification_status === 'verified' ? '#10B981' :
+                      profile?.verification_status === 'pending_review' ? '#D97706' :
+                      profile?.verification_status === 'rejected' ? '#EF4444' : '#9CA3AF'
+                    } />
+                  </View>
+                </View>
+                {(!profile?.verification_status || profile?.verification_status === 'unverified') && (
+                  <Pressable onPress={handleSubmitVerification}
+                    style={{ marginTop: 8, paddingVertical: 6, borderRadius: 8, backgroundColor: `${colors.primary}10`, alignItems: 'center' }}>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: colors.primary }}>Submit for verification</Text>
+                  </Pressable>
+                )}
+              </View>
+            </View>
+
+            {/* Appeal button (probation only) */}
+            {standing?.tier === 'probation' && (
+              <Pressable onPress={() => setShowAppealModal(true)}
+                style={{ marginBottom: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A', alignItems: 'center' }}>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#D97706' }}>Submit an Appeal</Text>
+              </Pressable>
+            )}
+
+            {/* Appeal Modal */}
+            <Modal visible={showAppealModal} transparent animationType="fade">
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 }}>
+                <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20 }}>
+                  <Text style={{ fontFamily: 'Anton', fontSize: 18, color: '#1B1B27', marginBottom: 12 }}>Submit an Appeal</Text>
+                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginBottom: 8 }}>Reason</Text>
+                  <TextInput value={appealReason} onChangeText={setAppealReason}
+                    multiline placeholder="Explain why you believe this should be reviewed..."
+                    placeholderTextColor="#D1D5DB"
+                    style={{ borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 14, paddingVertical: 10, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27', textAlignVertical: 'top', marginBottom: 16, minHeight: 100 }} />
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <Pressable onPress={() => { setShowAppealModal(false); setAppealReason(''); }}
+                      style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: '#F3F4F6', alignItems: 'center' }}>
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280' }}>Cancel</Text>
+                    </Pressable>
+                    <Pressable onPress={handleSubmitAppeal} disabled={submittingAppeal || !appealReason.trim()}
+                      style={{ flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: (!appealReason.trim() || submittingAppeal) ? '#D1D5DB' : colors.primary, alignItems: 'center' }}>
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>{submittingAppeal ? 'Submitting...' : 'Submit'}</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
 
             {/* Personal Information */}
             <SectionHeader icon="person" label="Personal" />
