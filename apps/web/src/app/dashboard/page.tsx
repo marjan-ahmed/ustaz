@@ -109,6 +109,8 @@ interface IProviderData {
   avatarUrl: string | null;
   registrationDate: string;
   phone_verified: boolean;
+  verification_status: string | null;
+  verification_expires_at: string | null;
 }
 
 // New interface for Service Request
@@ -306,6 +308,13 @@ function ProviderDashboardInner() {
 
   // Provider stats (avg rating, completed jobs)
   const [providerStats, setProviderStats] = useState<{ avg_rating: number; total_ratings: number; completed_jobs: number } | null>(null);
+
+  // Provider standing (tier + performance)
+  const [providerStanding, setProviderStanding] = useState<any>(null);
+  const [showAppealModal, setShowAppealModal] = useState(false);
+  const [appealReason, setAppealReason] = useState('');
+  const [appealType, setAppealType] = useState<'rating' | 'incident' | 'verification' | 'general'>('general');
+  const [submittingAppeal, setSubmittingAppeal] = useState(false);
 
   // New state for service requests
   const [serviceRequests, setServiceRequests] = useState<IServiceRequest[]>([]);
@@ -756,6 +765,41 @@ function ProviderDashboardInner() {
         }
       });
   }, [userIdFromUrl]);
+
+  // Fetch provider standing (tier + verification)
+  useEffect(() => {
+    if (!userIdFromUrl) return;
+    supabase
+      .from('provider_standing')
+      .select('*')
+      .eq('provider_id', userIdFromUrl)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setProviderStanding(data);
+      });
+  }, [userIdFromUrl]);
+
+  // Submit appeal handler
+  const handleSubmitAppeal = async () => {
+    if (!appealReason.trim()) return;
+    setSubmittingAppeal(true);
+    try {
+      const res = await fetch('/api/provider/submit-appeal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ appeal_type: appealType, reason: appealReason }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success('Appeal submitted successfully');
+      setShowAppealModal(false);
+      setAppealReason('');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit appeal');
+    } finally {
+      setSubmittingAppeal(false);
+    }
+  };
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !userIdFromUrl) return;
@@ -1869,6 +1913,133 @@ function ProviderDashboardInner() {
                   <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
                     <p className="text-2xl font-extrabold text-[#db4b0d]">{providerStats.completed_jobs}</p>
                     <p className="text-xs text-gray-500 mt-0.5">Jobs Done</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Provider Tier & Verification Status */}
+            {providerData && activeTab === 'profile' && (
+              <div className="max-w-4xl mx-auto mb-6">
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Tier Card */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Provider Tier</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        providerStanding?.tier === 'elite' ? 'bg-purple-100 text-purple-800' :
+                        providerStanding?.tier === 'trusted' ? 'bg-green-100 text-green-800' :
+                        providerStanding?.tier === 'probation' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {providerStanding?.tier || 'standard'}
+                      </span>
+                    </div>
+                    {providerStanding?.reliability_score != null && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                          <span>Reliability</span>
+                          <span>{Math.round(providerStanding.reliability_score * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              providerStanding.reliability_score >= 0.8 ? 'bg-green-500' :
+                              providerStanding.reliability_score >= 0.6 ? 'bg-amber-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${providerStanding.reliability_score * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {providerStanding?.tier == null && (
+                      <p className="text-xs text-gray-400 mt-2">Complete jobs to unlock tier status</p>
+                    )}
+                  </div>
+
+                  {/* Verification Card */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Verification</span>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        providerData.verification_status === 'approved' ? 'bg-green-100 text-green-800' :
+                        providerData.verification_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        providerData.verification_status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {providerData.verification_status || 'not_submitted'}
+                      </span>
+                    </div>
+                    {providerData.verification_status === 'approved' && providerData.verification_expires_at && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Expires: {new Date(providerData.verification_expires_at).toLocaleDateString()}
+                      </p>
+                    )}
+                    {(!providerData.verification_status || providerData.verification_status === 'not_submitted') && (
+                      <button
+                        onClick={() => fetch('/api/provider/submit-verification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+                          .then(r => r.json())
+                          .then(d => { if (d.success) toast.success('Verification submitted'); else toast.error(d.error); })
+                          .catch(() => toast.error('Failed to submit'))
+                      }
+                        className="mt-2 text-xs text-[#db4b0d] hover:text-[#c4420b] font-medium"
+                      >
+                        Submit for verification →
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Appeal Button */}
+                {providerStanding?.tier === 'probation' && (
+                  <button
+                    onClick={() => setShowAppealModal(true)}
+                    className="mt-3 w-full bg-white border border-amber-300 text-amber-700 rounded-xl py-2.5 text-sm font-medium hover:bg-amber-50 transition-colors"
+                  >
+                    Submit an Appeal
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Appeal Modal */}
+            {showAppealModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Submit an Appeal</h3>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={appealType}
+                    onChange={(e) => setAppealType(e.target.value as any)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"
+                  >
+                    <option value="general">General</option>
+                    <option value="rating">Rating Dispute</option>
+                    <option value="incident">Incident Appeal</option>
+                    <option value="verification">Verification Issue</option>
+                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                  <textarea
+                    value={appealReason}
+                    onChange={(e) => setAppealReason(e.target.value)}
+                    rows={4}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4"
+                    placeholder="Explain why you believe this should be reviewed..."
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setShowAppealModal(false)}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitAppeal}
+                      disabled={submittingAppeal || !appealReason.trim()}
+                      className="px-4 py-2 bg-[#db4b0d] text-white rounded-lg text-sm font-medium hover:bg-[#c4420b] disabled:opacity-50"
+                    >
+                      {submittingAppeal ? 'Submitting...' : 'Submit Appeal'}
+                    </button>
                   </div>
                 </div>
               </div>
