@@ -64,6 +64,26 @@ export default function CustomerProfile() {
         </View>
 
         <View style={{ gap: 8 }}>
+          <Pressable onPress={() => router.push('/(customer)/favorites')}
+            style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF', padding: 16, borderWidth: 1, borderColor: '#F3F4F6' }}>
+            <Ionicons name="heart" size={20} color="#EF4444" />
+            <View style={{ marginLeft: 14, flex: 1 }}>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#1B1B27' }}>Favorite Providers</Text>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Quick rebook your trusted ustaz</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+          </Pressable>
+
+          <Pressable onPress={() => router.push('/(customer)/saved-addresses')}
+            style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF', padding: 16, borderWidth: 1, borderColor: '#F3F4F6' }}>
+            <Ionicons name="location" size={20} color={colors.primary} />
+            <View style={{ marginLeft: 14, flex: 1 }}>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#1B1B27' }}>Saved Addresses</Text>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Manage your locations and service history</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+          </Pressable>
+
           <Pressable onPress={switchRole}
             style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 16, backgroundColor: '#FFFFFF', padding: 16, borderWidth: 1, borderColor: '#F3F4F6' }}>
             <MaterialCommunityIcons name="wrench-outline" size={20} color="#1B1B27" />

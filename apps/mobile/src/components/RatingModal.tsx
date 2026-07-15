@@ -31,6 +31,8 @@ export default function RatingModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [savingFavorite, setSavingFavorite] = useState(false);
 
   async function handleSubmit() {
     if (rating === 0) { setError('Please select a rating'); return; }
@@ -62,8 +64,23 @@ export default function RatingModal({
   }
 
   function handleClose() {
-    setRating(0); setComment(''); setSubmitted(false); setError(null);
+    setRating(0); setComment(''); setSubmitted(false); setError(null); setIsFavorited(false);
     onClose();
+  }
+
+  async function toggleFavorite() {
+    if (!raterId || !ratedUserId || savingFavorite) return;
+    setSavingFavorite(true);
+    try {
+      if (isFavorited) {
+        await supabase.from('favorites').delete().eq('customer_id', raterId).eq('provider_id', ratedUserId);
+        setIsFavorited(false);
+      } else {
+        await supabase.from('favorites').insert({ customer_id: raterId, provider_id: ratedUserId });
+        setIsFavorited(true);
+      }
+    } catch {}
+    setSavingFavorite(false);
   }
 
   return (
@@ -86,6 +103,20 @@ export default function RatingModal({
               </View>
               <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#10B981', marginBottom: 4 }}>Rating submitted!</Text>
               <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#6B7280', textAlign: 'center' }}>Thank you for your feedback.</Text>
+
+              {/* Favorite button */}
+              <Pressable onPress={toggleFavorite} disabled={savingFavorite}
+                style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12,
+                  backgroundColor: isFavorited ? '#FEE2E2' : '#FFF7ED', borderWidth: 1, borderColor: isFavorited ? '#FECACA' : '#FDBA74' }}>
+                {savingFavorite ? (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                ) : (
+                  <Ionicons name={isFavorited ? 'heart' : 'heart-outline'} size={20} color={isFavorited ? '#EF4444' : colors.primary} />
+                )}
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: isFavorited ? '#EF4444' : colors.primary }}>
+                  {isFavorited ? 'Saved to favorites' : `Save ${ratedUserName} as favorite`}
+                </Text>
+              </Pressable>
             </View>
           ) : (
             /* Rating form */

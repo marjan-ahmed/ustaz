@@ -76,7 +76,15 @@ function decodeGooglePolyline(encoded: string): MapCoordinate[] {
 }
 
 export default function BookScreen() {
-  const params = useLocalSearchParams<{ service?: string }>();
+  const params = useLocalSearchParams<{
+    service?: string;
+    savedAddressId?: string;
+    savedAddressLabel?: string;
+    savedLat?: string;
+    savedLng?: string;
+    favoritedProviderId?: string;
+    favoritedProviderName?: string;
+  }>();
   const initialService = typeof params.service === 'string' ? params.service : serviceCategories[0].name;
   const { user, loading: authLoading, isSignedIn } = useAuth();
   const router = useRouter();
@@ -318,6 +326,23 @@ export default function BookScreen() {
     if (userLat && userLng) return;
     getCurrentLocation();
   }, [user, authLoading]);
+
+  // Pre-fill from saved address params
+  useEffect(() => {
+    if (params.savedLat && params.savedLng) {
+      const lat = parseFloat(params.savedLat);
+      const lng = parseFloat(params.savedLng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setUserLat(lat);
+        setUserLng(lng);
+        setMarkerCoords({ lat, lng });
+        if (params.savedAddressLabel) {
+          setAddress(params.savedAddressLabel);
+        }
+        selectedAddressRef.current = true;
+      }
+    }
+  }, [params.savedLat, params.savedLng, params.savedAddressLabel]);
 
   useEffect(() => {
     if (!currentRequestId) return;
