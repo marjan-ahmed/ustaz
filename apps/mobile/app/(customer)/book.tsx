@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, LayoutAnimation } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Dimensions, PanResponder, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { ActivityIndicator, Dimensions, Image, PanResponder, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@ustaz/shared/theme';
@@ -132,6 +133,10 @@ export default function BookScreen() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  // Landmark + entrance photo
+  const [landmark, setLandmark] = useState('');
+  const [entrancePhoto, setEntrancePhoto] = useState<string | null>(null);
 
   const isIdle = requestStatus === 'idle' || requestStatus === 'error';
 
@@ -405,11 +410,33 @@ export default function BookScreen() {
     setSearchMessage('Finding nearby providers...');
 
     try {
+      // Upload entrance photo if present
+      let entrancePhotoUrl: string | null = null;
+      if (entrancePhoto && user) {
+        const response = await fetch(entrancePhoto);
+        const buffer = await response.arrayBuffer();
+        const timestamp = Date.now();
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('entrance-photos')
+          .upload(`${user.id}/entrance-${timestamp}.jpg`, buffer, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+        if (!uploadError && uploadData) {
+          const { data: urlData } = supabase.storage
+            .from('entrance-photos')
+            .getPublicUrl(uploadData.path);
+          entrancePhotoUrl = urlData.publicUrl;
+        }
+      }
+
       const result = await createServiceRequest({
         serviceType,
         userLat: requestLat,
         userLng: requestLng,
         requestDetails: address.trim() || null,
+        landmark: landmark.trim() || null,
+        entrancePhotoUrl,
         radiusKm: 3,
       });
 
@@ -645,6 +672,57 @@ export default function BookScreen() {
                   </View>
                 )}
               </View>
+
+              {/* Landmark + Entrance Photo */}
+              {isIdle && userLat && userLng && (
+                <View style={{ gap: 8 }}>
+                  <View>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>Landmark (required for provider)</Text>
+                    <TextInput
+                      value={landmark}
+                      onChangeText={setLandmark}
+                      placeholder="e.g. Near Shalimar Hospital, blue gate"
+                      placeholderTextColor="#D1D5DB"
+                      style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27' }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>Entrance photo (optional)</Text>
+                    {entrancePhoto ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 60, height: 60, borderRadius: 8, backgroundColor: '#F3F4F6', overflow: 'hidden' }}>
+                          <Image source={{ uri: entrancePhoto }} style={{ width: 60, height: 60 }} resizeMode="cover" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#10B981', fontWeight: '700' }}>Photo added</Text>
+                          <Pressable onPress={() => setEntrancePhoto(null)}>
+                            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#EF4444', marginTop: 2 }}>Remove</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    ) : (
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <Pressable onPress={async () => {
+                          const result = await ImagePicker.launchCameraAsync({ quality: 0.7, mediaTypes: ['images'] });
+                          if (!result.canceled && result.assets[0]) setEntrancePhoto(result.assets[0].uri);
+                        }}
+                          style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' }}>
+                          <Ionicons name="camera-outline" size={16} color="#6B7280" />
+                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280' }}>Camera</Text>
+                        </Pressable>
+                        <Pressable onPress={async () => {
+                          const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ['images'] });
+                          if (!result.canceled && result.assets[0]) setEntrancePhoto(result.assets[0].uri);
+                        }}
+                          style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' }}>
+                          <Ionicons name="images-outline" size={16} color="#6B7280" />
+                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280' }}>Gallery</Text>
+                        </Pressable>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* Action Buttons */}

@@ -121,6 +121,8 @@ interface IServiceRequest {
   request_latitude: number;
   request_longitude: number;
   request_details: string | null;
+  landmark: string | null;
+  entrance_photo_url: string | null;
   status: 'pending_notification' | 'notified_multiple' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'no_ustaz_found';
   created_at: string;
   notified_providers?: string[]; // Array of provider IDs who were notified
@@ -2128,6 +2130,25 @@ function ProviderDashboardInner() {
                     {/* Using request_details instead of message */}
                     {request.request_details || "No details provided"}
                   </p>
+
+                  {/* Landmark */}
+                  {request.landmark && (
+                    <p className="text-sm text-gray-600 flex items-center mb-1">
+                      <MapPin className="h-4 w-4 mr-2 text-amber-500" />
+                      <span className="font-medium text-amber-700">Landmark:</span>&nbsp;{request.landmark}
+                    </p>
+                  )}
+
+                  {/* Entrance Photo */}
+                  {request.entrance_photo_url && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500 mb-1">Entrance Photo</p>
+                      <a href={request.entrance_photo_url} target="_blank" rel="noopener noreferrer">
+                        <img src={request.entrance_photo_url} alt="Entrance"
+                          className="w-32 h-24 object-cover rounded-lg border border-gray-200 hover:border-[#db4b0d] transition-colors cursor-pointer" />
+                      </a>
+                    </div>
+                  )}
 
                   <p className="text-sm text-gray-600 flex items-center mb-1">
                     <Clock className="h-4 w-4 mr-2 text-gray-500" />

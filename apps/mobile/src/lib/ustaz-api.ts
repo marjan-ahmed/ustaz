@@ -214,6 +214,8 @@ export async function createServiceRequest(input: {
   userLat: number;
   userLng: number;
   requestDetails?: string | null;
+  landmark?: string | null;
+  entrancePhotoUrl?: string | null;
   radiusKm?: number;
 }) {
   const radiusMeters = Math.max(100, Math.min(50_000, Math.round((input.radiusKm ?? 3) * 1000)));
@@ -223,6 +225,8 @@ export async function createServiceRequest(input: {
     p_request_longitude: input.userLng,
     p_request_details: input.requestDetails ?? null,
     p_radius_meters: radiusMeters,
+    p_landmark: input.landmark ?? null,
+    p_entrance_photo_url: input.entrancePhotoUrl ?? null,
   });
 
   if (error) throw error;
