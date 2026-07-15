@@ -43,6 +43,25 @@ export async function cleanTestData(
     `DELETE FROM live_locations WHERE provider_id = $1`,
     [providerUserId],
   );
+  // Clean up Tier 0 tables
+  await p.query(
+    `DELETE FROM incidents WHERE provider_id = $1 OR request_id IN (
+      SELECT id FROM service_requests WHERE user_id = $2 OR accepted_by_provider_id = $1
+    )`,
+    [providerUserId, customerUserId],
+  );
+  await p.query(
+    `DELETE FROM provider_performance WHERE provider_id = $1`,
+    [providerUserId],
+  );
+  await p.query(
+    `DELETE FROM provider_standing WHERE provider_id = $1`,
+    [providerUserId],
+  );
+  await p.query(
+    `DELETE FROM appeals WHERE provider_id = $1`,
+    [providerUserId],
+  );
   await p.query(
     `DELETE FROM service_requests WHERE user_id = $1 OR accepted_by_provider_id = $2`,
     [customerUserId, providerUserId],
