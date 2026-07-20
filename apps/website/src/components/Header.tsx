@@ -33,6 +33,7 @@ export default function Header() {
   const navItems = [
     { label: "Home", href: "/" },
     { label: "How It Works", href: "#how-it-works" },
+    { label: "Waitlist", href: "#waitlist" },
     { label: "FAQ", href: "#faq" },
     { label: "Contact", href: "#footer" },
   ];
@@ -65,7 +66,7 @@ export default function Header() {
                 width={100}
                 height={90}
                 alt="Ustaz Logo"
-                className="w-auto h-20 object-contain"
+                className="w-auto h-15 object-contain"
               />
             </Link>
           </div>
@@ -88,10 +89,10 @@ export default function Header() {
 
           <div className="flex items-center gap-4">
             <a
-              href="#"
+              href="#waitlist"
               className="px-5 py-2 rounded-full bg-[#db4b0d] text-white font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg text-sm"
             >
-              Coming Soon
+              Join Waitlist
             </a>
           </div>
         </nav>

@@ -203,13 +203,9 @@ export default function HowItWorks() {
 
         {/* CTA Section */}
         <div className="text-center mt-16">
-          <a
-            href="https://play.google.com/store/apps/details?id=pk.ustaz.app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="#waitlist">
             <button className="bg-[#db4b0d] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 inline-flex items-center gap-2">
-              Coming Soon
+              Join the Waitlist
               <ArrowRight className="w-5 h-5" />
             </button>
           </a>

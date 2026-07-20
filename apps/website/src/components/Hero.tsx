@@ -38,13 +38,9 @@ export default function Hero() {
               repairs to installations, get instant quotes and book appointments.
             </p>
 
-            <a
-              href="https://play.google.com/store/apps/details?id=pk.ustaz.app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href="#waitlist">
               <button className="bg-[#0f1729] text-white px-5 py-2 rounded-full font-semibold hover:bg-[#1a2440] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-100 w-fit group z-10">
-                Coming Soon
+                Join the Waitlist
                 <ArrowUpRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </button>
             </a>

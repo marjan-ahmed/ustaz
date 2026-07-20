@@ -8,7 +8,7 @@ This is an npm workspaces monorepo for "Ustaz", a Pakistani home-services market
 
 ## Architecture
 
-Monorepo layout: `apps/web` is the Next.js 15 (App Router, Turbopack) frontend, `apps/mobile` is the Expo React Native app, and `packages/shared` holds cross-platform theme tokens, shared types, and utilities. Supabase remains the backend.
+Monorepo layout: `apps/web` is the Next.js 15 (App Router, Turbopack) frontend, `apps/mobile` is the Expo React Native app, `apps/website` is the standalone marketing landing page, and `packages/shared` holds cross-platform theme tokens, shared types, and utilities. Supabase remains the backend.
 
 - **Auth**: Supabase phone OTP via custom Edge Functions (`send-otp` + `verify-otp`).
   Sessions stored in **cookies** via `@supabase/ssr` (NOT localStorage —
@@ -60,6 +60,55 @@ npm run dev:mobile    # Expo dev server from apps/mobile
 npm run build:mobile  # Expo export/build script
 ```
 
+## Marketing Website (apps/website)
+
+Standalone Next.js 15 landing page at `apps/website`. Runs on port 3002
+(`next dev --turbopack -p 3002`). Deployed on Vercel separately from the
+main app. NO booking functionality — funnels visitors to Play Store/App Store.
+
+### Website Design System
+
+Brand-matched design tokens:
+- **Primary orange**: `#DB4B0D` (buttons, links, accents)
+- **Primary light**: `#FF6B4A` (gradients, hover states)
+- **Primary dark hover**: `#C24309` (button hover)
+- **Dark navy**: `#0F1729` (footer, hero CTA, dark sections)
+- **Cream**: `#FFF7ED` (card backgrounds, hero surfaces)
+
+Typography:
+- **Headings**: Clash Grotesk (Fontshare CDN, applied via inline `style={{fontFamily: 'Clash Grotesk, sans-serif'}}`)
+- **Body EN**: Atkinson Hyperlegible (local TTF via `next/font/local`)
+- **Body UR**: Gulzar (Google Font), Body AR: IBM Plex Sans Arabic
+- **Display/Counter numbers**: Anton (local TTF)
+
+### Website Key Files
+
+- `apps/website/src/app/page.tsx` — Homepage composition (all sections)
+- `apps/website/src/components/Header.tsx` — Desktop header + StaggeredMenu
+- `apps/website/src/components/Hero.tsx` — Bento hero with cards
+- `apps/website/src/components/Services.tsx` — Bento grid services
+- `apps/website/src/components/HowItWorks.tsx` — Step-by-step flow
+- `apps/website/src/components/AppScreenshots.tsx` — 3D phone mockup
+- `apps/website/src/components/TrustBar.tsx` — Real-time stats (Anton numbers)
+- `apps/website/src/components/Testimonials.tsx` — Customer reviews
+- `apps/website/src/components/DownloadCTA.tsx` — "Coming Soon on Play Store"
+- `apps/website/src/components/FAQ.tsx` — Accordion FAQ
+- `apps/website/src/components/Footer.tsx` — 5-column footer
+- `apps/website/src/components/WaitlistSection.tsx` — Waitlist signup form
+- `apps/website/src/app/api/waitlist/route.ts` — Waitlist submission API
+- `apps/website/src/lib/supabase.ts` — Server-side Supabase client (service role)
+- `apps/website/.env.local` — SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+
+### Website Gotchas
+
+- `requireCommit: true` in eas.json means the working tree must be clean
+  before EAS builds — the website Vercel deploy picks up from git push.
+- StaggeredMenu (React Bits) needs `isFixed={true}` for proper mobile layout.
+- Clash Grotesk is loaded via CDN `<link>`, NOT `next/font` — applied via
+  inline `style` prop on every heading. Do NOT use Tailwind `font-heading`.
+- SVG arrows replaced with lucide-react icons across all components.
+- DownloadCTA uses "Coming Soon" CTA — app not launched yet.
+
 ## Supabase
 
 Project ref: `solrsmnkxklsqklqhgxf`.
@@ -93,6 +142,16 @@ Supabase secret store.
   default. Enable per-country in the Verify Service settings.
 - **Trial accounts**: only SMS to phone numbers verified in the Twilio Console.
 
+### Waitlist Table
+
+`waitlist` table stores pre-launch customer signups from the marketing website:
+- `id` uuid PK, `name` text NOT NULL, `email` text UNIQUE, `source` text,
+  `created_at` timestamptz default now()
+- RLS: allow anonymous INSERT (public signup), authenticated SELECT only
+- Unique constraint on `(email)` to prevent duplicate signups
+- API route: `apps/website/src/app/api/waitlist/route.ts` (POST, rate-limited)
+- Component: `apps/website/src/components/WaitlistSection.tsx`
+
 ## Key Directories
 
 - `apps/web/src/app/` — Next.js App Router pages and layouts.
@@ -104,7 +163,7 @@ Supabase secret store.
 - `apps/web/src/lib/` — Utility functions and validations.
 - `apps/web/src/actions/` — Server actions.
 - `client/supabaseClient.ts` — **lives outside `src/`**.
-- `apps/web/client/supabaseClient.ts` � **lives outside `apps/web/src/`**.
+- `apps/web/client/supabaseClient.ts` — **lives outside `apps/web/src/`**.
 - `supabase/functions/` — Edge Function source mirrors (deploy via MCP).
 - `supabase/migrations/` — DDL history. Always use `apply_migration`, not raw SQL.
 

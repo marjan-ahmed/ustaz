@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function DownloadCTA() {
   return (
@@ -34,19 +34,15 @@ export default function DownloadCTA() {
             Launching soon on Google Play.
           </p>
 
-          {/* Coming Soon Badge */}
+          {/* Join Waitlist CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-10">
-            <div className="bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl flex items-center gap-3 border border-white/20">
-              <Play className="w-8 h-8 fill-white" />
-              <div className="text-left">
-                <div className="text-[10px] text-white/60 leading-none uppercase">
-                  Coming Soon on
-                </div>
-                <div className="text-lg font-semibold leading-tight">
-                  Google Play
-                </div>
-              </div>
-            </div>
+            <Link
+              href="#waitlist"
+              className="inline-flex items-center gap-2 bg-white text-[#db4b0d] px-8 py-4 rounded-xl font-semibold hover:bg-white/90 transition-all duration-300 shadow-lg hover:shadow-xl group"
+            >
+              Join the Waitlist
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
 
           {/* WhatsApp Support */}
