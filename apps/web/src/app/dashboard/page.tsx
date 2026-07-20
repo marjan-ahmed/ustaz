@@ -42,7 +42,6 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sidebar,
   SidebarContent,
@@ -89,6 +88,7 @@ import ProviderRequestNotification from "../components/ProviderRequestNotificati
 import ReactConfetti from "react-confetti";
 import ProviderLocationTracker from "../components/ProviderLocationTracker";
 import ArrivalWorkflow from "../components/ArrivalWorkflow";
+import ProviderCustomerMap from "../components/ProviderCustomerMap";
 import WalletPanel from "../components/WalletPanel";
 import { toast } from "sonner";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -102,9 +102,9 @@ interface IProviderData {
   lastName: string;
   email: string | null;
   cnic: string;
-  city: string;
   phoneNumber: string;
   service_type: string;
+  service_types: string[] | null;
   hasActiveMobile: boolean | null;
   avatarUrl: string | null;
   registrationDate: string;
@@ -313,6 +313,7 @@ function ProviderDashboardInner() {
 
   // Provider standing (tier + performance)
   const [providerStanding, setProviderStanding] = useState<any>(null);
+  const [providerLocation, setProviderLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [appealReason, setAppealReason] = useState('');
   const [appealType, setAppealType] = useState<'rating' | 'incident' | 'verification' | 'general'>('general');
@@ -471,70 +472,6 @@ function ProviderDashboardInner() {
       icon: ShieldCheck,
     },
   ];
-
-  // Cities data
-  const citiesByCountry: Record<string, string[]> = {
-    Pakistan: [
-      "Karachi",
-      "Lahore",
-      "Islamabad",
-      "Rawalpindi",
-      "Faisalabad",
-      "Multan",
-      "Peshawar",
-      "Quetta",
-      "Sialkot",
-      "Hyderabad",
-    ],
-    "United States": [
-      "New York",
-      "Los Angeles",
-      "Chicago",
-      "Houston",
-      "Phoenix",
-      "Philadelphia",
-      "San Antonio",
-      "San Diego",
-      "Dallas",
-      "San Jose",
-    ],
-    "United Kingdom": [
-      "London",
-      "Birmingham",
-      "Manchester",
-      "Glasgow",
-      "Liverpool",
-      "Bristol",
-      "Sheffield",
-      "Leeds",
-      "Edinburgh",
-      "Leicester",
-    ],
-    Canada: [
-      "Toronto",
-      "Montreal",
-      "Vancouver",
-      "Calgary",
-      "Edmonton",
-      "Ottawa",
-      "Winnipeg",
-      "Quebec City",
-      "Hamilton",
-      "Halifax",
-    ],
-    Australia: [
-      "Sydney",
-      "Melbourne",
-      "Brisbane",
-      "Perth",
-      "Adelaide",
-      "Gold Coast",
-      "Canberra",
-      "Newcastle",
-      "Wollongong",
-      "Hobart",
-    ],
-  };
 
 
   useEffect(() => {
@@ -1241,10 +1178,7 @@ function ProviderDashboardInner() {
     }
 
     if (!(editableFormData.cnic || "").trim()) {
-      newErrors.cnic = "CNIC number is required.";
-      isValid = false;
-    } else if (!(editableFormData.cnic || "").startsWith("42201")) {
-      newErrors.cnic = "CNIC must start with 42201.";
+      newErrors.cnic = "CNIC is required.";
       isValid = false;
     } else if (!/^\d{13}$/.test(editableFormData.cnic || "")) {
       newErrors.cnic = "CNIC must be 13 digits (e.g., 4220112345678).";
@@ -1256,11 +1190,6 @@ function ProviderDashboardInner() {
       isValid = false;
     } else if (!/^\d{7,}$/.test(editableFormData.phoneNumber || "")) {
       newErrors.phoneNumber = "Please enter a valid phone number (digits only, at least 7).";
-      isValid = false;
-    }
-
-    if (!(editableFormData.city || "").trim()) {
-      newErrors.city = "City is required.";
       isValid = false;
     }
 
@@ -1298,9 +1227,9 @@ function ProviderDashboardInner() {
         lastName: (editableFormData.lastName || "").trim(),
         email: (editableFormData.email || "").trim() || null,
         cnic: (editableFormData.cnic || "").trim(),
-        city: (editableFormData.city || "").trim(),
         phoneNumber: (editableFormData.phoneNumber || "").trim(),
         service_type: (editableFormData.service_type || "").trim(),
+        service_types: editableFormData.service_types && editableFormData.service_types.length > 0 ? editableFormData.service_types : null,
         hasActiveMobile: editableFormData.hasActiveMobile,
         avatarUrl: (editableFormData.avatarUrl || "").trim() || null,
         phone_verified: phoneNumberChanged ? false : providerData?.phone_verified,
@@ -1674,7 +1603,11 @@ function ProviderDashboardInner() {
                   <h3 className="font-semibold text-gray-900">
                     {providerData.firstName} {providerData.lastName}
                   </h3>
-                  <p className="text-sm text-gray-500">{providerData.service_type}</p>
+                  <p className="text-sm text-gray-500">
+                    {(providerData.service_types && providerData.service_types.length > 0
+                      ? providerData.service_types.join(', ')
+                      : providerData.service_type) || 'Service provider'}
+                  </p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {providerData.phone_verified ? (
                       <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
@@ -2069,7 +2002,7 @@ function ProviderDashboardInner() {
                   requestId={serviceRequests.find(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)?.id || null}
                   isActive={serviceRequests.some(req => req.status === 'accepted' && req.accepted_by_provider_id === providerData.userId)}
                   onLocationUpdate={(location) => {
-                    console.log('Provider location received in dashboard:', location);
+                    setProviderLocation(location);
                   }}
                 />
               </div>
@@ -2207,6 +2140,15 @@ function ProviderDashboardInner() {
 
                   {request.accepted_by_provider_id === userIdFromUrl && ["accepted", "provider_enroute", "arriving", "arrived", "in_progress", "work_in_progress", "completed"].includes(request.status) && (
                     <div className="mt-4 space-y-2">
+                      {request.request_latitude && request.request_longitude && (
+                        <ProviderCustomerMap
+                          customerLat={request.request_latitude}
+                          customerLng={request.request_longitude}
+                          providerLat={providerLocation?.latitude ?? null}
+                          providerLng={providerLocation?.longitude ?? null}
+                          height={200}
+                        />
+                      )}
                       <ArrivalWorkflow
                         requestId={request.id}
                         providerId={userIdFromUrl!}
@@ -2385,31 +2327,7 @@ function ProviderDashboardInner() {
                           </div>
                         </div>
 
-                        {/* Location Information */}
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Location Information</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <Label htmlFor="editCity" className="text-sm font-medium text-gray-700">
-                                City <span className="text-red-500">*</span>
-                              </Label>
-                              <Select
-                                value={editableFormData.city}
-                                onValueChange={(value) => handleSelectChange("city", value)}
-                              >
-                                <SelectTrigger className={`mt-1 ${editErrors.city ? "border-red-500" : ""}`}>
-                                  <SelectValue placeholder="Select City" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {citiesByCountry["Pakistan"]?.map((city) => (
-                                    <SelectItem key={city} value={city}>
-                                      {city}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {editErrors.city && <p className="text-red-500 text-sm mt-1">{editErrors.city}</p>}
-                            </div>
+                        {/* Contact Information */}
                           </div>
                         </div>
 
@@ -2440,30 +2358,48 @@ function ProviderDashboardInner() {
                             </div>
 
                             <div>
-                              <Label htmlFor="editServiceType" className="text-sm font-medium text-gray-700">
-                                Service Type <span className="text-red-500">*</span>
+                              <Label className="text-sm font-medium text-gray-700">
+                                Services <span className="text-red-500">*</span>
                               </Label>
-                              <Select
-                                value={editableFormData.service_type}
-                                onValueChange={(value) => handleSelectChange("service_type", value)}
-                              >
-                                <SelectTrigger className={`mt-1 ${editErrors.service_type ? "border-red-500" : ""}`}>
-                                  <SelectValue placeholder="Select Service Type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {[
-                                    "Electrician Service",
-                                    "Plumbing",
-                                    "Carpentry",
-                                    "AC Maintenance",
-                                    "Solar Technician",
-                                  ].map((service) => (
-                                    <SelectItem key={service} value={service}>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {[
+                                  "Electrician",
+                                  "Plumbing",
+                                  "Carpentry",
+                                  "AC Maintenance",
+                                  "Solar Technician",
+                                ].map((service) => {
+                                  const isActive = (editableFormData.service_types || []).includes(service);
+                                  return (
+                                    <button
+                                      key={service}
+                                      type="button"
+                                      onClick={() => {
+                                        const current = editableFormData.service_types || [];
+                                        const updated = isActive
+                                          ? current.filter((s: string) => s !== service)
+                                          : [...current, service];
+                                        setEditableFormData((prev: any) => ({
+                                          ...prev,
+                                          service_types: updated,
+                                          service_type: updated[0] || "",
+                                        }));
+                                        if (editErrors.service_type) {
+                                          setEditErrors((prev) => { const n = { ...prev }; delete n.service_type; return n; });
+                                        }
+                                      }}
+                                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                                        isActive
+                                          ? "border-[#db4b0d] bg-orange-50 text-[#db4b0d]"
+                                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                      }`}
+                                    >
+                                      {isActive && <CheckCircle className="w-4 h-4" />}
                                       {service}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                               {editErrors.service_type && (
                                 <p className="text-red-500 text-sm mt-1">{editErrors.service_type}</p>
                               )}
@@ -2568,20 +2504,6 @@ function ProviderDashboardInner() {
                           </div>
                         </div>
 
-                        {/* Location Information */}
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <MapPin className="mr-2 h-5 w-5 text-[#db4b0d]" />
-                            Location Information
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-500">City</Label>
-                              <p className="text-base text-gray-900">{providerData.city}</p>
-                            </div>
-                          </div>
-                        </div>
-
                         {/* Contact Information */}
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -2625,8 +2547,17 @@ function ProviderDashboardInner() {
                           </h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-1">
-                              <Label className="text-sm font-medium text-gray-500">Service Type</Label>
-                              <p className="text-base font-semibold text-[#db4b0d]">{providerData.service_type}</p>
+                              <Label className="text-sm font-medium text-gray-500">Services</Label>
+                              <div className="flex flex-wrap gap-2">
+                                {(providerData.service_types && providerData.service_types.length > 0
+                                  ? providerData.service_types
+                                  : providerData.service_type ? [providerData.service_type] : []
+                                ).map((svc) => (
+                                  <span key={svc} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                                    {svc}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
 
                             <div className="space-y-1">

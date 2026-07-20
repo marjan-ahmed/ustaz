@@ -17,7 +17,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
@@ -35,12 +34,14 @@ interface IFormData {
   lastName: string
   email: string
   cnic: string
-  city: string
   phoneNumber: string
   service_type: string
+  serviceTypes: string[]
   hasActiveMobile: boolean | null
   avatar: File | null
   avatarUrl: string
+  cnicFrontUrl: string
+  cnicBackUrl: string
   agreedToTerms: boolean
   wantsUpdates: boolean
 }
@@ -68,12 +69,14 @@ function App() {
     lastName: "",
     email: "",
     cnic: "",
-    city: "",
     phoneNumber: "",
     service_type: "",
+    serviceTypes: [],
     hasActiveMobile: null,
     avatar: null,
     avatarUrl: "",
+    cnicFrontUrl: "",
+    cnicBackUrl: "",
     agreedToTerms: false,
     wantsUpdates: false,
   })
@@ -117,23 +120,7 @@ function App() {
 
   // Removed useEffect that called getCurrentLocation
 
-  // Simulated city data
-  const citiesByCountry: Record<string, string[]> = {
-    Pakistan: [
-      "Karachi",
-      "Lahore",
-      "Islamabad",
-      "Rawalpindi",
-      "Faisalabad",
-      "Multan",
-      "Peshawar",
-      "Quetta",
-      "Sialkot",
-      "Hyderabad",
-    ],
-  }
-
-  const service_types = ["Electrician Service", "Plumbing", "Carpentry", "AC Maintenance", "Solar Technician"]
+  const service_types = ["Electrician", "Plumbing", "Carpentry", "AC Maintenance", "Solar Technician"]
 
   // Handle input changes for all form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -186,6 +173,40 @@ function App() {
     setTempImageUrl("")
   }
 
+  // Handle CNIC photo uploads
+  const handleCnicPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'cnicFrontUrl' | 'cnicBackUrl') => {
+    const file = e.target.files?.[0]
+    if (!file || !userId) return
+    try {
+      const timestamp = Date.now()
+      const path = `${userId}/cnic-${type === 'cnicFrontUrl' ? 'front' : 'back'}-${timestamp}.jpg`
+      const { data, error } = await supabase.storage
+        .from('provider-docs')
+        .upload(path, file, { contentType: file.type, upsert: true })
+      if (error) throw error
+      const { data: urlData } = supabase.storage.from('provider-docs').getPublicUrl(data.path)
+      setFormData(prev => ({ ...prev, [type]: urlData.publicUrl }))
+      if (errors[type]) {
+        setErrors(prev => { const n = { ...prev }; delete n[type]; return n })
+      }
+    } catch (err: any) {
+      console.error('CNIC upload error:', err.message)
+    }
+  }
+
+  // Toggle service type in multi-select
+  const toggleServiceType = (service: string) => {
+    setFormData(prev => {
+      const types = prev.serviceTypes.includes(service)
+        ? prev.serviceTypes.filter(s => s !== service)
+        : [...prev.serviceTypes, service]
+      return { ...prev, serviceTypes: types, service_type: types[0] || '' }
+    })
+    if (errors.serviceTypes) {
+      setErrors(prev => { const n = { ...prev }; delete n.serviceTypes; return n })
+    }
+  }
+
   // Validation function for each step of the form
   const validateStep = (): boolean => {
   const newErrors: Record<string, string> = {}
@@ -203,9 +224,6 @@ function App() {
     if (!formData.cnic.trim()) {
       newErrors.cnic = t("errors.cnicRequired")
       isValid = false
-    } else if (!formData.cnic.startsWith("42201")) {
-      newErrors.cnic = t("errors.cnicStart")
-      isValid = false
     } else if (!/^\d{13}$/.test(formData.cnic)) {
       newErrors.cnic = t("errors.cnicLength")
       isValid = false
@@ -217,20 +235,25 @@ function App() {
       newErrors.phoneNumber = t("errors.phoneInvalid")
       isValid = false
     }
-    if (!formData.city.trim()) {
-      newErrors.city = t("errors.cityRequired")
+  } else if (currentStep === 2) {
+    if (!formData.cnicFrontUrl) {
+      newErrors.cnicFrontUrl = "Please upload CNIC front photo"
       isValid = false
     }
-  } else if (currentStep === 2) {
-    if (!formData.service_type.trim()) {
-      newErrors.service_type = t("errors.serviceTypeRequired")
+    if (!formData.cnicBackUrl) {
+      newErrors.cnicBackUrl = "Please upload CNIC back photo"
+      isValid = false
+    }
+  } else if (currentStep === 3) {
+    if (formData.serviceTypes.length === 0) {
+      newErrors.serviceTypes = t("errors.serviceTypeRequired")
       isValid = false
     }
     if (formData.hasActiveMobile === null) {
       newErrors.hasActiveMobile = t("errors.mobileOptionRequired")
       isValid = false
     }
-  } else if (currentStep === 3) {
+  } else if (currentStep === 4) {
     if (!formData.agreedToTerms) {
       newErrors.agreedToTerms = t("errors.mustAgree")
       isValid = false
@@ -346,16 +369,16 @@ function App() {
         lastName: data.lastName,
         email: data.email || null,
         cnic: data.cnic,
-        city: data.city,
         phoneCountryCode: "+92",
         phoneNumber: data.phoneNumber,
         service_type: data.service_type,
+        service_types: data.serviceTypes.length > 0 ? data.serviceTypes : null,
         hasActiveMobile: data.hasActiveMobile,
         avatarUrl: data.avatarUrl || null,
+        cnic_front_url: data.cnicFrontUrl || null,
+        cnic_back_url: data.cnicBackUrl || null,
         registrationDate: new Date().toISOString(),
         userId: userId,
-        // Reaching this form requires a completed Supabase Auth OTP session,
-        // so phone is verified by construction.
         phone_verified: true,
       }
       const { data: supabaseData, error } = await supabase.from("ustaz_registrations").insert([dataToSave])
@@ -366,7 +389,7 @@ function App() {
       setIsLoading(false)
       setIsRegisteredSuccessfully(true)
       localStorage.setItem("isRegisteredSuccessfully", "true")
-      router.push(`/dashboard`) // Redirect on success — userId derived from session
+      router.push(`/dashboard`)
     } catch (error: any) {
       console.error("Error sending data to Supabase:", error.message)
       setIsLoading(false)
@@ -394,12 +417,18 @@ function App() {
     },
     {
       number: 2,
+      title: "CNIC Photos",
+      icon: FileText,
+      description: "Upload your identity documents",
+    },
+    {
+      number: 3,
       title: t("title2"),
       icon: FileText,
       description: t("description2"),
     },
     {
-      number: 3,
+      number: 4,
       title: t("title3"),
       icon: CheckCircle,
       description: t("description3"),
@@ -606,39 +635,7 @@ function App() {
                       <MapPin className="w-5 h-5 mr-2 text-orange-500" />
                       {t('address')}
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* City */}
-                      <div className="space-y-2">
-                        <Label htmlFor="city" className="text-sm font-semibold text-gray-700">
-                          {t('city')} <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          value={formData.city}
-                          onValueChange={(value) => setFormData((prev) => ({ ...prev, city: value }))}
-                        >
-                          <SelectTrigger
-                            id="city"
-                            className={`w-full px-4 py-3 rounded-lg border-2 text-sm transition focus:outline-none focus:ring-0 ${
-                              errors.city
-                                ? "border-red-300 bg-red-50"
-                                : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                            }`}
-                          >
-                            <SelectValue placeholder="Select City" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {citiesByCountry["Pakistan"]?.map((city) => (
-                              <SelectItem key={city} value={city}>
-                                {city}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {errors.city && <p className="text-red-500 text-xs mt-1 animate-fade-in">{errors.city}</p>}
-                      </div>
-                    </div>
-
-                    {/* Removed Geolocation Section */}
+                    <p className="text-sm text-gray-500">Your location will be tracked from your device when you go online.</p>
                   </div>
                   {/* Phone Number */}
                   <div className="group">
@@ -683,8 +680,102 @@ function App() {
                 </div>
               )}
 
-              {/* Step 2: Service Selection */}
+              {/* Step 2: CNIC Photos */}
               {currentStep === 2 && (
+                <div className="space-y-8">
+                  <div className="text-center mb-8">
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
+                      CNIC Photos
+                    </h2>
+                    <p className="text-gray-600 text-lg">Upload clear photos of your identity card</p>
+                  </div>
+
+                  {/* CNIC Front */}
+                  <div className="group">
+                    <Label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                      <FileText className="w-4 h-4 mr-2 text-orange-500" />
+                      CNIC Front Side <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-48 h-32 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden hover:border-orange-400 transition-colors">
+                        {formData.cnicFrontUrl ? (
+                          <img src={formData.cnicFrontUrl} alt="CNIC Front" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center">
+                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-xs text-gray-500">Click to upload</p>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleCnicPhotoChange(e, 'cnicFrontUrl')}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <p>• Clear, readable photo</p>
+                        <p>• All 4 corners visible</p>
+                        <p>• No glare or blur</p>
+                      </div>
+                    </div>
+                    {errors.cnicFrontUrl && <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.cnicFrontUrl}</p>}
+                  </div>
+
+                  {/* CNIC Back */}
+                  <div className="group">
+                    <Label className="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                      <FileText className="w-4 h-4 mr-2 text-orange-500" />
+                      CNIC Back Side <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-48 h-32 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center overflow-hidden hover:border-orange-400 transition-colors">
+                        {formData.cnicBackUrl ? (
+                          <img src={formData.cnicBackUrl} alt="CNIC Back" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center">
+                            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-xs text-gray-500">Click to upload</p>
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleCnicPhotoChange(e, 'cnicBackUrl')}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        <p>• Clear, readable photo</p>
+                        <p>• All 4 corners visible</p>
+                        <p>• No glare or blur</p>
+                      </div>
+                    </div>
+                    {errors.cnicBackUrl && <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.cnicBackUrl}</p>}
+                  </div>
+
+                  {/* Navigation */}
+                  <div className="flex justify-between pt-6">
+                    <Button
+                      onClick={handleBack}
+                      className="group bg-gray-200 text-gray-800 px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
+                    >
+                      <ChevronLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
+                      {t('back')}
+                    </Button>
+                    <Button
+                      onClick={handleNext}
+                      className="group bg-gradient-to-r from-orange-500 to-red-500 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center"
+                    >
+                      {t('continue')}
+                      <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Service Selection */}
+              {currentStep === 3 && (
                 <div className="space-y-8">
                   <div className="text-center mb-8">
                     <h2 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-3">
@@ -692,40 +783,37 @@ function App() {
                     </h2>
                     <p className="text-gray-600 text-lg">{t('experienceHelpText')}</p>
                   </div>
-                  {/* Select a service */}
+                  {/* Select services (multi-select) */}
                   <div className="group">
-                    <Label htmlFor="service_type" className="text-sm font-semibold text-gray-700 mb-3 block">
+                    <Label className="text-sm font-semibold text-gray-700 mb-3 block">
                       {t('selectService')} <span className="text-red-500">*</span>
                     </Label>
-                    <Select
-                      name="service_type"
-                      value={formData.service_type}
-                      onValueChange={(value) =>
-                        handleChange({
-                          target: { name: "service_type", value: value, type: "select-one" },
-                        } as React.ChangeEvent<HTMLSelectElement>)
-                      }
-                    >
-                      <SelectTrigger
-                        id="service_type"
-                        className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 focus:outline-none focus:ring-0 ${
-                          errors.service_type
-                            ? "border-red-300 bg-red-50"
-                            : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                        }`}
-                      >
-                        <SelectValue placeholder="Select a service type" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border border-gray-200 rounded-xl shadow-lg">
-                        {service_types.map((service) => (
-                          <SelectItem key={service} value={service}>
+                    <div className="flex flex-wrap gap-3">
+                      {service_types.map((service) => {
+                        const isActive = formData.serviceTypes.includes(service)
+                        return (
+                          <button
+                            key={service}
+                            type="button"
+                            onClick={() => toggleServiceType(service)}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-xl border-2 font-semibold transition-all duration-200 ${
+                              isActive
+                                ? "border-orange-500 bg-orange-50 text-orange-700"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                            }`}
+                          >
+                            {isActive ? (
+                              <CheckCircle className="w-5 h-5 text-orange-500" />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-gray-300" />
+                            )}
                             {service}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.service_type && (
-                      <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.service_type}</p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {errors.serviceTypes && (
+                      <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.serviceTypes}</p>
                     )}
                   </div>
                   {/* Active Mobile Question */}
@@ -785,8 +873,8 @@ function App() {
                 </div>
               )}
 
-              {/* Step 3: Greeting and Finalize */}
-              {currentStep === 3 && (
+              {/* Step 4: Greeting and Finalize */}
+              {currentStep === 4 && (
                 <div className="space-y-8 text-center">
                   {isRegisteredSuccessfully ? (
                     // Success message and identifier component

@@ -43,93 +43,36 @@ export async function POST(req: NextRequest) {
     // Convert radius to meters for PostGIS ST_DWithin function
     const radiusMeters = radiusKm * 1000;
 
-    // Use Supabase's RPC to call a custom database function that calculates distances
-    // This function needs to be created in the database first
-    const { data, error } = await supabase.rpc('find_providers_nearby_with_distance', {
-      lat_input: userLat,
-      lng_input: userLng,
-      radius_input: radiusMeters,
-      type_input: serviceType
+    // Use find_providers_nearby_ranked (TDD-verified, composite scoring: distance + rating + reliability + fairness)
+    const { data, error } = await supabase.rpc('find_providers_nearby_ranked', {
+      p_user_lat: userLat,
+      p_user_lng: userLng,
+      p_service_type: serviceType,
+      p_radius_meters: radiusMeters,
+      p_limit: 5,
     });
 
     if (error) {
       console.error('Error querying providers with distance:', error);
-
-      // If the RPC function doesn't exist, we'll need to implement a fallback
-      if (error.code === '42883') { // undefined function error
-        // Fallback: Get providers without distance calculation and return basic info
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('ustaz_registrations')
-          .select(`
-            userId,
-            firstName,
-            lastName,
-            email,
-            phoneNumber,
-            service_type,
-            city,
-            avatarUrl
-          `)
-          .eq('service_type', serviceType)
-          .eq('online_status', true)
-          .eq('provider_status', 'available')
-          .not('location', 'is', null)
-          .limit(5);
-
-        if (fallbackError) {
-          console.error('Error with fallback query:', fallbackError);
-          return NextResponse.json(
-            { error: 'Failed to query providers', details: fallbackError.message },
-            { status: 500 }
-          );
-        }
-
-        // For fallback data, we don't have distance, so we assign a default value
-        // Since we can't calculate distance without coordinates, assign a high default value
-        const providers: ProviderWithDistance[] = fallbackData.map((provider: any) => ({
-          id: provider.userId,
-          firstName: provider.firstName,
-          lastName: provider.lastName,
-          email: provider.email,
-          phoneNumber: provider.phoneNumber,
-          serviceType: provider.service_type,
-          city: provider.city,
-          avatarUrl: provider.avatarUrl,
-          distance: Number.MAX_SAFE_INTEGER // Placeholder since we don't have actual distance
-        }));
-
-        // Sort by the placeholder distance (they'll all have the same value, so order doesn't matter)
-        // Just slice to the first 5
-        const sortedProviders = providers.slice(0, 5);
-
-        return NextResponse.json({ providers: sortedProviders });
-      } else {
-        return NextResponse.json(
-          { error: 'Failed to query providers', details: error.message },
-          { status: 500 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'Failed to query providers', details: error.message },
+        { status: 500 }
+      );
     }
 
-    // Format the response data
-    const providers: ProviderWithDistance[] = data.map((provider: any) => ({
-      id: provider.userId,
-      firstName: provider.firstName,
-      lastName: provider.lastName,
-      email: provider.email,
-      phoneNumber: provider.phoneNumber,
+    // find_providers_nearby_ranked returns user_id, first_name, last_name, distance_meters, score, etc.
+    const providers: ProviderWithDistance[] = (data ?? []).map((provider: any) => ({
+      id: provider.user_id,
+      firstName: provider.first_name,
+      lastName: provider.last_name,
+      phoneNumber: provider.phone_number,
       serviceType: provider.service_type,
       city: provider.city,
-      avatarUrl: provider.avatarUrl,
-      distance: Math.round(provider.distance) // Round distance to nearest meter
+      avatarUrl: provider.avatar_url,
+      distance: Math.round(provider.distance_meters ?? 0),
     }));
 
-    // Return the providers sorted by distance (nearest first), limited to top 5
-    const sortedProviders = providers
-      .sort((a: ProviderWithDistance, b: ProviderWithDistance) => a.distance - b.distance)
-      .slice(0, 5);
-
-    return NextResponse.json({ providers: sortedProviders });
+    return NextResponse.json({ providers });
   } catch (error: any) {
     console.error('Unexpected error in find-nearby-providers API:', error);
     return NextResponse.json(

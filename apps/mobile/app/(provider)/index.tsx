@@ -7,9 +7,12 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { PROVIDER_MIN_WALLET_BALANCE } from '@ustaz/shared';
 import { colors } from '@ustaz/shared/theme';
 import { useAuth } from '@/lib/useAuth';
+import { supabase } from '@/lib/supabase';
 import { getProviderActiveRequests, getProviderPendingRequests, getProviderStats, getWallet, respondToServiceRequest, updateRequestStatus, setProviderOnlineStatus, setProviderAvailability, statusLabel, type ProviderNotification, type ServiceRequest } from '@/lib/ustaz-api';
 import { useProviderLocationTracker } from '@/hooks/useProviderLocationTracker';
+import { useProviderAlwaysOnLocation } from '@/hooks/useProviderAlwaysOnLocation';
 import NotificationBell from '@/components/NotificationBell';
+import ProviderCustomerMap from '@/components/ProviderCustomerMap';
 import { useNotificationsContext } from '@/context/NotificationsContext';
 
 const nextAction: Partial<Record<string, { action: 'completed'; label: string; icon: string }>> = {
@@ -27,6 +30,16 @@ const WORKFLOW_STEPS = [
 const AUTO_ARRIVAL_PENDING_STATUSES = ['accepted', 'provider_enroute', 'arriving'];
 const DASH_WELCOME_KEY_PREFIX = 'ustaz_dash_welcome_';
 
+function formatPakistaniTime(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleTimeString('en-PK', {
+    timeZone: 'Asia/Karachi',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 export default function ProviderHome() {
   const { user, loading: authLoading, isSignedIn } = useAuth();
   const router = useRouter();
@@ -39,6 +52,9 @@ export default function ProviderHome() {
   const [acting, setActing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showWelcomeCard, setShowWelcomeCard] = useState(false);
+  const [cancelledAlert, setCancelledAlert] = useState<{ serviceType: string; customerName: string } | null>(null);
+
+  const alwaysOnLocation = useProviderAlwaysOnLocation(user?.id ?? null);
 
   const walletBalance = Number(wallet?.balance ?? 0);
   const hasWalletMinimum = walletBalance >= PROVIDER_MIN_WALLET_BALANCE;
@@ -59,6 +75,40 @@ export default function ProviderHome() {
 
   useEffect(() => { if (user) load(); }, [user, load]);
 
+  // Realtime: refresh when notifications arrive or active request status changes
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`provider-realtime-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_user_id=eq.${user.id}` },
+        () => { load(); },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'service_requests', filter: `accepted_by_provider_id=eq.${user.id}` },
+        async (payload) => {
+          const updated = payload.new as any;
+          if (updated?.status === 'cancelled') {
+            // Look up customer name before clearing
+            let customerName = 'A customer';
+            try {
+              const { data: userData } = await supabase.rpc('get_user_display_name', { p_user_id: updated.user_id });
+              if (userData) customerName = userData;
+            } catch {}
+            setCancelledAlert({ serviceType: updated.service_type || 'Service', customerName });
+            setTimeout(() => setCancelledAlert(null), 5000);
+          }
+          if (['cancelled', 'completed', 'no_ustaz_found'].includes(updated?.status)) {
+            load();
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, load]);
+
   useEffect(() => {
     if (!user) return;
     AsyncStorage.getItem(DASH_WELCOME_KEY_PREFIX + user.id)
@@ -74,6 +124,14 @@ export default function ProviderHome() {
       setProviderAvailability(user.id, 'offline').catch(() => {});
     };
   }, [user?.id]);
+
+  // Always-on location tracking for receiving nearby requests
+  useEffect(() => {
+    if (user?.id && isSignedIn) {
+      alwaysOnLocation.startTracking();
+    }
+    return () => alwaysOnLocation.stopTracking();
+  }, [user?.id, isSignedIn]);
 
   const { isSharing, currentLocation, lastUpdateTime, error: trackerError } = useProviderLocationTracker({
     providerId: user?.id ?? '',
@@ -189,6 +247,24 @@ export default function ProviderHome() {
         {error ? <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: '#FEF2F2', padding: 16 }}><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#EF4444' }}>{error}</Text></View> : null}
         {trackerError ? <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: '#FEF2F2', padding: 16 }}><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#EF4444' }}>{trackerError}</Text></View> : null}
 
+        {/* Cancellation alert */}
+        {cancelledAlert && (
+          <Pressable onPress={() => setCancelledAlert(null)} style={{ marginBottom: 16, borderRadius: 14, backgroundColor: '#FEF2F2', padding: 16, borderWidth: 1, borderColor: '#FECACA', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="close-circle" size={20} color="#EF4444" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#991B1B' }}>
+                {cancelledAlert.customerName}
+              </Text>
+              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#B91C1C', marginTop: 2 }}>
+                cancelled {cancelledAlert.serviceType} request
+              </Text>
+            </View>
+            <Ionicons name="close" size={16} color="#EF4444" />
+          </Pressable>
+        )}
+
         {/* Stats */}
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
           <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#F9FAFB', padding: 14, borderWidth: 1, borderColor: '#F3F4F6' }}>
@@ -260,9 +336,12 @@ export default function ProviderHome() {
             <View style={{ marginBottom: 20, gap: 10 }}>
               {pending.map((item) => (
                 <View key={item.notificationId} style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 18, borderWidth: 1, borderColor: `${colors.primary}20` }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' }} />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: '#10B981' }}>New request</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' }} />
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: '#10B981' }}>New request</Text>
+                    </View>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF' }}>{formatPakistaniTime(item.createdAt)}</Text>
                   </View>
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#1B1B27', marginTop: 10 }}>{item.serviceType ?? item.requestDetails?.service_type ?? 'Service'}</Text>
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#6B7280', marginTop: 4 }} numberOfLines={2}>{item.requestDetails?.request_details ?? item.message ?? 'Customer needs help nearby.'}</Text>
@@ -307,6 +386,17 @@ export default function ProviderHome() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
                       <Ionicons name="location-outline" size={14} color="#9CA3AF" />
                       <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', flex: 1 }} numberOfLines={1}>{request.address}</Text>
+                    </View>
+                  )}
+                  {request.request_latitude && request.request_longitude && (
+                    <View style={{ marginTop: 10 }}>
+                      <ProviderCustomerMap
+                        customerLat={request.request_latitude}
+                        customerLng={request.request_longitude}
+                        providerLat={currentLocation?.latitude ?? null}
+                        providerLng={currentLocation?.longitude ?? null}
+                        height={180}
+                      />
                     </View>
                   )}
                   {(action || isWaitingForAutoArrival) && (

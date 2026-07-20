@@ -70,6 +70,7 @@ export async function registerProvider(
     service_type: serviceType,
     city: 'Islamabad',
     cnic: '4220112345678',
+    heardFrom: 'test',
     hasActiveMobile: true,
     registrationDate: new Date().toISOString(),
     phone_verified: true,

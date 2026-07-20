@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,19 +9,21 @@ import { setStoredRole } from '@/lib/role';
 import { supabase } from '@/lib/supabase';
 import { getProviderStats } from '@/lib/ustaz-api';
 
-const SERVICE_TYPES = ['Electrician Service', 'Plumbing', 'Carpentry', 'AC Maintenance', 'Solar Technician'];
+const SERVICE_TYPES = ['Electrician', 'Plumbing', 'Carpentry', 'AC Maintenance', 'Solar Technician'];
 
 interface ProviderProfile {
   firstName: string | null;
   lastName: string | null;
   email: string | null;
   cnic: string | null;
-  city: string | null;
   phoneNumber: string | null;
   service_type: string | null;
+  service_types: string[] | null;
   registrationDate: string | null;
   phone_verified: boolean | null;
   avatarUrl: string | null;
+  cnic_front_url: string | null;
+  cnic_back_url: string | null;
   verification_status: string | null;
   verification_expires_at: string | null;
 }
@@ -50,8 +52,7 @@ export default function ProviderProfile() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [city, setCity] = useState('');
-  const [serviceType, setServiceType] = useState('');
+  const [formServiceTypes, setFormServiceTypes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -71,8 +72,7 @@ export default function ProviderProfile() {
           setFirstName(p.firstName ?? '');
           setLastName(p.lastName ?? '');
           setEmail(p.email ?? '');
-          setCity(p.city ?? '');
-          setServiceType(p.service_type ?? '');
+          setFormServiceTypes(p.service_types ?? (p.service_type ? [p.service_type] : []));
         }
         if (statsRes) setStats(statsRes);
         if (standingRes.data) setStanding(standingRes.data as ProviderStanding);
@@ -87,8 +87,7 @@ export default function ProviderProfile() {
     setFirstName(profile.firstName ?? '');
     setLastName(profile.lastName ?? '');
     setEmail(profile.email ?? '');
-    setCity(profile.city ?? '');
-    setServiceType(profile.service_type ?? '');
+    setFormServiceTypes(profile.service_types ?? (profile.service_type ? [profile.service_type] : []));
     setError(null);
     setEditing(true);
   }
@@ -96,6 +95,12 @@ export default function ProviderProfile() {
   function cancelEditing() {
     setEditing(false);
     setError(null);
+  }
+
+  function toggleEditService(service: string) {
+    setFormServiceTypes(prev =>
+      prev.includes(service) ? prev.filter(s => s !== service) : [...prev, service]
+    );
   }
 
   async function saveProfile() {
@@ -112,8 +117,8 @@ export default function ProviderProfile() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim() || null,
-          city: city.trim() || null,
-          service_type: serviceType || null,
+          service_type: formServiceTypes[0] || null,
+          service_types: formServiceTypes.length > 0 ? formServiceTypes : null,
         })
         .eq('userId', user.id);
 
@@ -200,12 +205,20 @@ export default function ProviderProfile() {
             {/* Avatar + Name Card */}
             <View style={{ marginBottom: 16, borderRadius: 20, backgroundColor: '#F9FAFB', padding: 20, borderWidth: 1, borderColor: '#F3F4F6' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary }}>
-                  <Text style={{ fontFamily: 'Anton', fontSize: 24, color: colors.primary }}>{name ? name.charAt(0).toUpperCase() : 'U'}</Text>
-                </View>
+                {profile?.avatarUrl ? (
+                  <Image source={{ uri: profile.avatarUrl }} style={{ width: 60, height: 60, borderRadius: 30, borderWidth: 2, borderColor: colors.primary }} />
+                ) : (
+                  <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary }}>
+                    <Text style={{ fontFamily: 'Anton', fontSize: 24, color: colors.primary }}>{name ? name.charAt(0).toUpperCase() : 'U'}</Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 18, fontWeight: '700', color: '#1B1B27' }}>{name || 'Provider'}</Text>
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>{profile?.service_type || 'Service provider'}</Text>
+                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>
+                    {(profile?.service_types && profile.service_types.length > 0
+                      ? profile.service_types.join(', ')
+                      : profile?.service_type) || 'Service provider'}
+                  </Text>
                   {profile?.phone_verified && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                       <Ionicons name="checkmark-circle" size={12} color="#10B981" />
@@ -387,22 +400,35 @@ export default function ProviderProfile() {
               {editing ? (
                 <>
                   <View>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginBottom: 6 }}>Service Type</Text>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginBottom: 6 }}>Service Types</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                      {SERVICE_TYPES.map((st) => (
-                        <Pressable key={st} onPress={() => setServiceType(st)}
-                          style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: serviceType === st ? colors.primary : '#F3F4F6', borderWidth: 1, borderColor: serviceType === st ? colors.primary : '#E5E7EB' }}>
-                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: serviceType === st ? '#FFFFFF' : '#374151' }}>{st}</Text>
-                        </Pressable>
-                      ))}
+                      {SERVICE_TYPES.map((st) => {
+                        const isActive = (formServiceTypes || []).includes(st);
+                        return (
+                          <Pressable key={st} onPress={() => toggleEditService(st)}
+                            style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: isActive ? colors.primary : '#F3F4F6', borderWidth: 1, borderColor: isActive ? colors.primary : '#E5E7EB' }}>
+                            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: isActive ? '#FFFFFF' : '#374151' }}>{st}</Text>
+                          </Pressable>
+                        );
+                      })}
                     </ScrollView>
                   </View>
-                  <EditField label="City" value={city} onChangeText={setCity} placeholder="e.g. Karachi" />
                 </>
               ) : (
                 <>
-                  <ProfileRow label="Type" value={profile?.service_type || 'Not set'} accent />
-                  <ProfileRow label="City" value={profile?.city || 'Not set'} />
+                  <View>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginBottom: 6 }}>Services</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                      {(profile?.service_types && profile.service_types.length > 0
+                        ? profile.service_types
+                        : profile?.service_type ? [profile.service_type] : []
+                      ).map((svc) => (
+                        <View key={svc} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: '#FED7AA' }}>
+                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: colors.primary }}>{svc}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
                 </>
               )}
             </View>

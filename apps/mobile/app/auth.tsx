@@ -96,10 +96,62 @@ export default function AuthScreen() {
     else router.replace('/role-select');
   }
 
+  async function handleProviderSignup() {
+    clearMessages();
+    if (!E164.test(phone)) {
+      setError('Enter phone in E.164 format, e.g. +923001234567');
+      return;
+    }
+    setBusy(true);
+    try {
+      // Create a Supabase auth user directly (no OTP)
+      // Use deterministic password so re-login works
+      const email = phone.replace('+', '') + '@phone.ustaz.local';
+      const password = 'Ustaz' + phone.replace('+', '').slice(-6) + '!A1';
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { phone } },
+      });
+      if (signUpError) {
+        // If user already exists, sign in instead
+        if (signUpError.message?.includes('already registered') || signUpError.message?.includes('already exists')) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) throw signInError;
+        } else {
+          throw signUpError;
+        }
+      }
+      await setStoredRole('provider');
+      router.replace('/provider-register');
+    } catch (err: any) {
+      setError(err?.message ?? 'Could not create account. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   useEffect(() => {
     if (!providerIntent) return;
     setTab('phone');
     setStoredRole('provider').catch(() => undefined);
+
+    // Skip OTP: if user already has a session, go straight to registration
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('ustaz_registrations')
+          .select('userId')
+          .eq('userId', user.id)
+          .maybeSingle();
+        if (!data) {
+          router.replace('/provider-register');
+        } else {
+          router.replace('/(provider)');
+        }
+      }
+    })();
   }, [providerIntent]);
 
   async function navigateToApp() {
@@ -328,25 +380,6 @@ export default function AuthScreen() {
     }
   }
 
-  async function devBypassLogin() {
-    clearMessages();
-    setBusy(true);
-    try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: '923062806717@phone.ustaz.local',
-        password: 'DevTest1234!',
-      });
-      if (signInError) throw signInError;
-
-      await setStoredRole('provider');
-      router.replace('/(provider)');
-    } catch (err: any) {
-      setError('Dev login failed: ' + (err?.message ?? 'Try again.'));
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function resendCode() {
     clearMessages();
     const now = Date.now();
@@ -369,7 +402,7 @@ export default function AuthScreen() {
   }
 
   const title = providerIntent
-    ? phoneStep === 'phone' ? 'Verify phone\nto earn' : 'Enter the\nOTP code'
+    ? 'Start earning\nwith Ustaz'
     : tab === 'email'
       ? emailMode === 'signup' ? 'Create your\nUstaz account' : 'Welcome\nback'
       : tab === 'phone'
@@ -395,18 +428,41 @@ export default function AuthScreen() {
               </>
             ) : null}
             <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, lineHeight: 22, color: '#9CA3AF', marginTop: title ? 12 : 0 }}>
-              {providerIntent ? 'Verify your phone number with OTP before provider registration. This protects customers and keeps earnings tied to a real mobile number.' : 'Continue with social login, email/password, or the existing phone OTP flow.'}
+              {providerIntent ? 'Enter your phone number and we\'ll set up your provider account. No OTP needed — you can verify your phone later.' : 'Continue with social login, email/password, or the existing phone OTP flow.'}
             </Text>
           </View>
 
           {providerIntent ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 18, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: `${colors.primary}33`, marginBottom: 18 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="shield-checkmark" size={18} color="#FFFFFF" />
+            <View style={{ gap: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 18, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: `${colors.primary}33`, marginBottom: 8 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="hammer" size={18} color="#FFFFFF" />
+                </View>
+                <Text style={{ flex: 1, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, lineHeight: 19, fontWeight: '700', color: colors.primary }}>
+                  Enter your phone number to get started as a provider.
+                </Text>
               </View>
-              <Text style={{ flex: 1, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, lineHeight: 19, fontWeight: '700', color: colors.primary }}>
-                Phone OTP is required before you can accept jobs and earn money.
-              </Text>
+
+              <View>
+                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Phone number</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 54, borderRadius: 18, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', overflow: 'hidden' }}>
+                  <View style={{ paddingHorizontal: 16, height: 54, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', borderRightWidth: 1, borderRightColor: '#E5E7EB' }}>
+                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#1B1B27' }}>+92</Text>
+                  </View>
+                  <TextInput
+                    ref={phoneInputRef}
+                    value={phone.replace('+92', '')}
+                    onChangeText={(v: string) => setPhone('+92' + v.replace(/\D/g, ''))}
+                    placeholder="300 123 4567"
+                    placeholderTextColor="#D1D5DB"
+                    keyboardType="phone-pad"
+                    maxLength={11}
+                    style={{ flex: 1, minHeight: 52, paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#1B1B27' }}
+                  />
+                </View>
+              </View>
+
+              <PrimaryButton busy={busy} label="Continue to Registration" onPress={handleProviderSignup} />
             </View>
           ) : (
             <View style={{ flexDirection: 'row', padding: 4, borderRadius: 999, backgroundColor: '#F3F4F6', marginBottom: 18 }}>
@@ -419,7 +475,7 @@ export default function AuthScreen() {
           {error ? <Notice tone="error" text={error} action={/not verified|not confirmed/i.test(error) ? { label: 'Resend verification', onPress: resendVerification } : undefined} /> : null}
           {message ? <Notice tone="success" text={message} /> : null}
 
-          {tab === 'social' && (
+          {!providerIntent && tab === 'social' && (
             <View style={{ gap: 12, marginTop: 8 }}>
               <SocialButton
                 label="Continue with Google"
@@ -443,7 +499,7 @@ export default function AuthScreen() {
             </View>
           )}
 
-          {tab === 'email' && (
+          {!providerIntent && tab === 'email' && (
             <View style={{ gap: 14 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <ModeButton label="Sign in" active={emailMode === 'signin'} onPress={() => { setEmailMode('signin'); clearMessages(); }} />
@@ -460,7 +516,7 @@ export default function AuthScreen() {
             </View>
           )}
 
-          {tab === 'phone' && (
+          {!providerIntent && tab === 'phone' && (
             <View style={{ gap: 14 }}>
               {phoneStep === 'phone' ? (
                 <>
@@ -533,17 +589,6 @@ export default function AuthScreen() {
           )}
 
           <View style={{ marginTop: 'auto', paddingTop: 28 }}>
-            {providerIntent ? (
-              <Pressable
-                onPress={devBypassLogin}
-                disabled={busy}
-                style={{ marginBottom: 16, minHeight: 48, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#D1D5DB', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB' }}
-              >
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280' }}>
-                  {busy ? 'Creating dev account...' : '⚡ Dev Quick Login (skip OTP)'}
-                </Text>
-              </Pressable>
-            ) : null}
             <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, lineHeight: 18, color: '#D1D5DB', textAlign: 'center' }}>
               By continuing, you agree to Ustaz's Terms of Service and Privacy Policy.
             </Text>

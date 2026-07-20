@@ -15,7 +15,6 @@ interface FavoriteProvider {
   phone_number: string;
   avatar_url: string | null;
   rating_avg: number;
-  city: string;
 }
 
 export default function FavoritesScreen() {
@@ -104,7 +103,7 @@ export default function FavoritesScreen() {
                   {fav.first_name} {fav.last_name}
                 </Text>
                 <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                  {fav.service_type} | {fav.city}
+                  {fav.service_type}
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                   <Ionicons name="star" size={12} color="#F59E0B" />

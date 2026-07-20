@@ -119,6 +119,7 @@ export const ACTIVE_STATUSES: ServiceRequestStatus[] = [
   'arriving',
   'arrived',
   'in_progress',
+  'work_in_progress',
 ];
 
 export async function sendPhoneOtp(phone: string) {
@@ -159,27 +160,27 @@ export async function getCurrentUser(): Promise<User | null> {
 
 export async function findNearbyProviders(serviceType: string, userLat: number, userLng: number, radiusKm = 3) {
   const radiusMeters = radiusKm * 1000;
-  const { data, error } = await supabase.rpc('find_providers_nearby_with_distance', {
-    lat_input: userLat,
-    lng_input: userLng,
-    radius_input: radiusMeters,
-    type_input: serviceType,
+  const { data, error } = await supabase.rpc('find_providers_nearby_ranked', {
+    p_user_lat: userLat,
+    p_user_lng: userLng,
+    p_service_type: serviceType,
+    p_radius_meters: radiusMeters,
+    p_limit: 5,
   });
 
   if (!error && data) {
     return ((data ?? []) as any[])
-      .map((provider) => ({
-        id: provider.userId,
-        firstName: provider.firstName ?? null,
-        lastName: provider.lastName ?? null,
+      .map((provider: any) => ({
+        id: provider.user_id ?? provider.userId,
+        firstName: provider.first_name ?? provider.firstName ?? null,
+        lastName: provider.last_name ?? provider.lastName ?? null,
         email: provider.email ?? null,
-        phoneNumber: provider.phoneNumber ?? null,
+        phoneNumber: provider.phone_number ?? provider.phoneNumber ?? null,
         serviceType: provider.service_type ?? serviceType,
         city: provider.city ?? null,
-        avatarUrl: provider.avatarUrl ?? null,
-        distance: Math.round(provider.distance ?? Number.MAX_SAFE_INTEGER),
+        avatarUrl: provider.avatar_url ?? provider.avatarUrl ?? null,
+        distance: Math.round(provider.distance_meters ?? provider.distance ?? Number.MAX_SAFE_INTEGER),
       }))
-      .sort((a, b) => a.distance - b.distance)
       .slice(0, 5) as ProviderCandidate[];
   }
 

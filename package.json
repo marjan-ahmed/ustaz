@@ -8,8 +8,10 @@
     ],
     "scripts": {
         "dev:web": "npm --workspace @ustaz/web run dev",
+        "dev:website": "npm --workspace @ustaz/website run dev",
         "dev:mobile": "npm --workspace @ustaz/mobile run dev",
         "build:web": "npm --workspace @ustaz/web run build",
+        "build:website": "npm --workspace @ustaz/website run build",
         "build:mobile": "npm --workspace @ustaz/mobile run build"
     },
     "devDependencies": {

@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 const services = [
-  { label: 'Electrician Service', value: 'Electrician Service' },
+  { label: 'Electrician', value: 'Electrician' },
   { label: 'Plumbing Service', value: 'Plumbing' },
   { label: 'Carpenter', value: 'Carpentry' },
   { label: 'AC Maintenance', value: 'AC Maintenance' },

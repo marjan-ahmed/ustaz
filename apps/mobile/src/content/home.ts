@@ -7,7 +7,7 @@ export const homeCopy = {
 };
 
 export const serviceCategories = [
-  { name: 'Electrician Service', short: 'EL', tone: '#FFF7ED', accent: '#DB4B0D', note: 'Wiring, fans, panels' },
+  { name: 'Electrician', short: 'EL', tone: '#FFF7ED', accent: '#DB4B0D', note: 'Wiring, fans, panels' },
   { name: 'Plumbing', short: 'PL', tone: '#EFF6FF', accent: '#2563EB', note: 'Leaks, tanks, fittings' },
   { name: 'Carpentry', short: 'CP', tone: '#F7FEE7', accent: '#4D7C0F', note: 'Doors, shelves, repairs' },
   { name: 'AC Maintenance', short: 'AC', tone: '#ECFEFF', accent: '#0891B2', note: 'Service, cooling, gas' },

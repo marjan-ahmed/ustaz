@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
+import CancelReasonModal from '@/app/components/CancelReasonModal';
 import { HomeModernIcon } from '@heroicons/react/24/solid'; // Assuming this is correct for Home icon
 import Link from 'next/link';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser'; // Using your custom Supabase user hook
@@ -152,6 +153,8 @@ function ProcessPage() {
 
   // State for chat functionality
   const [showChat, setShowChat] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false); // State to track map initialization
   const mapRef = useRef<any>(null); // Ref for the Leaflet map instance
   const mapContainerRef = useRef<HTMLDivElement>(null); // Ref for the map container div
@@ -171,7 +174,7 @@ function ProcessPage() {
   const [showProviderList, setShowProviderList] = useState<boolean>(false); // To conditionally render provider list UI
 
   const service_types = [
-    "Electrician Service",
+    "Electrician",
     "Plumbing",
     "Carpentry",
     "AC Maintenance",
@@ -469,6 +472,64 @@ const handlePlaceSelect = useCallback((
   }, [supabase, setProviderLiveLocation]);
 
   // Function to cancel the current service request (MOVED UP)
+  const cancelWithReason = useCallback(async (reason: string) => {
+    if (!currentRequestId || !user || !user.id) return;
+    setIsCancelling(true);
+    try {
+      const res = await fetch('/api/cancel-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: currentRequestId, reason }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to cancel');
+      }
+
+      setRequestStatus('cancelled');
+      setSearchMessage(t('requestCancelled'));
+      setShowCancelModal(false);
+
+      // Clean up subscriptions and state
+      if (requestSubscriptionRef.current) {
+        supabase.removeChannel(requestSubscriptionRef.current);
+        requestSubscriptionRef.current = null;
+      }
+      if (liveLocationSubscriptionRef.current) {
+        supabase.removeChannel(liveLocationSubscriptionRef.current);
+        liveLocationSubscriptionRef.current = null;
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+
+      setCurrentRequestId(null);
+      setAcceptedProvider(null);
+      setProviderLiveLocation(null);
+      setAvailableProviders([]);
+      setSelectedProviderIds([]);
+      setShowProviderList(false);
+      if (userMarkerRef.current && window.L) {
+        mapRef.current.removeLayer(userMarkerRef.current);
+        userMarkerRef.current = null;
+      }
+      if (providerMarkerRef.current && window.L) {
+        mapRef.current.removeLayer(providerMarkerRef.current);
+        providerMarkerRef.current = null;
+      }
+      setRequestStatus('idle');
+      setSearchMessage(null);
+      isSubmittingRef.current = false;
+    } catch (error: any) {
+      console.error('Error cancelling request:', error.message);
+      setSearchMessage(`Error cancelling request: ${error.message}`);
+      setRequestStatus('error');
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [currentRequestId, user, t]);
+
   const cancelServiceRequest = useCallback(async () => {
     if (!currentRequestId || !user || !user.id) return;
 
@@ -1204,7 +1265,7 @@ const handlePlaceSelect = useCallback((
                 </Button>
 
                 <Button
-                  onClick={cancelServiceRequest}
+                  onClick={() => setShowCancelModal(true)}
                   disabled={!canCancel}
                   variant="outline"
                   className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-[#db4b0d] px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center"
@@ -1446,6 +1507,15 @@ const handlePlaceSelect = useCallback((
           onClose={() => setShowChat(false)}
         />
       )}
+
+      {/* Cancel Reason Modal */}
+      <CancelReasonModal
+        open={showCancelModal}
+        onConfirm={cancelWithReason}
+        onSkip={() => cancelWithReason('skip')}
+        onClose={() => setShowCancelModal(false)}
+        loading={isCancelling}
+      />
     </>
   );
 }

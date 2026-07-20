@@ -35,13 +35,22 @@ export async function cleanTestData(
   providerUserId: string,
 ): Promise<void> {
   const p = getPool();
+  // Reset rating columns on service_requests (no separate ratings table)
   await p.query(
-    `DELETE FROM ratings WHERE rater_id IN ($1, $2) OR rated_user_id IN ($1, $2)`,
+    `UPDATE service_requests
+     SET customer_rated = false, customer_rating_value = NULL,
+         customer_rating_comment = NULL, provider_rated = false,
+         provider_rating_value = NULL
+     WHERE user_id = $1 OR accepted_by_provider_id = $2`,
     [customerUserId, providerUserId],
   );
   await p.query(
     `DELETE FROM live_locations WHERE provider_id = $1`,
     [providerUserId],
+  );
+  await p.query(
+    `DELETE FROM favorites WHERE customer_id = $1 OR provider_id = $2`,
+    [customerUserId, providerUserId],
   );
   // Clean up Tier 0 tables
   await p.query(
@@ -61,6 +70,10 @@ export async function cleanTestData(
   await p.query(
     `DELETE FROM appeals WHERE provider_id = $1`,
     [providerUserId],
+  );
+  await p.query(
+    `DELETE FROM warranty_claims WHERE customer_id = $1 OR provider_id = $2`,
+    [customerUserId, providerUserId],
   );
   await p.query(
     `DELETE FROM service_requests WHERE user_id = $1 OR accepted_by_provider_id = $2`,
@@ -161,4 +174,86 @@ export async function advanceRequestStatus(
   } catch (err: any) {
     return { success: false, message: err.message };
   }
+}
+
+export interface ProviderWithStatusOptions {
+  onlineStatus: boolean;
+  providerStatus: string;
+  serviceType: string;
+  latitude: number;
+  longitude: number;
+  walletBalance: number;
+}
+
+/**
+ * Create or update a provider with specific online_status, provider_status,
+ * location, and wallet balance for dispatch testing.
+ *
+ * This writes directly to the DB (bypasses RPC auth) for test data setup.
+ */
+export async function createProviderWithStatus(
+  providerId: string,
+  options: ProviderWithStatusOptions,
+): Promise<void> {
+  const p = getPool();
+
+  // Upsert provider registration with specific status (must exist before wallet)
+  // Use unique CNIC derived from provider ID to avoid unique constraint violations
+  const uniqueCnic = `42201${providerId.replace(/-/g, '').slice(0, 8)}`;
+  await p.query(
+    `INSERT INTO ustaz_registrations (
+      "userId", "firstName", "lastName", "email", "phoneNumber",
+      "phoneCountryCode", "service_type", "city", "cnic", "heardFrom",
+      "hasActiveMobile", "registrationDate", "phone_verified",
+      "online_status", "provider_status", "location"
+    ) VALUES (
+      $1, 'Test', 'Provider', $5, $6,
+      '+92', $3, 'Islamabad', $9, 'test',
+      true, NOW(), true,
+      $2, $4, ST_SetSRID(ST_MakePoint($8, $7), 4326)::geography
+    )
+    ON CONFLICT ("userId") DO UPDATE SET
+      "online_status" = $2,
+      "provider_status" = $4,
+      "service_type" = $3,
+      location = ST_SetSRID(ST_MakePoint($8, $7), 4326)::geography`,
+    [
+      providerId,
+      options.onlineStatus,
+      options.serviceType,
+      options.providerStatus,
+      `provider-${providerId.slice(0, 8)}@ustaz-test.local`,
+      String(Math.random()).slice(2, 12),
+      options.latitude,
+      options.longitude,
+      uniqueCnic,
+    ],
+  );
+
+  // Ensure wallet exists with required balance (after registration)
+  await p.query(
+    `INSERT INTO provider_wallets (provider_id, balance, total_earned, total_commission_paid)
+     VALUES ($1, $2, 0, 0)
+     ON CONFLICT (provider_id) DO UPDATE SET balance = $2`,
+    [providerId, options.walletBalance],
+  );
+}
+
+/**
+ * Clean up dispatch test data: service_requests, notifications, provider status.
+ */
+export async function cleanupDispatchTest(providerId: string): Promise<void> {
+  const p = getPool();
+  await p.query(
+    `DELETE FROM notifications WHERE recipient_user_id = $1`,
+    [providerId],
+  );
+  await p.query(
+    `DELETE FROM service_requests WHERE accepted_by_provider_id = $1 OR notified_providers @> ARRAY[$1::uuid]`,
+    [providerId],
+  );
+  await p.query(
+    `UPDATE ustaz_registrations SET provider_status = 'available', online_status = false WHERE "userId" = $1`,
+    [providerId],
+  );
 }

@@ -5,6 +5,7 @@ import { colors, radii, spacing } from '../../packages/shared/theme';
 
 const config: Config = {
   presets: [nativewindPreset],
+  darkMode: 'class',
   content: ['./app/**/*.{js,jsx,ts,tsx}', './src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {

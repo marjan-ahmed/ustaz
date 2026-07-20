@@ -1,0 +1,139 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+.font-atkinson {
+  font-family: var(--font-atkinson, sans-serif);
+}
+
+::selection {
+  background-color: #e3a47e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-atkinson, system-ui, sans-serif);
+  --font-heading: 'Clash Grotesk', var(--font-atkinson, system-ui, sans-serif);
+  --font-mono: ui-monospace, monospace;
+  --color-primary: #db4b0d;
+  --color-primary-light: #ff6b4a;
+  --color-primary-dark: #c24309;
+  --color-cream: #FFF7ED;
+  --color-navy: #0f1729;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+}
+
+body {
+  font-family: var(--font-atkinson, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Wave Underline Effect for Nav Items */
+.nav-wave-link {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-wave-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #db4b0d, transparent);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-wave-link:hover::after {
+  width: 100%;
+  animation: waveFlow 0.6s ease-in-out;
+}
+
+@keyframes waveFlow {
+  0% {
+    transform: translateX(-100%) scaleX(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(0%) scaleX(1) translateY(-2px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0%) scaleX(1) translateY(0px);
+    opacity: 1;
+  }
+}
+
+.nav-wave-link.active::after {
+  width: 100%;
+  background: #db4b0d;
+  animation: none;
+}
+
+/* Container */
+.container {
+  @apply mx-auto max-w-7xl px-4;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Slide Up Animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+/* StaggeredMenu header white background */
+.staggered-menu-header {
+  background: white !important;
+}
+
+/* Premium Spring Animation for Mobile Menu */
+@keyframes slideInSpring {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

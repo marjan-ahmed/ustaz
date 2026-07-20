@@ -32,12 +32,8 @@ test.describe('Rating Flow', () => {
   });
 
   test.afterAll(async () => {
-    const pool = getPool();
-    await pool.query(`DELETE FROM ratings WHERE request_id = $1`, [requestId]).catch(() => {});
     await cleanTestData(customer.id, provider.id).catch(() => {});
     await deleteTestUsers([customer, provider]).catch(() => {});
-    // Note: do NOT call pool.end() here — the singleton pool is shared across test files.
-    // Closing it would break subsequent test files that call getPool().
   });
 
   test('Scenario A: Customer rates provider after completion', async ({ browser }) => {
@@ -70,14 +66,15 @@ test.describe('Rating Flow', () => {
     // Should show thank-you message after submission
     await expect(page.getByText(/Thank you!|Rating submitted!/i)).toBeVisible({ timeout: 10_000 });
 
-    // Verify DB: rating exists
+    // Verify DB: rating exists on service_requests (no separate ratings table)
     const pool = getPool();
     const { rows } = await pool.query(
-      `SELECT rating, comment FROM ratings WHERE request_id = $1 AND rater_id = $2`,
+      `SELECT customer_rating_value, customer_rating_comment
+       FROM service_requests WHERE id = $1 AND user_id = $2`,
       [requestId, customer.id],
     );
-    expect(rows[0]?.rating).toBe(4);
-    expect(rows[0]?.comment).toContain('Great service');
+    expect(rows[0]?.customer_rating_value).toBe(4);
+    expect(rows[0]?.customer_rating_comment).toContain('Great service');
 
     await ctx.close();
   });

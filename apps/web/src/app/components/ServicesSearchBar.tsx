@@ -48,7 +48,7 @@ declare global {
 
 const services = [
   // Updated values to match the full service names used in ProcessPage.tsx for consistency
-  { label: 'Electrician Service', value: 'Electrician Service', icon: MdElectricalServices },
+  { label: 'Electrician', value: 'Electrician', icon: MdElectricalServices },
   { label: 'Plumbing Service', value: 'Plumbing', icon: MdPlumbing },
   { label: 'Carpenter', value: 'Carpentry', icon: MdCarpenter },
   { label: 'AC Maintenance', value: 'AC Maintenance', icon: MdAcUnit },

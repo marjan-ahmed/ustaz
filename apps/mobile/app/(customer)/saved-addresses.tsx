@@ -167,9 +167,10 @@ export default function SavedAddressesScreen() {
                   </View>
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280', marginTop: 4 }} numberOfLines={1}>{addr.address}</Text>
                   {addr.landmark && (
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#D97706', marginTop: 2 }}>
-                      <Ionicons name="flag" size={10} color="#D97706" /> {addr.landmark}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Ionicons name="flag" size={10} color="#D97706" />
+                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#D97706' }}>{addr.landmark}</Text>
+                    </View>
                   )}
                   {/* Service history summary */}
                   <View style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}>

@@ -8,12 +8,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@ustaz/shared/theme';
 import { serviceCategories } from '@/content/home';
-import { cancelRequest, createServiceRequest, type ServiceRequest } from '@/lib/ustaz-api';
+import { cancelRequest, createServiceRequest, sendPushNotification, type ServiceRequest } from '@/lib/ustaz-api';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
 import { useCustomerLocationSubscription } from '@/hooks/useCustomerLocationSubscription';
 import ProviderTrackingCard from '@/components/ProviderTrackingCard';
 import RatingModal from '@/components/RatingModal';
+import CancelReasonModal from '@/components/CancelReasonModal';
 import { MapView, Marker, Polyline, PROVIDER_GOOGLE } from '@/components/MapComponents';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -141,6 +142,8 @@ export default function BookScreen() {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // Landmark + entrance photo
   const [landmark, setLandmark] = useState('');
@@ -295,7 +298,9 @@ export default function BookScreen() {
 
         if (cancelled || !data) return;
         setCurrentRequestId(data.id);
-        setRequestStatus(data.status as RequestStatusDB);
+        // Only keep tracking status for active requests; completed/cancelled → idle so the service selector works again
+        const activeStatuses = ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'];
+        setRequestStatus(activeStatuses.includes(data.status) ? (data.status as RequestStatusDB) : 'idle');
         if (typeof data.request_latitude === 'number' && typeof data.request_longitude === 'number') {
           setUserLat(data.request_latitude);
           setUserLng(data.request_longitude);
@@ -391,7 +396,10 @@ export default function BookScreen() {
         setIsGettingLocation(false);
         return;
       }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const pos = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Location timeout')), 10000)),
+      ]);
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       setUserLat(lat);
@@ -399,7 +407,10 @@ export default function BookScreen() {
       setMarkerCoords({ lat, lng });
 
       try {
-        const results = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+        const results = await Promise.race([
+          Location.reverseGeocodeAsync({ latitude: lat, longitude: lng }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('geocode timeout')), 5000)),
+        ]);
         if (results.length > 0) {
           const r = results[0];
           const parts = [r.name, r.street, r.district, r.city, r.region].filter(Boolean);
@@ -409,7 +420,7 @@ export default function BookScreen() {
 
       mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 300);
     } catch (err: any) {
-      setSearchMessage(err.message ?? 'Could not get location.');
+      setSearchMessage(err.message ?? 'Could not get location. Tap retry or enter address manually.');
     }
     setIsGettingLocation(false);
   }
@@ -481,6 +492,53 @@ export default function BookScreen() {
       setSearchMessage(err.message || 'Failed to send request');
     }
     setIsSending(false);
+  }
+
+  async function cancelWithReason(reason: string) {
+    if (!currentRequestId || !user) return;
+    setIsCancelling(true);
+    try {
+      const updated = await cancelRequest(currentRequestId, user.id, false);
+
+      // Store cancellation reason
+      if (reason && reason !== 'skip') {
+        await supabase
+          .from('service_requests')
+          .update({ cancellation_reason: reason })
+          .eq('id', currentRequestId);
+      }
+
+      // Notify the provider
+      if (updated?.accepted_by_provider_id) {
+        const reasonLabels: Record<string, string> = {
+          'found-better': 'Found another provider',
+          'changed-mind': 'Changed my mind',
+          'wrong-address': 'Wrong address',
+          'too-expensive': 'Too expensive',
+          'no-response': 'No response',
+          'duplicate': 'Duplicate request',
+        };
+        const label = reasonLabels[reason] || '';
+        const body = label
+          ? `Customer cancelled your ${updated.service_type} request. Reason: ${label}`
+          : `Customer cancelled your ${updated.service_type} request.`;
+        sendPushNotification([updated.accepted_by_provider_id], 'Request Cancelled', body, {
+          type: 'cancellation',
+          requestId: currentRequestId,
+        }).catch(() => {});
+      }
+
+      setCurrentRequestId(null);
+      setRequestStatus('idle');
+      setAcceptedProvider(null);
+      setServiceStartedAt(null);
+      setSearchMessage('Request cancelled.');
+      setShowCancelModal(false);
+    } catch (err: any) {
+      setSearchMessage(err.message);
+    } finally {
+      setIsCancelling(false);
+    }
   }
 
   async function cancelActive() {
@@ -774,7 +832,7 @@ export default function BookScreen() {
               </Pressable>
 
               {canCancel && (
-                <Pressable onPress={cancelActive}
+                <Pressable onPress={() => setShowCancelModal(true)}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', paddingVertical: 12 }}>
                   <Ionicons name="close-circle" size={16} color="#6B7280" />
                   <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151' }}>Cancel Request</Text>
@@ -789,6 +847,15 @@ export default function BookScreen() {
       <RatingModal visible={showRating} requestId={currentRequestId ?? ''} raterId={user?.id ?? ''} ratedUserId={acceptedProvider?.id ?? ''}
         ratedUserName={acceptedProvider ? `${acceptedProvider.firstName ?? ''} ${acceptedProvider.lastName ?? ''}`.trim() || 'Provider' : 'Provider'}
         onComplete={() => setShowRating(false)} onClose={() => setShowRating(false)} />
+
+      {/* Cancel Reason Modal */}
+      <CancelReasonModal
+        visible={showCancelModal}
+        onCancel={cancelWithReason}
+        onSkip={() => cancelWithReason('skip')}
+        onClose={() => setShowCancelModal(false)}
+        loading={isCancelling}
+      />
     </SafeAreaView>
   );
 }
