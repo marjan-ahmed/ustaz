@@ -1,0 +1,14 @@
+
+SECURE ACCESS
+Sign in to
+Ustaz
+Continue with social login, email/password, or the existing phone OTP flow.
+Social
+Email
+Phone
+
+Continue with Google
+
+Continue with Facebook
+Uses the same Supabase Google and Facebook providers as the web app.
+By continuing, you agree to Ustaz's Terms of Service and Privacy Policy.

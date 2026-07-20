@@ -1,0 +1,7 @@
+npm error Lifecycle script `dev` failed with error:
+npm error code 4294967295
+npm error path E:\nextjs-projects\ustaz\apps\mobile
+npm error workspace @ustaz/mobile@0.1.0
+npm error location E:\nextjs-projects\ustaz\apps\mobile
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c expo start --port 8082

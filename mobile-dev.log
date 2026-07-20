@@ -1,0 +1,13 @@
+
+> ustaz@0.1.0 dev:mobile
+> npm --workspace @ustaz/mobile run dev
+
+
+> @ustaz/mobile@0.1.0 dev
+> expo start --port 8082
+
+env: load .env.local
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_GOOGLE_MAPS_API_KEY EXPO_PUBLIC_AUTH_BRIDGE_URL
+Starting project at E:\nextjs-projects\ustaz\apps\mobile
+Starting Metro Bundler
+Networking has been disabled
