@@ -65,7 +65,7 @@ export default function Hero() {
         {/* Right Column - Two Stacked Cards */}
         <div className="md:col-span-1 grid grid-cols-1 gap-3">
           {/* Top Right Card - Get Help On Demand */}
-          <div className="bg-gradient-to-br bg-[#a03d0a] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-7 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden h-[280px] sm:h-[320px] md:h-[360px] flex flex-col justify-between">
+          <div className="bg-[#db4b0d] rounded-2xl md:rounded-3xl p-5 sm:p-6 md:p-7 hover:shadow-sm transition-all duration-300 cursor-pointer group relative overflow-hidden h-[280px] sm:h-[320px] md:h-[360px] flex flex-col justify-between">
             {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-5 right-5 w-24 h-24 border-2 border-white rounded-full"></div>
