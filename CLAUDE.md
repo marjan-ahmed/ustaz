@@ -2,6 +2,37 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Coding Guidelines (Karpathy Rules)
+
+All code work in this repo must follow these behavioral guidelines to avoid common LLM coding mistakes:
+
+### 1. Think Before Coding
+- State assumptions explicitly before writing code.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+- Minimum code that solves the problem. Nothing speculative.
+- No features beyond what was asked. No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+### 3. Surgical Changes
+- Touch only what's required for the request.
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- Clean up only your own orphans (unused imports/variables from YOUR changes), not pre-existing dead code.
+- Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+- Define verifiable success criteria before starting.
+- For multi-step tasks, state a brief plan with verify checks.
+- Loop until verified, not until "it looks right."
+- Weak criteria ("make it work") require clarification.
+
 ## Project Overview
 
 This is an npm workspaces monorepo for "Ustaz", a Pakistani home-services marketplace. The production web app lives in `apps/web`; it lets users request services, find nearby providers, and track service requests in real time.
@@ -108,6 +139,10 @@ Typography:
   inline `style` prop on every heading. Do NOT use Tailwind `font-heading`.
 - SVG arrows replaced with lucide-react icons across all components.
 - DownloadCTA uses "Coming Soon" CTA — app not launched yet.
+- **Brand colors only** — ALL components must use ONLY the brand palette:
+  `#db4b0d` (orange), `#ff6b4a` (light), `#c24309` (dark), `#0f1729` (navy),
+  `#FFF7ED` (cream). NO other colors (no blue, green, purple, yellow, etc.).
+  Neutral grays (`gray-*`) are acceptable for text/borders only.
 
 ## Supabase
 
