@@ -46,6 +46,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Ustaz - Trusted Home Service Providers in Pakistan",
   description: "Book trusted electricians, plumbers, and carpenters in Pakistan with Ustaz. Fast, affordable home services for repairs and installations near you.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 
