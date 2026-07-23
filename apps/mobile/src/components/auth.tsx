@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { colors } from '@ustaz/shared/theme';
 import { sendPhoneOtp, verifyPhoneOtp } from '@/lib/ustaz-api';
-import { Card, PrimaryButton, SoftButton } from './mobile-ui';
+import { Button, Card } from './mobile-ui';
 
 const E164 = /^\+[1-9]\d{7,14}$/;
 
@@ -52,7 +52,7 @@ export function PhoneAuthCard({ title = 'Sign in to continue', subtitle = 'Use t
   }
 
   return (
-    <Card className="border border-orange-100">
+    <Card variant="elevated">
       <Text className="font-atkinson text-sm font-bold uppercase tracking-widest text-ustaz-primary">Secure access</Text>
       <Text className="mt-sm font-atkinson text-2xl font-bold text-slate-950">{title}</Text>
       <Text className="mt-xs font-atkinson text-sm leading-5 text-slate-600">{subtitle}</Text>
@@ -69,9 +69,7 @@ export function PhoneAuthCard({ title = 'Sign in to continue', subtitle = 'Use t
               placeholder="+923001234567"
               className="min-h-[52px] rounded-[18px] border border-slate-200 bg-white px-md font-atkinson text-base text-slate-950"
             />
-            <PrimaryButton className="mt-md" onPress={sendCode} disabled={busy} accessibilityLabel="Send OTP code">
-              {busy ? <ActivityIndicator color="#FFFFFF" /> : 'Send code'}
-            </PrimaryButton>
+            <Button label="Send code" onPress={sendCode} loading={busy} style={{ marginTop: 12 }} />
           </>
         ) : (
           <>
@@ -85,12 +83,16 @@ export function PhoneAuthCard({ title = 'Sign in to continue', subtitle = 'Use t
               placeholder="123456"
               className="min-h-[52px] rounded-[18px] border border-slate-200 bg-white px-md text-center font-atkinson text-xl tracking-[8px] text-slate-950"
             />
-            <PrimaryButton className="mt-md" onPress={verifyCode} disabled={busy} accessibilityLabel="Verify OTP code">
-              {busy ? <ActivityIndicator color="#FFFFFF" /> : 'Verify and continue'}
-            </PrimaryButton>
-            <SoftButton className="mt-sm" onPress={() => { setStep('phone'); setCode(''); }} accessibilityLabel="Use a different phone number">
-              Use a different number
-            </SoftButton>
+            <Button label="Verify and continue" onPress={verifyCode} loading={busy} style={{ marginTop: 12 }} />
+            <Button
+              label="Use a different number"
+              variant="soft"
+              onPress={() => {
+                setStep('phone');
+                setCode('');
+              }}
+              style={{ marginTop: 8 }}
+            />
           </>
         )}
       </View>
@@ -116,10 +118,10 @@ export function LoadingBlock({ label = 'Loading Ustaz data...' }: { label?: stri
 
 export function ErrorBlock({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <Card className="border border-red-100 bg-red-50">
+    <Card variant="elevated">
       <Text className="font-atkinson text-base font-bold text-red-700">Something went wrong</Text>
       <Text className="mt-xs font-atkinson text-sm leading-5 text-red-700">{message}</Text>
-      {onRetry ? <SoftButton className="mt-md bg-white" onPress={onRetry}>Try again</SoftButton> : null}
+      {onRetry ? <Button label="Try again" variant="soft" onPress={onRetry} style={{ marginTop: 12 }} /> : null}
     </Card>
   );
 }

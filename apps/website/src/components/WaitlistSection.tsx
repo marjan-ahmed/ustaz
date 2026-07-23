@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ArrowRight, Loader2, User, Mail } from "lucide-react";
 
@@ -142,6 +143,18 @@ export default function WaitlistSection() {
               <p className="text-[#db4b0d] text-xs font-semibold tracking-widest uppercase mb-4 text-center">
                 Early Access
               </p>
+
+              {/* Illustration */}
+              <div className="flex justify-center mb-6">
+                <div className="relative w-48 h-48">
+                  <Image
+                    src="/images/join_the_watitlist-removebg-preview.png"
+                    alt="Join the waitlist"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              </div>
 
               {/* Headline */}
               <h2

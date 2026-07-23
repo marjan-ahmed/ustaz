@@ -151,8 +151,7 @@ function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link
-                  href="https://apps.ustaz.pk/privacy-policy"
-                  target="_blank"
+                  href="/privacy-policy"
                   className="hover:text-white transition-colors"
                 >
                   Privacy Policy
@@ -160,8 +159,7 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  href="https://apps.ustaz.pk/terms"
-                  target="_blank"
+                  href="/terms"
                   className="hover:text-white transition-colors"
                 >
                   Terms of Service
@@ -169,8 +167,7 @@ function Footer() {
               </li>
               <li>
                 <Link
-                  href="https://apps.ustaz.pk/cookie-policy"
-                  target="_blank"
+                  href="/cookie-policy"
                   className="hover:text-white transition-colors"
                 >
                   Cookie Policy
@@ -255,16 +252,14 @@ function Footer() {
 
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <Link
-              href="https://apps.ustaz.pk/privacy-policy"
-              target="_blank"
+              href="/privacy-policy"
               className="hover:text-white transition-colors"
             >
               Privacy Policy
             </Link>
             <span>·</span>
             <Link
-              href="https://apps.ustaz.pk/terms"
-              target="_blank"
+              href="/terms"
               className="hover:text-white transition-colors"
             >
               Terms

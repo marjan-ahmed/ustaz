@@ -9,7 +9,7 @@ const services = [
     title: "Electrical Work",
     description:
       "Expert electricians for wiring, installations, repairs, and maintenance. Licensed and insured professionals.",
-    image: "/images/services/electrician.png",
+    image: "/images/electrician-removebg-preview.png",
     icon: <Zap className="w-6 h-6" />,
     color: "#F59E0B",
   },
@@ -17,7 +17,7 @@ const services = [
     title: "Plumbing",
     description:
       "Professional plumbing services — leak repairs, pipe installation, drain cleaning, and emergency fixes.",
-    image: "/images/services/plumber.png",
+    image: "/images/plumber-removebg-preview.png",
     icon: <Droplets className="w-6 h-6" />,
     color: "#3B82F6",
   },
@@ -25,7 +25,7 @@ const services = [
     title: "Carpentry",
     description:
       "Custom woodwork, furniture repair, door/window installation, and home carpentry solutions.",
-    image: "/images/services/carpenter.png",
+    image: "/images/carpenter-removebg-preview.png",
     icon: <Hammer className="w-6 h-6" />,
     color: "#8B5CF6",
   },
@@ -33,8 +33,7 @@ const services = [
     title: "AC Repair",
     description:
       "Complete AC installation, servicing, gas refilling, and repair by certified technicians.",
-    image:
-      "https://images.unsplash.com/photo-1631545806609-9ba21b177bdb?w=600&auto=format&fit=crop&q=60",
+    image: "/images/ac_repair-removebg-preview.png",
     icon: <Wind className="w-6 h-6" />,
     color: "#06B6D4",
   },
@@ -42,8 +41,7 @@ const services = [
     title: "Solar Installation",
     description:
       "Professional solar panel installation, maintenance, and energy solutions for your home.",
-    image:
-      "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=600&auto=format&fit=crop&q=60",
+    image: "/images/solar-removebg-preview.png",
     icon: <Sun className="w-6 h-6" />,
     color: "#F97316",
   },

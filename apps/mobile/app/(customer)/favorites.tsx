@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@ustaz/shared/theme';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
+import {
+  Button, Card, Drift, EmptyState, FadeInUp, IsoServiceScene, PressableScale, Screen, Stagger, Text,
+} from '@/components/mobile-ui';
+import { color, radius, shadow, space } from '@/theme/tokens';
 
 interface FavoriteProvider {
   provider_id: string;
@@ -53,7 +55,6 @@ export default function FavoritesScreen() {
   }
 
   function rebookProvider(provider: FavoriteProvider) {
-    // Navigate to book screen with pre-selected provider
     router.push({
       pathname: '/(customer)/book',
       params: {
@@ -65,74 +66,70 @@ export default function FavoritesScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 }}>
-        <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-          <Ionicons name="arrow-back" size={24} color="#1B1B27" />
-        </Pressable>
-        <Text style={{ fontFamily: 'Anton', fontSize: 22, color: '#1B1B27', marginLeft: 12 }}>My Favorite Providers</Text>
-      </View>
+    <Screen bg={color.white} edges={['top']}>
+      <FadeInUp>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: space.lg, paddingBottom: space.sm }}>
+          <PressableScale onPress={() => router.back()} style={{ padding: space.xs }}>
+            <Ionicons name="arrow-back" size={24} color={color.navy} />
+          </PressableScale>
+          <Text variant="h1" style={{ marginLeft: space.md }}>Favorites</Text>
+        </View>
+      </FadeInUp>
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator color={colors.primary} size="large" />
+          <Text variant="body" tone="muted">Loading favorites...</Text>
         </View>
       ) : favorites.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-          <Ionicons name="heart-outline" size={64} color="#D1D5DB" />
-          <Text style={{ fontFamily: 'Anton', fontSize: 18, color: '#9CA3AF', marginTop: 16 }}>No favorites yet</Text>
-          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#D1D5DB', marginTop: 8, textAlign: 'center' }}>
-            After a service, tap the heart icon to save your favorite providers for quick rebooking
-          </Text>
-        </View>
+        <EmptyState
+          illustration={<Drift distance={6}><IsoServiceScene size={140} variant="general" /></Drift>}
+          title="No favorites yet"
+          subtitle="After a service, tap the heart icon to save your favorite providers for quick rebooking"
+        />
       ) : (
-        <View style={{ flex: 1, paddingHorizontal: 16 }}>
-          {favorites.map((fav) => (
-            <View key={fav.provider_id}
-              style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 16, backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 10 }}>
-              {/* Avatar */}
-              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: colors.primary }}>
-                <Text style={{ fontFamily: 'Anton', fontSize: 18, color: colors.primary }}>
-                  {fav.first_name?.charAt(0)}{fav.last_name?.charAt(0)}
-                </Text>
-              </View>
+        <View style={{ flex: 1, paddingHorizontal: space.lg }}>
+          <Stagger step={40}>
+            {favorites.map((fav) => (
+              <Card key={fav.provider_id} variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {/* Avatar */}
+                  <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: `${color.primary}14`, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: color.primary }}>
+                    <Text variant="h3" tone="primary">{fav.first_name?.charAt(0)}{fav.last_name?.charAt(0)}</Text>
+                  </View>
 
-              {/* Info */}
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#1B1B27' }}>
-                  {fav.first_name} {fav.last_name}
-                </Text>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                  {fav.service_type}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                  <Ionicons name="star" size={12} color="#F59E0B" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#6B7280' }}>
-                    {fav.rating_avg ? Number(fav.rating_avg).toFixed(1) : 'New'}
-                  </Text>
+                  {/* Info */}
+                  <View style={{ flex: 1, marginLeft: space.md }}>
+                    <Text variant="bodyLg" style={{ fontWeight: '700' }}>{fav.first_name} {fav.last_name}</Text>
+                    <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>{fav.service_type}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                      <Ionicons name="star" size={12} color="#F59E0B" />
+                      <Text variant="caption" tone="soft">
+                        {fav.rating_avg ? Number(fav.rating_avg).toFixed(1) : 'New'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Actions */}
+                  <View style={{ gap: 6 }}>
+                    <PressableScale onPress={() => rebookProvider(fav)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.sm, backgroundColor: color.primary, alignItems: 'center' }}>
+                      <Ionicons name="refresh" size={14} color={color.white} />
+                      <Text variant="caption" style={{ color: color.white, marginTop: 2, fontWeight: '700' }}>Rebook</Text>
+                    </PressableScale>
+                    <PressableScale onPress={() => removeFavorite(fav.provider_id)} disabled={removing === fav.provider_id}
+                      style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.sm, backgroundColor: color.errorBg, alignItems: 'center' }}>
+                      {removing === fav.provider_id ? (
+                        <Text variant="caption" style={{ color: color.error }}>...</Text>
+                      ) : (
+                        <Ionicons name="heart" size={14} color={color.error} />
+                      )}
+                    </PressableScale>
+                  </View>
                 </View>
-              </View>
-
-              {/* Actions */}
-              <View style={{ gap: 6 }}>
-                <Pressable onPress={() => rebookProvider(fav)}
-                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center' }}>
-                  <Ionicons name="refresh" size={14} color="#FFFFFF" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, fontWeight: '700', color: '#FFFFFF', marginTop: 2 }}>Rebook</Text>
-                </Pressable>
-                <Pressable onPress={() => removeFavorite(fav.provider_id)} disabled={removing === fav.provider_id}
-                  style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEF2F2', alignItems: 'center' }}>
-                  {removing === fav.provider_id ? (
-                    <ActivityIndicator color="#EF4444" size="small" />
-                  ) : (
-                    <Ionicons name="heart" size={14} color="#EF4444" />
-                  )}
-                </Pressable>
-              </View>
-            </View>
-          ))}
+              </Card>
+            ))}
+          </Stagger>
         </View>
       )}
-    </SafeAreaView>
+    </Screen>
   );
 }

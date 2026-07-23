@@ -2,20 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, LayoutAnimation } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { ActivityIndicator, Dimensions, Image, PanResponder, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Dimensions, PanResponder, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@ustaz/shared/theme';
+import { color, font, radius, space, touch } from '@/theme/tokens';
 import { serviceCategories } from '@/content/home';
 import { cancelRequest, createServiceRequest, sendPushNotification, type ServiceRequest } from '@/lib/ustaz-api';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
 import { useCustomerLocationSubscription } from '@/hooks/useCustomerLocationSubscription';
+import { getNextProviderSearchRadius } from '@/lib/bookingMapAnimation';
 import ProviderTrackingCard from '@/components/ProviderTrackingCard';
 import RatingModal from '@/components/RatingModal';
 import CancelReasonModal from '@/components/CancelReasonModal';
-import { MapView, Marker, Polyline, PROVIDER_GOOGLE } from '@/components/MapComponents';
+import { Circle, MapView, Marker, Polyline, PROVIDER_GOOGLE } from '@/components/MapComponents';
+import { Button, Card, Chip, IconTile, PressableScale, Text, TextField } from '@/components/mobile-ui';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -29,6 +30,8 @@ type RequestStatusDB = 'notified_multiple' | 'accepted' | 'provider_enroute' | '
 
 const ACTIVE_STATUSES = ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'];
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const PROVIDER_SEARCH_CIRCLE_STROKE = 'rgba(219,75,13,0.7)';
+const PROVIDER_SEARCH_CIRCLE_FILL = 'rgba(219,75,13,0.25)';
 
 type PlacePrediction = {
   placeId: string;
@@ -131,6 +134,7 @@ export default function BookScreen() {
   const [userLng, setUserLng] = useState<number | null>(null);
   const [markerCoords, setMarkerCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<MapCoordinate[]>([]);
+  const [providerSearchRadius, setProviderSearchRadius] = useState(0);
 
   const [requestStatus, setRequestStatus] = useState<RequestStatus>('idle');
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
@@ -144,10 +148,6 @@ export default function BookScreen() {
   const [isSending, setIsSending] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-
-  // Landmark + entrance photo
-  const [landmark, setLandmark] = useState('');
-  const [entrancePhoto, setEntrancePhoto] = useState<string | null>(null);
 
   const isIdle = requestStatus === 'idle' || requestStatus === 'error';
 
@@ -298,7 +298,7 @@ export default function BookScreen() {
 
         if (cancelled || !data) return;
         setCurrentRequestId(data.id);
-        // Only keep tracking status for active requests; completed/cancelled → idle so the service selector works again
+        // Only keep tracking status for active requests; completed/cancelled â†’ idle so the service selector works again
         const activeStatuses = ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'];
         setRequestStatus(activeStatuses.includes(data.status) ? (data.status as RequestStatusDB) : 'idle');
         if (typeof data.request_latitude === 'number' && typeof data.request_longitude === 'number') {
@@ -446,33 +446,11 @@ export default function BookScreen() {
     setSearchMessage('Finding nearby providers...');
 
     try {
-      // Upload entrance photo if present
-      let entrancePhotoUrl: string | null = null;
-      if (entrancePhoto && user) {
-        const response = await fetch(entrancePhoto);
-        const buffer = await response.arrayBuffer();
-        const timestamp = Date.now();
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('entrance-photos')
-          .upload(`${user.id}/entrance-${timestamp}.jpg`, buffer, {
-            contentType: 'image/jpeg',
-            upsert: false,
-          });
-        if (!uploadError && uploadData) {
-          const { data: urlData } = supabase.storage
-            .from('entrance-photos')
-            .getPublicUrl(uploadData.path);
-          entrancePhotoUrl = urlData.publicUrl;
-        }
-      }
-
       const result = await createServiceRequest({
         serviceType,
         userLat: requestLat,
         userLng: requestLng,
         requestDetails: address.trim() || null,
-        landmark: landmark.trim() || null,
-        entrancePhotoUrl,
         radiusKm: 3,
       });
 
@@ -628,12 +606,45 @@ export default function BookScreen() {
   const showTrackingCard = currentRequestId && acceptedProvider && ACTIVE_STATUSES.includes(requestStatus);
   const showMap = userLat !== null || (currentRequestId && ACTIVE_STATUSES.includes(requestStatus));
   const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'accepted' || requestStatus === 'finding_provider');
+  const isSearchingProvider = requestStatus === 'finding_provider' || requestStatus === 'notified_multiple';
+  const findBusy = isSending || isResolvingAddress || isSearchingProvider;
 
-  if (authLoading) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.primary} /></View></SafeAreaView>;
-  if (!isSignedIn) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}><Text style={{ fontFamily: 'Anton', fontSize: 28, color: '#1B1B27', textAlign: 'center' }}>Sign in required</Text><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#9CA3AF', textAlign: 'center', marginTop: 12 }}>Go to Profile tab to sign in first.</Text></View></SafeAreaView>;
+  useEffect(() => {
+    if (!isSearchingProvider || !customerCoordinate) {
+      setProviderSearchRadius(0);
+      return;
+    }
+
+    let frame: number | null = null;
+    const animateSearchCircle = () => {
+      setProviderSearchRadius((radius) => getNextProviderSearchRadius(radius));
+      frame = requestAnimationFrame(animateSearchCircle);
+    };
+
+    frame = requestAnimationFrame(animateSearchCircle);
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, [isSearchingProvider, customerCoordinate?.latitude, customerCoordinate?.longitude]);
+
+  if (authLoading) return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.cream }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={color.primary} />
+      </View>
+    </SafeAreaView>
+  );
+  if (!isSignedIn) return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.cream }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl }}>
+        <Text variant="h1" center>Sign in required</Text>
+        <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.md }}>Go to Profile tab to sign in first.</Text>
+      </View>
+    </SafeAreaView>
+  );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.cream }} edges={['top']}>
       <View style={{ flex: 1 }}>
         {/* Map */}
         {showMap && Platform.OS !== 'web' && GOOGLE_MAPS_API_KEY ? (
@@ -641,202 +652,183 @@ export default function BookScreen() {
             showsUserLocation={!userLat} showsMyLocationButton={false}>
             {routeCoordinates.length > 1 && (
               <>
-                <Polyline coordinates={routeCoordinates} strokeColor="#FFFFFF" strokeWidth={9} zIndex={1} />
-                <Polyline coordinates={routeCoordinates} strokeColor="#EF4444" strokeWidth={6} zIndex={2} />
+                <Polyline coordinates={routeCoordinates} strokeColor={color.white} strokeWidth={9} zIndex={1} />
+                <Polyline coordinates={routeCoordinates} strokeColor={color.primary} strokeWidth={5} zIndex={2} />
               </>
             )}
-            {markerCoords && <Marker coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }} draggable={isIdle} onDragEnd={onMarkerDragEnd} pinColor={colors.primary} />}
-            {providerLocation && <Marker coordinate={{ latitude: providerLocation.latitude, longitude: providerLocation.longitude }} pinColor="#10B981" />}
+            {isSearchingProvider && customerCoordinate && (
+              <Circle
+                center={customerCoordinate}
+                radius={providerSearchRadius}
+                strokeColor={PROVIDER_SEARCH_CIRCLE_STROKE}
+                strokeWidth={2}
+                fillColor={PROVIDER_SEARCH_CIRCLE_FILL}
+                zIndex={0}
+              />
+            )}
+            {markerCoords && (
+              <Marker
+                coordinate={{ latitude: markerCoords.lat, longitude: markerCoords.lng }}
+                draggable={isIdle}
+                onDragEnd={onMarkerDragEnd}
+                anchor={{ x: 0.5, y: 0.5 }}
+              >
+                <View style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{
+                    width: 20, height: 20, borderRadius: 10, backgroundColor: color.primary,
+                    borderWidth: 3, borderColor: color.white,
+                    shadowColor: color.navy, shadowOpacity: 0.3, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+                  }} />
+                </View>
+              </Marker>
+            )}
+            {providerLocation && <Marker coordinate={{ latitude: providerLocation.latitude, longitude: providerLocation.longitude }} pinColor={color.success} />}
           </MapView>
         ) : showMap ? (
-          <View style={{ flex: 1, backgroundColor: '#E5E7EB', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="map" size={48} color="#9CA3AF" />
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#6B7280', marginTop: 8 }}>Map available on mobile</Text>
+          <View style={{ flex: 1, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="map" size={48} color={color.line} />
+            <Text variant="label" tone="muted" style={{ marginTop: space.sm }}>Map available on mobile</Text>
           </View>
-        ) : <View style={{ flex: 1, backgroundColor: '#F3F4F6' }} />}
+        ) : <View style={{ flex: 1, backgroundColor: color.surfaceAlt }} />}
 
         {/* Bottom Sheet */}
         <View
           style={{
             position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
+            bottom: 0, left: 0, right: 0,
             height: sheetHeight,
-            backgroundColor: '#FFFFFF',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            shadowColor: '#000',
-            shadowOpacity: 0.15,
-            shadowRadius: 24,
-            shadowOffset: { width: 0, height: -6 },
-            elevation: 12,
+            backgroundColor: color.surface,
+            borderTopLeftRadius: radius['2xl'],
+            borderTopRightRadius: radius['2xl'],
+            shadowColor: color.navy,
+            shadowOpacity: 0.14,
+            shadowRadius: 28,
+            shadowOffset: { width: 0, height: -8 },
+            elevation: 14,
           }}
         >
-          {/* Drag Handle + Snap Buttons */}
-          <View style={{ paddingTop: 12, paddingBottom: 4 }} {...panResponder.panHandlers}>
-            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#D1D5DB', alignSelf: 'center' }} />
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 8 }}>
-              <Pressable onPress={() => snapTo(COLLAPSED_HEIGHT)} style={({ pressed }) => [{ width: 6, height: 6, borderRadius: 3, backgroundColor: lastSnap.current === COLLAPSED_HEIGHT ? colors.primary : '#D1D5DB', opacity: pressed ? 0.6 : 1 }]} />
-              <Pressable onPress={() => snapTo(MIDDLE_HEIGHT)} style={({ pressed }) => [{ width: 6, height: 6, borderRadius: 3, backgroundColor: lastSnap.current === MIDDLE_HEIGHT ? colors.primary : '#D1D5DB', opacity: pressed ? 0.6 : 1 }]} />
-              <Pressable onPress={() => snapTo(EXPANDED_HEIGHT)} style={({ pressed }) => [{ width: 6, height: 6, borderRadius: 3, backgroundColor: lastSnap.current === EXPANDED_HEIGHT ? colors.primary : '#D1D5DB', opacity: pressed ? 0.6 : 1 }]} />
+          {/* Drag handle + snap dots */}
+          <View style={{ paddingTop: space.md, paddingBottom: space.xs }} {...panResponder.panHandlers}>
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: color.line, alignSelf: 'center' }} />
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.sm }}>
+              {[COLLAPSED_HEIGHT, MIDDLE_HEIGHT, EXPANDED_HEIGHT].map((h) => (
+                <PressableScale key={h} onPress={() => snapTo(h)}
+                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lastSnap.current === h ? color.primary : color.line }} />
+              ))}
             </View>
           </View>
 
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
-            {/* Search Message */}
-            {searchMessage && (
-              <View style={{ marginBottom: 12, borderRadius: 12, backgroundColor: requestStatus === 'error' ? '#FEF2F2' : requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? '#EFF6FF' : '#ECFDF5', padding: 12 }}>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: requestStatus === 'error' ? '#EF4444' : requestStatus === 'finding_provider' || requestStatus === 'notified_multiple' ? '#2563EB' : '#10B981' }}>{searchMessage}</Text>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space['2xl'] }} keyboardShouldPersistTaps="handled">
+
+            {/* Status message (non-searching states) */}
+            {searchMessage && !isSearchingProvider && (
+              <View style={{
+                marginBottom: space.md, borderRadius: radius.md, padding: space.md,
+                backgroundColor: requestStatus === 'error' ? color.errorBg : color.successBg,
+              }}>
+                <Text variant="label" style={{ color: requestStatus === 'error' ? color.error : color.success }}>{searchMessage}</Text>
               </View>
             )}
 
-            {/* Provider Tracking Card */}
+            {/* Provider tracking card */}
             {showTrackingCard && acceptedProvider && (
-              <View style={{ marginBottom: 12 }}>
-                <ProviderTrackingCard status={requestStatus} provider={acceptedProvider} liveLocation={providerLocation} userLat={userLat} userLng={userLng}
+              <View style={{ marginBottom: space.md }}>
+                <ProviderTrackingCard
+                  status={requestStatus} provider={acceptedProvider}
+                  liveLocation={providerLocation} userLat={userLat} userLng={userLng}
                   serviceStartedAt={serviceStartedAt}
-                  onChat={() => router.push(`/(customer)/chat?peer=${acceptedProvider.id}`)} />
+                  onChat={() => router.push(`/(customer)/chat?peer=${acceptedProvider.id}`)}
+                />
               </View>
             )}
 
-            {/* Service Type */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, marginBottom: 8 }}>SERVICE TYPE</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                {serviceCategories.map((service) => (
-                  <Pressable key={service.name} onPress={() => { if (isIdle) setServiceType(service.name); }}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: serviceType === service.name ? colors.primary : '#F3F4F6', borderWidth: 1, borderColor: serviceType === service.name ? colors.primary : '#E5E7EB' }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: service.accent }} />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: serviceType === service.name ? '#FFFFFF' : '#374151' }}>{service.name}</Text>
-                  </Pressable>
-                ))}
+            {/* Service type chips */}
+            <View style={{ marginBottom: space.lg }}>
+              <Text variant="caption" tone="muted" style={{ textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: '700', marginBottom: space.sm }}>Service type</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
+                {serviceCategories.map((service) => {
+                  const active = serviceType === service.name;
+                  return (
+                    <Chip
+                      key={service.name}
+                      label={service.name}
+                      active={active}
+                      onPress={() => { if (isIdle) setServiceType(service.name); }}
+                      icon={<View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: active ? color.white : service.accent }} />}
+                    />
+                  );
+                })}
               </ScrollView>
             </View>
 
             {/* Location */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.5, marginBottom: 8 }}>LOCATION</Text>
+            <View style={{ marginBottom: space.lg }}>
+              <Text variant="caption" tone="muted" style={{ textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: '700', marginBottom: space.sm }}>Location</Text>
               {isGettingLocation ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#F3F4F6', paddingVertical: 12 }}>
-                  <ActivityIndicator color={colors.primary} size="small" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280' }}>Detecting your location...</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, borderRadius: radius.md, backgroundColor: color.surfaceAlt, paddingVertical: space.md }}>
+                  <ActivityIndicator color={color.primary} size="small" />
+                  <Text variant="label" tone="muted" style={{ fontWeight: '700' }}>Detecting your location...</Text>
                 </View>
               ) : !userLat && !userLng ? (
-                <Pressable onPress={getCurrentLocation} disabled={isGettingLocation}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#FEF2F2', paddingVertical: 12 }}>
-                  <Ionicons name="refresh" size={16} color="#EF4444" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#EF4444' }}>Tap to retry location</Text>
-                </Pressable>
+                <PressableScale onPress={getCurrentLocation} disabled={isGettingLocation}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, borderRadius: radius.md, backgroundColor: color.errorBg, paddingVertical: space.md }}>
+                  <Ionicons name="refresh" size={16} color={color.error} />
+                  <Text variant="label" style={{ color: color.error, fontWeight: '700' }}>Tap to retry location</Text>
+                </PressableScale>
               ) : null}
               {userLat && userLng && (
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', textAlign: 'center', marginTop: 4 }}>
+                <Text variant="caption" tone="muted" center style={{ marginTop: 4 }}>
                   {userLat.toFixed(4)}, {userLng.toFixed(4)}
                 </Text>
               )}
-              <View style={{ marginTop: 10, gap: 8 }}>
-                <TextInput value={address} onChangeText={handleAddressChange} editable={isIdle} placeholder="Search or enter address manually" placeholderTextColor="#D1D5DB"
+              <View style={{ marginTop: space.sm, gap: space.sm }}>
+                <TextField
+                  value={address} onChangeText={handleAddressChange} editable={isIdle}
+                  placeholder="Search or enter address manually"
                   returnKeyType="search" onSubmitEditing={() => { if (isIdle) resolveManualAddress(); }}
-                  style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: userLat && userLng ? `${colors.primary}55` : '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27' }} />
+                  error={!!(userLat && userLng) ? false : undefined}
+                />
                 {isIdle && address.trim().length >= 3 && addressSuggestions.length > 0 && (
-                  <View style={{ overflow: 'hidden', borderRadius: 14, borderWidth: 1, borderColor: '#F3F4F6', backgroundColor: '#FFFFFF' }}>
+                  <Card variant="elevated" padded={false} style={{ overflow: 'hidden' }}>
                     {addressSuggestions.map((item, index) => (
-                      <Pressable key={item.placeId} onPress={() => selectPlaceSuggestion(item)}
-                        style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: '#F3F4F6' }}>
-                        <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center' }}>
-                          <Ionicons name="location" size={14} color={colors.primary} />
-                        </View>
+                      <PressableScale key={item.placeId} onPress={() => selectPlaceSuggestion(item)}
+                        style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.md, paddingVertical: space.sm, borderTopWidth: index === 0 ? 0 : 1, borderTopColor: color.line }}>
+                        <IconTile size={32} bg={color.cream}>
+                          <Ionicons name="location" size={14} color={color.primary} />
+                        </IconTile>
                         <View style={{ flex: 1 }}>
-                          <Text numberOfLines={1} style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#1B1B27' }}>{item.mainText}</Text>
-                          {!!item.secondaryText && <Text numberOfLines={1} style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{item.secondaryText}</Text>}
+                          <Text variant="label" numberOfLines={1} style={{ fontWeight: '700' }}>{item.mainText}</Text>
+                          {!!item.secondaryText && <Text variant="caption" tone="muted" numberOfLines={1} style={{ marginTop: 2 }}>{item.secondaryText}</Text>}
                         </View>
-                      </Pressable>
+                      </PressableScale>
                     ))}
-                  </View>
+                  </Card>
                 )}
               </View>
 
-              {/* Landmark + Entrance Photo */}
-              {isIdle && userLat && userLng && (
-                <View style={{ gap: 8 }}>
-                  <View>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>Landmark (required for provider)</Text>
-                    <TextInput
-                      value={landmark}
-                      onChangeText={setLandmark}
-                      placeholder="e.g. Near Shalimar Hospital, blue gate"
-                      placeholderTextColor="#D1D5DB"
-                      style={{ minHeight: 44, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27' }}
-                    />
-                  </View>
-                  <View>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>Entrance photo (optional)</Text>
-                    {entrancePhoto ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <View style={{ width: 60, height: 60, borderRadius: 8, backgroundColor: '#F3F4F6', overflow: 'hidden' }}>
-                          <Image source={{ uri: entrancePhoto }} style={{ width: 60, height: 60 }} resizeMode="cover" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#10B981', fontWeight: '700' }}>Photo added</Text>
-                          <Pressable onPress={() => setEntrancePhoto(null)}>
-                            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#EF4444', marginTop: 2 }}>Remove</Text>
-                          </Pressable>
-                        </View>
-                      </View>
-                    ) : (
-                      <View style={{ flexDirection: 'row', gap: 8 }}>
-                        <Pressable onPress={async () => {
-                          const result = await ImagePicker.launchCameraAsync({ quality: 0.7, mediaTypes: ['images'] });
-                          if (!result.canceled && result.assets[0]) setEntrancePhoto(result.assets[0].uri);
-                        }}
-                          style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' }}>
-                          <Ionicons name="camera-outline" size={16} color="#6B7280" />
-                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280' }}>Camera</Text>
-                        </Pressable>
-                        <Pressable onPress={async () => {
-                          const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ['images'] });
-                          if (!result.canceled && result.assets[0]) setEntrancePhoto(result.assets[0].uri);
-                        }}
-                          style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: '#F3F4F6', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#E5E7EB', borderStyle: 'dashed' }}>
-                          <Ionicons name="images-outline" size={16} color="#6B7280" />
-                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280' }}>Gallery</Text>
-                        </Pressable>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              )}
             </View>
 
-            {/* Action Buttons */}
-            <View style={{ gap: 10 }}>
-              <Pressable onPress={handleFindProviders}
+            {/* Action buttons */}
+            <View style={{ gap: space.sm }}>
+              <Button
+                label={
+                  isResolvingAddress ? 'Finding Address...'
+                  : requestStatus === 'finding_provider' ? 'Finding Providers...'
+                  : requestStatus === 'notified_multiple' ? 'Waiting for Response...'
+                  : 'Find Available Providers'
+                }
+                onPress={handleFindProviders}
                 disabled={isSending || isResolvingAddress || requestStatus === 'notified_multiple' || requestStatus === 'accepted'}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: (isSending || isResolvingAddress || requestStatus === 'notified_multiple' || requestStatus === 'accepted') ? '#D1D5DB' : colors.primary, paddingVertical: 14 }}>
-                {isSending || isResolvingAddress || requestStatus === 'finding_provider' ? (
-                  <>
-                    <ActivityIndicator color="#FFF" size="small" />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>{isResolvingAddress ? 'Finding Address...' : 'Finding Providers...'}</Text>
-                  </>
-                ) : requestStatus === 'notified_multiple' ? (
-                  <>
-                    <ActivityIndicator color="#FFF" size="small" />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Waiting for Response...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Ionicons name="search" size={16} color="#FFFFFF" />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF' }}>Find Available Providers</Text>
-                  </>
-                )}
-              </Pressable>
+                icon={findBusy ? <ActivityIndicator color={color.white} size="small" /> : <Ionicons name="search" size={16} color={color.white} />}
+              />
 
               {canCancel && (
-                <Pressable onPress={() => setShowCancelModal(true)}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB', paddingVertical: 12 }}>
-                  <Ionicons name="close-circle" size={16} color="#6B7280" />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151' }}>Cancel Request</Text>
-                </Pressable>
+                <Button
+                  variant="soft"
+                  label="Cancel Request"
+                  icon={<Ionicons name="close-circle" size={16} color={color.primary} />}
+                  onPress={() => setShowCancelModal(true)}
+                />
               )}
             </View>
           </ScrollView>
@@ -859,4 +851,5 @@ export default function BookScreen() {
     </SafeAreaView>
   );
 }
+
 

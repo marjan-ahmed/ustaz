@@ -1,11 +1,8 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import {
-  Download,
-  ClipboardList,
-  Wrench,
-  CheckCircle,
   ArrowDown,
   ArrowRight,
 } from "lucide-react";
@@ -23,32 +20,32 @@ export default function HowItWorks() {
 
   const steps = [
     {
-      icon: <Download className="h-12 w-12 text-orange-600" />,
       title: "Download App",
       description:
         "Get the Ustaz app from Google Play Store. Quick and easy installation.",
       bgColor: "bg-orange-50",
+      image: "/images/live_map-removebg-preview.png",
     },
     {
-      icon: <ClipboardList className="h-12 w-12 text-blue-600" />,
       title: "Choose Service",
       description:
         "Select from electrician, plumber, carpenter, AC repair, or solar services.",
       bgColor: "bg-blue-50",
+      image: "/images/service-selection-removebg-preview.png",
     },
     {
-      icon: <Wrench className="h-12 w-12 text-green-600" />,
       title: "Get Matched",
       description:
         "We connect you with verified professionals near your location instantly.",
       bgColor: "bg-green-50",
+      image: "/images/completion-checklist-removebg-preview.png",
     },
     {
-      icon: <CheckCircle className="h-12 w-12 text-purple-600" />,
       title: "Job Done",
       description:
         "Service completed, rate your experience, and enjoy hassle-free home services.",
       bgColor: "bg-purple-50",
+      image: "/images/app-download-removebg-preview.png",
     },
   ];
 
@@ -170,8 +167,15 @@ export default function HowItWorks() {
                   <div className="absolute top-3 right-3 w-8 h-8 border-2 border-current opacity-20 rounded-full"></div>
                   <div className="absolute bottom-3 left-3 w-6 h-6 border-2 border-current opacity-20 rounded-full"></div>
 
-                  {/* Icon */}
-                  <div className="relative z-10">{step.icon}</div>
+                  {/* Illustration */}
+                  <div className="relative z-10 w-24 h-24">
+                    <Image
+                      src={step.image}
+                      alt={step.title}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
 
                   {/* Step Number Badge */}
                   <div className="absolute -top-3 -left-3 w-10 h-10 bg-[#0f1729] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">

@@ -1,13 +1,16 @@
-﻿import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, Text, TextInput, View, StyleSheet, Platform, KeyboardAvoidingView, Alert } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Platform, KeyboardAvoidingView, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { colors } from '@ustaz/shared/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/useAuth';
+import {
+  Button, Card, Chip, FadeInUp, GlowBackdrop, PressableScale, ProgressStepper, Screen, Text, TextField, TiltCard,
+} from '@/components/mobile-ui';
+import { color, radius, space } from '@/theme/tokens';
 
 const SERVICE_TYPES = [
   'Electrician',
@@ -237,272 +240,294 @@ export default function ProviderRegisterScreen() {
   // --- Loading / auth guard ---
   if (authLoading || !user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
+      <Screen bg={color.white} edges={['top']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={{ marginTop: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF' }}>Phone verification is required to start earning.</Text>
+          <ActivityIndicator color={color.primary} />
+          <Text variant="label" tone="muted" style={{ marginTop: space.md }}>Phone verification is required to start earning.</Text>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   // --- Success screen ---
   if (submitted) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-        <View style={{ flex: 1, paddingHorizontal: 20, justifyContent: 'center' }}>
-          <View style={{ borderRadius: 28, backgroundColor: '#111828', padding: 24, overflow: 'hidden', shadowColor: colors.primary, shadowOpacity: 0.22, shadowRadius: 18, shadowOffset: { width: 0, height: 10 }, elevation: 6 }}>
-            <View style={{ position: 'absolute', right: -42, top: -42, width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(245,158,11,0.18)' }} />
-            <View style={{ position: 'absolute', left: -32, bottom: -36, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(219,75,13,0.18)' }} />
-            <View style={{ alignItems: 'center' }}>
-              <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-                <Ionicons name="sparkles" size={36} color={colors.primary} />
+      <Screen bg={color.white} edges={['top']}>
+        <View style={{ flex: 1, paddingHorizontal: space.lg, justifyContent: 'center' }}>
+          <View style={{ borderRadius: radius['2xl'], overflow: 'hidden' }}>
+            <View style={{ padding: space.xl, backgroundColor: color.navy, overflow: 'hidden' }}>
+              <GlowBackdrop color="#F59E0B" top={-42} right={-42} size={150} opacity={0.18} />
+              <GlowBackdrop top={undefined} bottom={-36} left={-32} size={120} opacity={0.18} />
+              <View style={{ alignItems: 'center' }}>
+                <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: color.cream, alignItems: 'center', justifyContent: 'center', marginBottom: space.lg }}>
+                  <Ionicons name="sparkles" size={36} color={color.primary} />
+                </View>
+                <View style={{ paddingHorizontal: space.md, paddingVertical: space.xs, borderRadius: radius.full, backgroundColor: 'rgba(16,185,129,0.18)', marginBottom: space.md }}>
+                  <Text variant="caption" style={{ fontWeight: '700', color: '#34D399' }}>WELCOME TO USTAZ</Text>
+                </View>
+                <Text variant="display" tone="inverse" center>Congratulations,{'\n'}{form.firstName}!</Text>
+                <Text variant="label" tone="inverseSoft" center style={{ marginTop: space.md, lineHeight: 21 }}>
+                  Your provider profile is ready. Your first dashboard visit will show the welcome bonus card and wallet guidance.
+                </Text>
               </View>
-              <View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(16,185,129,0.18)', marginBottom: 14 }}>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: '#34D399' }}>WELCOME TO USTAZ</Text>
-              </View>
-              <Text style={{ fontFamily: 'Anton', fontSize: 30, color: '#FFFFFF', textAlign: 'center' }}>Congratulations,{'\n'}{form.firstName}!</Text>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: 'rgba(255,255,255,0.68)', textAlign: 'center', marginTop: 12, lineHeight: 21 }}>
-                Your provider profile is ready. Your first dashboard visit will show the welcome bonus card and wallet guidance.
-              </Text>
+              <Button label="Go to Wallet" onPress={() => router.replace('/(provider)/wallet')} style={{ marginTop: space.xl }} />
+              <PressableScale
+                onPress={() => router.replace('/(provider)')}
+                style={{ marginTop: space.sm, minHeight: 50, width: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+              >
+                <Text variant="bodyLg" tone="inverse" style={{ fontWeight: '700' }}>Open Dashboard</Text>
+              </PressableScale>
             </View>
-            <Pressable
-              onPress={() => router.replace('/(provider)/wallet')}
-              style={{ marginTop: 22, minHeight: 54, width: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.primary }}
-            >
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>Go to Wallet</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => router.replace('/(provider)')}
-              style={{ marginTop: 10, minHeight: 50, width: '100%', alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
-            >
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Open Dashboard</Text>
-            </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.white }} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}>
+        <View style={{ flex: 1, paddingHorizontal: space.lg, paddingTop: space.sm }}>
           {/* Header with back + progress */}
-          <View style={s.header}>
-            <Pressable onPress={handleBack} style={s.backBtn}>
-              <Ionicons name="chevron-back" size={20} color="#1B1B27" />
-            </Pressable>
-            <View style={s.stepIndicator}>
-              {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-                <View key={i} style={[s.stepDot, step >= i + 1 && s.stepDotActive]} />
-              ))}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.md }}>
+            <PressableScale onPress={handleBack} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="chevron-back" size={20} color={color.ink} />
+            </PressableScale>
+            <View style={{ flex: 1 }}>
+              <ProgressStepper total={TOTAL_STEPS} current={step - 1} />
             </View>
-            <Text style={s.stepCounter}>{step}/{TOTAL_STEPS}</Text>
+            <Text variant="label" tone="muted" style={{ fontWeight: '700', width: 32, textAlign: 'right' }}>{step}/{TOTAL_STEPS}</Text>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
             {/* STEP 1: Name */}
             {step === 1 && (
-              <View style={{ gap: 20 }}>
-                <View style={s.illustrationCircle}>
-                  <Ionicons name="person" size={48} color={colors.primary} />
+              <FadeInUp>
+                <View style={{ gap: space.xl }}>
+                  <TiltCard maxTilt={8} style={s.illustrationCircle}>
+                    <Ionicons name="person" size={48} color={color.primary} />
+                  </TiltCard>
+                  <View>
+                    <Text variant="display" center>What's your name?</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Let's start with the basics</Text>
+                  </View>
+                  <View>
+                    <TextField label="First Name *" value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="e.g. Ahmed" error={!!errors.firstName} />
+                    {errors.firstName && <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.firstName}</Text>}
+                  </View>
+                  <View>
+                    <TextField label="Last Name *" value={form.lastName} onChangeText={v => set('lastName', v)} placeholder="e.g. Khan" error={!!errors.lastName} />
+                    {errors.lastName && <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.lastName}</Text>}
+                  </View>
                 </View>
-                <Text style={s.bigQuestion}>What's your name?</Text>
-                <Text style={s.questionSubtext}>Let's start with the basics</Text>
-                <Field label="First Name" required error={errors.firstName}>
-                  <Input value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="e.g. Ahmed" />
-                </Field>
-                <Field label="Last Name" required error={errors.lastName}>
-                  <Input value={form.lastName} onChangeText={v => set('lastName', v)} placeholder="e.g. Khan" />
-                </Field>
-              </View>
+              </FadeInUp>
             )}
 
             {/* STEP 2: Profile Photo */}
             {step === 2 && (
-              <View style={{ gap: 20, alignItems: 'center' }}>
-                <Text style={s.bigQuestion}>Add your profile photo</Text>
-                <Text style={s.questionSubtext}>A good photo builds trust with customers</Text>
-                <Pressable onPress={() => showImageOptions('profile')} style={s.photoCircle}>
-                  {photos.profile ? (
-                    <Image source={{ uri: photos.profile }} style={s.photoCircleImage} />
-                  ) : (
-                    <View style={s.photoPlaceholder}>
-                      <Ionicons name="camera" size={40} color="#D1D5DB" />
-                      <Text style={s.photoPlaceholderText}>Tap to add photo</Text>
-                    </View>
+              <FadeInUp>
+                <View style={{ gap: space.xl, alignItems: 'center' }}>
+                  <View>
+                    <Text variant="display" center>Add your profile photo</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>A good photo builds trust with customers</Text>
+                  </View>
+                  <PressableScale onPress={() => showImageOptions('profile')} style={s.photoCircle}>
+                    {photos.profile ? (
+                      <Image source={{ uri: photos.profile }} style={s.photoCircleImage} />
+                    ) : (
+                      <View style={{ alignItems: 'center', gap: space.sm }}>
+                        <Ionicons name="camera" size={40} color={color.line} />
+                        <Text variant="label" tone="muted">Tap to add photo</Text>
+                      </View>
+                    )}
+                  </PressableScale>
+                  {photos.profile && (
+                    <PressableScale onPress={() => showImageOptions('profile')} style={s.retakeBtn}>
+                      <Ionicons name="refresh" size={16} color={color.primary} />
+                      <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>Change photo</Text>
+                    </PressableScale>
                   )}
-                </Pressable>
-                {photos.profile && (
-                  <Pressable onPress={() => showImageOptions('profile')} style={s.retakeBtn}>
-                    <Ionicons name="refresh" size={16} color={colors.primary} />
-                    <Text style={s.retakeBtnText}>Change photo</Text>
-                  </Pressable>
-                )}
-                {errors.profile && <Text style={s.errorText}>{errors.profile}</Text>}
-              </View>
+                  {errors.profile && <Text variant="caption" style={{ color: color.error }}>{errors.profile}</Text>}
+                </View>
+              </FadeInUp>
             )}
 
             {/* STEP 3: CNIC Number */}
             {step === 3 && (
-              <View style={{ gap: 20 }}>
-                <View style={s.illustrationCircle}>
-                  <Ionicons name="card" size={48} color={colors.primary} />
+              <FadeInUp>
+                <View style={{ gap: space.xl }}>
+                  <TiltCard maxTilt={8} style={s.illustrationCircle}>
+                    <Ionicons name="card" size={48} color={color.primary} />
+                  </TiltCard>
+                  <View>
+                    <Text variant="display" center>What's your CNIC number?</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>13-digit national identity card number</Text>
+                  </View>
+                  <View>
+                    <TextField
+                      label="CNIC Number *"
+                      value={form.cnic}
+                      onChangeText={v => set('cnic', v.replace(/\D/g, '').slice(0, 13))}
+                      placeholder="4220112345678"
+                      keyboardType="number-pad"
+                      maxLength={13}
+                      error={!!errors.cnic}
+                    />
+                    {errors.cnic && <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.cnic}</Text>}
+                  </View>
                 </View>
-                <Text style={s.bigQuestion}>What's your CNIC number?</Text>
-                <Text style={s.questionSubtext}>13-digit national identity card number</Text>
-                <Field label="CNIC Number" required error={errors.cnic}>
-                  <Input
-                    value={form.cnic}
-                    onChangeText={v => set('cnic', v.replace(/\D/g, '').slice(0, 13))}
-                    placeholder="4220112345678"
-                    keyboardType="number-pad"
-                    maxLength={13}
-                  />
-                </Field>
-              </View>
+              </FadeInUp>
             )}
 
             {/* STEP 4: CNIC Front Photo */}
             {step === 4 && (
-              <View style={{ gap: 20, alignItems: 'center' }}>
-                <Text style={s.bigQuestion}>CNIC front photo</Text>
-                <Text style={s.questionSubtext}>Take a clear photo of the front side</Text>
-                <Pressable onPress={() => showImageOptions('cnicFront')} style={s.photoRect}>
-                  {photos.cnicFront ? (
-                    <Image source={{ uri: photos.cnicFront }} style={s.photoRectImage} />
-                  ) : (
-                    <View style={s.photoPlaceholder}>
-                      <Ionicons name="camera" size={40} color="#D1D5DB" />
-                      <Text style={s.photoPlaceholderText}>Tap to capture</Text>
-                    </View>
+              <FadeInUp>
+                <View style={{ gap: space.xl, alignItems: 'center' }}>
+                  <View>
+                    <Text variant="display" center>CNIC front photo</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Take a clear photo of the front side</Text>
+                  </View>
+                  <PressableScale onPress={() => showImageOptions('cnicFront')} style={s.photoRect}>
+                    {photos.cnicFront ? (
+                      <Image source={{ uri: photos.cnicFront }} style={s.photoRectImage} />
+                    ) : (
+                      <View style={{ alignItems: 'center', gap: space.sm }}>
+                        <Ionicons name="camera" size={40} color={color.line} />
+                        <Text variant="label" tone="muted">Tap to capture</Text>
+                      </View>
+                    )}
+                  </PressableScale>
+                  {photos.cnicFront && (
+                    <PressableScale onPress={() => showImageOptions('cnicFront')} style={s.retakeBtn}>
+                      <Ionicons name="refresh" size={16} color={color.primary} />
+                      <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>Retake</Text>
+                    </PressableScale>
                   )}
-                </Pressable>
-                {photos.cnicFront && (
-                  <Pressable onPress={() => showImageOptions('cnicFront')} style={s.retakeBtn}>
-                    <Ionicons name="refresh" size={16} color={colors.primary} />
-                    <Text style={s.retakeBtnText}>Retake</Text>
-                  </Pressable>
-                )}
-                {errors.cnicFront && <Text style={s.errorText}>{errors.cnicFront}</Text>}
-              </View>
+                  {errors.cnicFront && <Text variant="caption" style={{ color: color.error }}>{errors.cnicFront}</Text>}
+                </View>
+              </FadeInUp>
             )}
 
             {/* STEP 5: CNIC Back Photo */}
             {step === 5 && (
-              <View style={{ gap: 20, alignItems: 'center' }}>
-                <Text style={s.bigQuestion}>CNIC back photo</Text>
-                <Text style={s.questionSubtext}>Now the back side of your CNIC</Text>
-                <Pressable onPress={() => showImageOptions('cnicBack')} style={s.photoRect}>
-                  {photos.cnicBack ? (
-                    <Image source={{ uri: photos.cnicBack }} style={s.photoRectImage} />
-                  ) : (
-                    <View style={s.photoPlaceholder}>
-                      <Ionicons name="camera" size={40} color="#D1D5DB" />
-                      <Text style={s.photoPlaceholderText}>Tap to capture</Text>
-                    </View>
+              <FadeInUp>
+                <View style={{ gap: space.xl, alignItems: 'center' }}>
+                  <View>
+                    <Text variant="display" center>CNIC back photo</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Now the back side of your CNIC</Text>
+                  </View>
+                  <PressableScale onPress={() => showImageOptions('cnicBack')} style={s.photoRect}>
+                    {photos.cnicBack ? (
+                      <Image source={{ uri: photos.cnicBack }} style={s.photoRectImage} />
+                    ) : (
+                      <View style={{ alignItems: 'center', gap: space.sm }}>
+                        <Ionicons name="camera" size={40} color={color.line} />
+                        <Text variant="label" tone="muted">Tap to capture</Text>
+                      </View>
+                    )}
+                  </PressableScale>
+                  {photos.cnicBack && (
+                    <PressableScale onPress={() => showImageOptions('cnicBack')} style={s.retakeBtn}>
+                      <Ionicons name="refresh" size={16} color={color.primary} />
+                      <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>Retake</Text>
+                    </PressableScale>
                   )}
-                </Pressable>
-                {photos.cnicBack && (
-                  <Pressable onPress={() => showImageOptions('cnicBack')} style={s.retakeBtn}>
-                    <Ionicons name="refresh" size={16} color={colors.primary} />
-                    <Text style={s.retakeBtnText}>Retake</Text>
-                  </Pressable>
-                )}
-                {errors.cnicBack && <Text style={s.errorText}>{errors.cnicBack}</Text>}
-              </View>
+                  {errors.cnicBack && <Text variant="caption" style={{ color: color.error }}>{errors.cnicBack}</Text>}
+                </View>
+              </FadeInUp>
             )}
 
             {/* STEP 6: Services (multi-select) */}
             {step === 6 && (
-              <View style={{ gap: 20 }}>
-                <View style={s.illustrationCircle}>
-                  <Ionicons name="hammer" size={48} color={colors.primary} />
+              <FadeInUp>
+                <View style={{ gap: space.xl }}>
+                  <TiltCard maxTilt={8} style={s.illustrationCircle}>
+                    <Ionicons name="hammer" size={48} color={color.primary} />
+                  </TiltCard>
+                  <View>
+                    <Text variant="display" center>What services can you do?</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Select all that apply</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, justifyContent: 'center' }}>
+                    {SERVICE_TYPES.map(svc => {
+                      const active = form.serviceTypes.includes(svc);
+                      return (
+                        <Chip
+                          key={svc}
+                          label={svc}
+                          active={active}
+                          onPress={() => toggleService(svc)}
+                          icon={<Ionicons name={active ? 'checkmark-circle' : 'add-circle'} size={18} color={active ? color.white : color.inkMuted} />}
+                        />
+                      );
+                    })}
+                  </View>
+                  {errors.serviceTypes && <Text variant="caption" center style={{ color: color.error }}>{errors.serviceTypes}</Text>}
                 </View>
-                <Text style={s.bigQuestion}>What services can you do?</Text>
-                <Text style={s.questionSubtext}>Select all that apply</Text>
-                <View style={s.chipRow}>
-                  {SERVICE_TYPES.map(svc => {
-                    const active = form.serviceTypes.includes(svc);
-                    return (
-                      <Pressable key={svc} onPress={() => toggleService(svc)} style={[s.chip, active && s.chipActive]}>
-                        <Ionicons name={active ? 'checkmark-circle' : 'add-circle'} size={18} color={active ? colors.primary : '#9CA3AF'} />
-                        <Text style={[s.chipText, active && s.chipTextActive]}>{svc}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                {errors.serviceTypes && <Text style={s.errorText}>{errors.serviceTypes}</Text>}
-              </View>
+              </FadeInUp>
             )}
 
             {/* STEP 7: Review & Submit */}
             {step === 7 && (
-              <View style={{ gap: 16 }}>
-                <Text style={[s.bigQuestion, { textAlign: 'center' }]}>Review & Complete</Text>
-                <Text style={[s.questionSubtext, { textAlign: 'center' }]}>Make sure everything looks good</Text>
-
-                {/* Profile photo preview */}
-                {photos.profile && (
-                  <View style={{ alignItems: 'center', marginBottom: 8 }}>
-                    <Image source={{ uri: photos.profile }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: colors.primary }} />
+              <FadeInUp>
+                <View style={{ gap: space.lg }}>
+                  <View>
+                    <Text variant="display" center>Review & Complete</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Make sure everything looks good</Text>
                   </View>
-                )}
 
-                <View style={s.summaryCard}>
-                  <SummaryRow icon="person" label="Name" value={`${form.firstName} ${form.lastName}`} />
-                  <SummaryRow icon="card" label="CNIC" value={form.cnic} />
-                  <SummaryRow icon="call" label="Phone" value={`+92 ${form.phoneNumber}`} />
-                  <View style={{ height: 1, backgroundColor: '#F3F4F6', marginVertical: 4 }} />
-                  <SummaryRow icon="hammer" label="Services" value={form.serviceTypes.join(', ')} />
-                  <SummaryRow icon="image" label="CNIC Front" value={photos.cnicFront ? 'Uploaded' : 'Not uploaded'} />
-                  <SummaryRow icon="image" label="CNIC Back" value={photos.cnicBack ? 'Uploaded' : 'Not uploaded'} />
+                  {/* Profile photo preview */}
+                  {photos.profile && (
+                    <View style={{ alignItems: 'center' }}>
+                      <Image source={{ uri: photos.profile }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: color.primary }} />
+                    </View>
+                  )}
+
+                  <Card variant="flat">
+                    <SummaryRow icon="person" label="Name" value={`${form.firstName} ${form.lastName}`} />
+                    <SummaryRow icon="card" label="CNIC" value={form.cnic} />
+                    <SummaryRow icon="call" label="Phone" value={`+92 ${form.phoneNumber}`} />
+                    <View style={{ height: 1, backgroundColor: color.line, marginVertical: space.xs }} />
+                    <SummaryRow icon="hammer" label="Services" value={form.serviceTypes.join(', ')} />
+                    <SummaryRow icon="image" label="CNIC Front" value={photos.cnicFront ? 'Uploaded' : 'Not uploaded'} />
+                    <SummaryRow icon="image" label="CNIC Back" value={photos.cnicBack ? 'Uploaded' : 'Not uploaded'} />
+                  </Card>
+
+                  <PressableScale onPress={() => set('agreedToTerms', !form.agreedToTerms)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                    <View style={[s.checkbox, form.agreedToTerms && s.checkboxChecked]}>
+                      {form.agreedToTerms && <Ionicons name="checkmark" size={14} color={color.white} />}
+                    </View>
+                    <Text variant="label" style={{ flex: 1 }}>I agree to the Terms of Service and Privacy Policy</Text>
+                  </PressableScale>
+                  {errors.agreedToTerms && <Text variant="caption" style={{ color: color.error }}>{errors.agreedToTerms}</Text>}
+
+                  {errors.submit && (
+                    <Card variant="flat" style={{ backgroundColor: color.errorBg }}>
+                      <Text variant="label" style={{ color: color.error }}>{errors.submit}</Text>
+                    </Card>
+                  )}
                 </View>
-
-                <Pressable onPress={() => set('agreedToTerms', !form.agreedToTerms)} style={s.checkboxRow}>
-                  <View style={[s.checkbox, form.agreedToTerms && s.checkboxChecked]}>
-                    {form.agreedToTerms && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-                  </View>
-                  <Text style={s.checkboxLabel}>I agree to the Terms of Service and Privacy Policy</Text>
-                </Pressable>
-                {errors.agreedToTerms && <Text style={s.errorText}>{errors.agreedToTerms}</Text>}
-
-                {errors.submit && (
-                  <View style={s.errorBox}>
-                    <Text style={s.errorBoxText}>{errors.submit}</Text>
-                  </View>
-                )}
-              </View>
+              </FadeInUp>
             )}
           </ScrollView>
         </View>
 
         {/* Bottom CTA */}
-        <View style={s.bottomBar}>
+        <View style={{ paddingHorizontal: space.lg, paddingBottom: Platform.OS === 'ios' ? 30 : space.lg, paddingTop: space.sm, backgroundColor: color.white, borderTopWidth: 1, borderTopColor: color.line }}>
           {step < TOTAL_STEPS ? (
-            <Pressable onPress={handleNext} style={s.ctaBtn}>
-              <Text style={s.ctaText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-            </Pressable>
+            <Button
+              label="Continue"
+              onPress={handleNext}
+              icon={<Ionicons name="arrow-forward" size={18} color={color.white} />}
+            />
           ) : (
-            <Pressable
+            <Button
+              label={submitting ? (uploading ? 'Uploading...' : 'Creating profile...') : 'Complete Registration'}
               onPress={handleSubmit}
               disabled={submitting}
-              style={[s.ctaBtn, submitting && { backgroundColor: '#D1D5DB' }]}
-            >
-              {submitting ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <ActivityIndicator color="#FFFFFF" />
-                  <Text style={s.ctaText}>{uploading ? 'Uploading...' : 'Creating profile...'}</Text>
-                </View>
-              ) : (
-                <>
-                  <Text style={s.ctaText}>Complete Registration</Text>
-                  <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
-                </>
-              )}
-            </Pressable>
+              loading={submitting}
+              icon={!submitting ? <Ionicons name="checkmark-circle" size={18} color={color.white} /> : undefined}
+            />
           )}
         </View>
       </KeyboardAvoidingView>
@@ -512,102 +537,36 @@ export default function ProviderRegisterScreen() {
 
 // --- Sub-components ---
 
-function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
-  return (
-    <View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-        <Text style={s.fieldLabel}>{label}</Text>
-        {required && <Text style={{ color: '#EF4444', marginLeft: 4 }}>*</Text>}
-      </View>
-      {children}
-      {error && <Text style={s.errorText}>{error}</Text>}
-    </View>
-  );
-}
-
-function Input({ style, onChangeText, ...rest }: { value?: string; onChangeText?: (text: string) => void; [key: string]: any }) {
-  return <TextInput {...rest} onChangeText={onChangeText} placeholderTextColor="#D1D5DB" style={[s.input, style]} />;
-}
-
 function SummaryRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <View style={s.summaryRow}>
-      <Ionicons name={icon as any} size={16} color="#9CA3AF" />
-      <Text style={s.summaryLabel}>{label}</Text>
-      <Text style={s.summaryValue} numberOfLines={1}>{value}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: space.sm, gap: space.sm }}>
+      <Ionicons name={icon as any} size={16} color={color.inkMuted} />
+      <Text variant="label" tone="muted" style={{ width: 90 }}>{label}</Text>
+      <Text variant="body" style={{ fontWeight: '600', flex: 1 }} numberOfLines={1}>{value}</Text>
     </View>
   );
 }
 
-// --- Styles ---
+// --- Styles (for the few things that don't map to a shared primitive) ---
 
 const s = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepIndicator: {
-    flexDirection: 'row',
-    gap: 4,
-  },
-  stepDot: {
-    width: 20,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-  },
-  stepDotActive: {
-    backgroundColor: colors.primary,
-  },
-  stepCounter: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#9CA3AF',
-    width: 40,
-    textAlign: 'right',
-  },
   illustrationCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#FFF7ED',
+    backgroundColor: color.cream,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     borderWidth: 2,
-    borderColor: `${colors.primary}30`,
-  },
-  bigQuestion: {
-    fontFamily: 'Anton',
-    fontSize: 28,
-    color: '#1B1B27',
-    textAlign: 'center',
-  },
-  questionSubtext: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: -8,
+    borderColor: `${color.primary}30`,
   },
   photoCircle: {
     width: 160,
     height: 160,
     borderRadius: 80,
     borderWidth: 3,
-    borderColor: '#E5E7EB',
+    borderColor: color.line,
     borderStyle: 'dashed',
     overflow: 'hidden',
     alignItems: 'center',
@@ -620,9 +579,9 @@ const s = StyleSheet.create({
   photoRect: {
     width: '100%',
     height: 200,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: color.line,
     borderStyle: 'dashed',
     overflow: 'hidden',
     alignItems: 'center',
@@ -632,163 +591,26 @@ const s = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  photoPlaceholder: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  photoPlaceholderText: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
   retakeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: '#FFF7ED',
-  },
-  retakeBtnText: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  fieldLabel: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  input: {
-    minHeight: 52,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 16,
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 16,
-    color: '#1B1B27',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-  },
-  chipActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFF7ED',
-  },
-  chipText: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  chipTextActive: {
-    color: colors.primary,
-  },
-  summaryCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    backgroundColor: '#F9FAFB',
-    padding: 20,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    gap: 10,
-  },
-  summaryLabel: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    color: '#9CA3AF',
-    width: 90,
-  },
-  summaryValue: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1B1B27',
-    flex: 1,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderRadius: radius.full,
+    backgroundColor: color.cream,
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: color.line,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  checkboxLabel: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 14,
-    color: '#374151',
-    flex: 1,
-  },
-  errorText: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
-  },
-  errorBox: {
-    borderRadius: 12,
-    backgroundColor: '#FEF2F2',
-    padding: 14,
-  },
-  errorBoxText: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    color: '#EF4444',
-  },
-  bottomBar: {
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
-    paddingTop: 8,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  ctaBtn: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 999,
-    backgroundColor: colors.primary,
-  },
-  ctaText: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    backgroundColor: color.primary,
+    borderColor: color.primary,
   },
 });

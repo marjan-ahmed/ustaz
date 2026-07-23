@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Pressable, Text, View, StyleSheet, Platform, Dimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, Text, View, StyleSheet, Platform, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@ustaz/shared/theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { color, font, radius, shadow } from '@/theme/tokens';
+import { haptic } from '@/lib/haptics';
+import { getPillTranslateX } from './CustomTabBar.layout';
 
 interface TabItem {
   name: string;
@@ -16,6 +16,9 @@ interface CustomTabBarProps {
   activeTab: string;
   onTabPress: (name: string) => void;
 }
+
+const PILL_SIZE = 46;
+const BAR_HORIZONTAL_PADDING = 4;
 
 function AnimatedTab({ tab, isActive, onPress }: { tab: TabItem; isActive: boolean; onPress: () => void }) {
   const iconScale = useRef(new Animated.Value(isActive ? 1 : 0.85)).current;
@@ -33,15 +36,15 @@ function AnimatedTab({ tab, isActive, onPress }: { tab: TabItem; isActive: boole
   }, [isActive]);
 
   return (
-    <Pressable onPress={onPress} style={styles.tab}>
+    <Pressable onPress={() => { haptic.select(); onPress(); }} style={styles.tab}>
       <Animated.View style={[styles.iconWrap, { transform: [{ scale: iconScale }], opacity: iconOpacity }]}>
         <Ionicons
           name={tab.icon as any}
           size={22}
-          color={isActive ? '#FFFFFF' : '#9CA3AF'}
+          color={isActive ? color.white : color.inkMuted}
         />
       </Animated.View>
-      <Animated.Text style={[styles.label, { transform: [{ translateY: labelY }], opacity: labelOpacity, color: isActive ? '#1B1B27' : '#9CA3AF' }]}>
+      <Animated.Text style={[styles.label, { transform: [{ translateY: labelY }], opacity: labelOpacity, color: isActive ? color.ink : color.inkMuted }]}>
         {tab.label}
       </Animated.Text>
     </Pressable>
@@ -51,20 +54,25 @@ function AnimatedTab({ tab, isActive, onPress }: { tab: TabItem; isActive: boole
 export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabBarProps) {
   const slideX = useRef(new Animated.Value(0)).current;
   const pillScale = useRef(new Animated.Value(1)).current;
+  const [barWidth, setBarWidth] = useState(0);
 
-  const BAR_MARGIN = 7;
-  const BAR_PADDING = 4;
-  const barWidth = SCREEN_WIDTH - BAR_MARGIN * 2;
-  const barContentWidth = barWidth - BAR_PADDING * 2;
-  const tabWidth = barContentWidth / tabs.length;
-  const PILL_SIZE = 46;
+  function onBarLayout(e: LayoutChangeEvent) {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && Math.abs(w - barWidth) > 0.5) setBarWidth(w);
+  }
 
   useEffect(() => {
+    if (barWidth === 0) return;
     const idx = tabs.findIndex((t) => t.name === activeTab);
     if (idx < 0) return;
 
-    const tabCenter = BAR_PADDING + idx * tabWidth + tabWidth / 2;
-    const targetX = tabCenter - PILL_SIZE / 2;
+    const targetX = getPillTranslateX({
+      barWidth,
+      tabCount: tabs.length,
+      activeIndex: idx,
+      pillSize: PILL_SIZE,
+      paddingHorizontal: BAR_HORIZONTAL_PADDING,
+    });
 
     Animated.sequence([
       Animated.timing(pillScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
@@ -73,19 +81,21 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
         Animated.spring(pillScale, { toValue: 1, useNativeDriver: true, tension: 300, friction: 10 }),
       ]),
     ]).start();
-  }, [activeTab]);
+  }, [activeTab, barWidth, tabs.length]);
 
   return (
     <View style={styles.outer}>
-      <View style={styles.bar}>
-        <Animated.View
-          style={[
-            styles.pill,
-            {
-              transform: [{ translateX: slideX }, { scale: pillScale }],
-            },
-          ]}
-        />
+      <View style={styles.bar} onLayout={onBarLayout}>
+        {barWidth > 0 && (
+          <Animated.View
+            style={[
+              styles.pill,
+              {
+                transform: [{ translateX: slideX }, { scale: pillScale }],
+              },
+            ]}
+          />
+        )}
         {tabs.map((tab) => (
           <AnimatedTab
             key={tab.name}
@@ -110,20 +120,20 @@ const styles = StyleSheet.create({
   },
   bar: {
     flexDirection: 'row',
+    alignSelf: 'stretch',
     alignItems: 'flex-start',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 32,
+    backgroundColor: color.surface,
+    borderRadius: radius['2xl'],
     marginHorizontal: 7,
     height: 76,
-    paddingHorizontal: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 32,
-    shadowOffset: { width: 0, height: 12 },
+    paddingHorizontal: BAR_HORIZONTAL_PADDING,
+    shadowColor: color.navy,
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: color.line,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -131,10 +141,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 7,
     left: 0,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: colors.primary,
+    width: PILL_SIZE,
+    height: PILL_SIZE,
+    borderRadius: PILL_SIZE / 2,
+    backgroundColor: color.navy,
+    ...shadow.brand,
   },
   tab: {
     flex: 1,
@@ -151,10 +162,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: 'AtkinsonHyperlegible',
+    fontFamily: font.body,
     fontSize: 10,
     fontWeight: '600',
     marginTop: 2,
     zIndex: 1,
   },
 });
+

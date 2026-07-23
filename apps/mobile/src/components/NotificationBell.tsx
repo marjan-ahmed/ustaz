@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, View, StyleSheet } from 'react-native';
+import { Animated, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '@ustaz/shared/theme';
+import { color, font } from '../theme/tokens';
+import { PressableScale, PulseRadar } from './motion';
 
 interface NotificationBellProps {
   unreadCount: number;
@@ -41,11 +42,16 @@ export default function NotificationBell({ unreadCount }: NotificationBellProps)
   }, [unreadCount]);
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => router.push('/notifications')}
       style={styles.container}
     >
-      <Ionicons name="notifications-outline" size={22} color="#1B1B27" />
+      {unreadCount > 0 && (
+        <View style={{ position: 'absolute', opacity: 0.5 }} pointerEvents="none">
+          <PulseRadar size={30} color={color.error} ringCount={2} />
+        </View>
+      )}
+      <Ionicons name="notifications-outline" size={22} color={color.ink} />
       {unreadCount > 0 && (
         <Animated.View
           style={[
@@ -62,7 +68,7 @@ export default function NotificationBell({ unreadCount }: NotificationBellProps)
           </View>
         </Animated.View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -71,7 +77,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: color.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -81,7 +87,7 @@ const styles = StyleSheet.create({
     right: 4,
   },
   badgeInner: {
-    backgroundColor: '#EF4444',
+    backgroundColor: color.error,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -89,12 +95,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 5,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: color.white,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: color.white,
     fontSize: 10,
     fontWeight: '700',
-    fontFamily: 'AtkinsonHyperlegible',
+    fontFamily: font.body,
   },
 });

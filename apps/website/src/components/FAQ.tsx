@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   Accordion,
   AccordionContent,
@@ -76,6 +77,16 @@ export default function FAQ() {
               Have questions? We&apos;ve got answers. If you can&apos;t find
               what you&apos;re looking for, feel free to contact us.
             </p>
+
+            {/* Illustration */}
+            <div className="mt-8 relative w-full h-48">
+              <Image
+                src="/images/404-toolbox-removebg-preview.png"
+                alt="Ustaz toolbox"
+                fill
+                className="object-contain object-left"
+              />
+            </div>
           </div>
 
           {/* Right Column - Accordion */}

@@ -1,17 +1,20 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Clipboard, Image, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Clipboard, Image, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { PROVIDER_MIN_WALLET_BALANCE } from '@ustaz/shared';
-import { colors } from '@ustaz/shared/theme';
 import { useAuth } from '@/lib/useAuth';
 import { createTopupRequest, getWallet, uploadTopupReceipt } from '@/lib/ustaz-api';
+import {
+  Badge, Button, Card, FadeInUp, GlowBackdrop, IsoWalletScene, LottieScene, NumberTicker, Numeric, PressableScale, Screen, SectionHeader, Stagger, Text, TextField, lottieSources,
+} from '@/components/mobile-ui';
+import { color, font, gradient, radius, shadow, space } from '@/theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const PACKAGES = [
-  { id: 'starter', label: 'Starter', amount: 500, tag: 'Just testing', icon: 'flash' as const, color: '#F59E0B' },
-  { id: 'standard', label: 'Standard', amount: 1000, tag: 'Regular work', icon: 'briefcase' as const, color: colors.primary, popular: true },
-  { id: 'pro', label: 'Pro', amount: 2000, tag: 'Full-time', icon: 'star' as const, color: '#8B5CF6' },
+  { id: 'starter', label: 'Starter', amount: 500, tag: 'Just testing', icon: 'flash' as const, accent: '#F59E0B' },
+  { id: 'standard', label: 'Standard', amount: 1000, tag: 'Regular work', icon: 'briefcase' as const, accent: color.primary, popular: true },
+  { id: 'pro', label: 'Pro', amount: 2000, tag: 'Full-time', icon: 'star' as const, accent: '#8B5CF6' },
 ];
 
 const BANK = {
@@ -36,6 +39,7 @@ export default function WalletScreen() {
   const [receiptFile, setReceiptFile] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [topupSuccess, setTopupSuccess] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -98,15 +102,24 @@ export default function WalletScreen() {
         receiptUrl: upload.url,
       });
 
-      Alert.alert('Submitted', 'Top-up request submitted! Admin will verify and credit your wallet.');
       resetTopup();
       load();
+      setTopupSuccess(true);
+      setTimeout(() => setTopupSuccess(false), 3200);
     } catch (err: any) {
       setError(err.message || 'Failed to submit');
     } finally { setSubmitting(false); }
   }
 
-  if (authLoading || !isSignedIn) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.primary} /></View></SafeAreaView>;
+  if (authLoading || !isSignedIn) {
+    return (
+      <Screen bg={color.white}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator color={color.primary} />
+        </View>
+      </Screen>
+    );
+  }
 
   const transactions = wallet?.recent_transactions ?? [];
   const pendingTopups = wallet?.pending_topups ?? [];
@@ -116,207 +129,250 @@ export default function WalletScreen() {
   const isBelowMinimum = balance < PROVIDER_MIN_WALLET_BALANCE;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
-        <Text style={{ fontFamily: 'Anton', fontSize: 26, color: '#1B1B27', marginBottom: 20 }}>Wallet</Text>
+    <Screen bg={color.white} edges={['top']}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+        <FadeInUp>
+          <Text variant="h1" style={{ marginBottom: space.xl }}>Wallet</Text>
+        </FadeInUp>
 
-        {error ? <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: '#FEF2F2', padding: 16 }}><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#EF4444' }}>{error}</Text></View> : null}
+        {error && (
+          <FadeInUp>
+            <Card variant="flat" style={{ marginBottom: space.md, backgroundColor: color.errorBg }}>
+              <Text variant="label" style={{ color: color.error }}>{error}</Text>
+            </Card>
+          </FadeInUp>
+        )}
 
-        {/* Balance Card */}
-        <View style={{ marginBottom: 20, borderRadius: 20, backgroundColor: '#1B1B27', padding: 24, overflow: 'hidden' }}>
-          <View style={{ position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.05)' }} />
-          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, color: 'rgba(255,255,255,0.4)' }}>Current balance</Text>
-          <Text style={{ fontFamily: 'Anton', fontSize: 36, color: '#FFFFFF', marginTop: 8 }}>{fmt(balance)}</Text>
-          {isBelowMinimum && (
-            <View style={{ marginTop: 16, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.16)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.28)', padding: 12 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: '#FCA5A5' }}>Minimum balance required</Text>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                Keep at least {fmt(PROVIDER_MIN_WALLET_BALANCE)} to receive or accept service requests.
-              </Text>
-            </View>
-          )}
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
-            <View style={{ flex: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', padding: 12 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Total earned</Text>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF', marginTop: 4 }}>{fmt(Number(wallet?.total_earned ?? 0))}</Text>
-            </View>
-            <View style={{ flex: 1, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', padding: 12 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Commission paid</Text>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#FFFFFF', marginTop: 4 }}>{fmt(Number(wallet?.total_commission_paid ?? 0))}</Text>
-            </View>
+        {topupSuccess && (
+          <FadeInUp>
+            <Card variant="elevated" style={{ marginBottom: space.md, alignItems: 'center' }}>
+              <LottieScene source={lottieSources.walletTopupSuccess} size={120} loop={false} />
+              <Text variant="bodyLg" style={{ fontWeight: '700', marginTop: space.xs }}>Top-up request submitted!</Text>
+              <Text variant="label" tone="muted" center>Admin will verify and credit your wallet.</Text>
+            </Card>
+          </FadeInUp>
+        )}
+
+        {/* Balance Card - Navy hero */}
+        <FadeInUp delay={60}>
+          <View style={{ borderRadius: radius['2xl'], overflow: 'hidden', marginBottom: space.xl, ...shadow.brand }}>
+            <LinearGradient colors={gradient.navy} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: space.xl }}>
+              <GlowBackdrop top={-60} right={-40} size={200} opacity={0.25} />
+              <GlowBackdrop color={color.primaryLight} bottom={-40} left={-20} size={160} opacity={0.12} />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="caption" tone="inverseSoft" style={{ textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                    Current balance
+                  </Text>
+                  <NumberTicker
+                    value={balance}
+                    formatter={fmt}
+                    style={{ fontFamily: font.numeric, fontSize: 36, color: color.white, marginTop: space.sm }}
+                  />
+                </View>
+                <IsoWalletScene size={90} />
+              </View>
+              {isBelowMinimum && (
+                <View style={{ marginTop: space.md, borderRadius: radius.md, backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.28)', padding: space.sm }}>
+                  <Text variant="caption" style={{ color: '#FCA5A5', fontWeight: '700' }}>Minimum balance required</Text>
+                  <Text variant="caption" tone="inverseSoft" style={{ marginTop: space.xs }}>
+                    Keep at least {fmt(PROVIDER_MIN_WALLET_BALANCE)} to receive or accept service requests.
+                  </Text>
+                </View>
+              )}
+              <View style={{ flexDirection: 'row', gap: space.md, marginTop: space.xl }}>
+                <View style={{ flex: 1, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.08)', padding: space.md }}>
+                  <Text variant="caption" tone="inverseSoft">Total earned</Text>
+                  <Text variant="bodyLg" tone="inverse" style={{ fontWeight: '700', marginTop: space.xs }}>{fmt(Number(wallet?.total_earned ?? 0))}</Text>
+                </View>
+                <View style={{ flex: 1, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.08)', padding: space.md }}>
+                  <Text variant="caption" tone="inverseSoft">Commission paid</Text>
+                  <Text variant="bodyLg" tone="inverse" style={{ fontWeight: '700', marginTop: space.xs }}>{fmt(Number(wallet?.total_commission_paid ?? 0))}</Text>
+                </View>
+              </View>
+            </LinearGradient>
           </View>
-        </View>
+        </FadeInUp>
 
         {/* Top Up Button / Flow */}
         {!showTopup ? (
-          <Pressable onPress={() => setShowTopup(true)}
-            style={{ marginBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, shadowColor: colors.primary, shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }}>
-            <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Top Up Wallet</Text>
-          </Pressable>
+          <FadeInUp delay={100}>
+            <Button label="Top Up Wallet" variant="primary" icon={<Ionicons name="add-circle" size={20} color={color.white} />} onPress={() => setShowTopup(true)} />
+          </FadeInUp>
         ) : (
-          <View style={{ marginBottom: 24, borderRadius: 20, backgroundColor: '#F9FAFB', padding: 20, borderWidth: 1, borderColor: '#F3F4F6' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Ionicons name="wallet" size={20} color={colors.primary} />
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#1B1B27' }}>Top up wallet</Text>
+          <FadeInUp delay={100}>
+            <Card variant="elevated" style={{ marginBottom: space.xl }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                  <Ionicons name="wallet" size={20} color={color.primary} />
+                  <Text variant="bodyLg" style={{ fontWeight: '700' }}>Top up wallet</Text>
+                </View>
+                <PressableScale onPress={resetTopup} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="close" size={14} color={color.inkMuted} />
+                </PressableScale>
               </View>
-              <Pressable onPress={resetTopup} style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="close" size={14} color="#6B7280" />
-              </Pressable>
-            </View>
 
-            {/* Package selection */}
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 10 }}>Choose amount</Text>
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-              {PACKAGES.map((pkg) => (
-                <Pressable key={pkg.id} onPress={() => setSelectedPkg(pkg.id)}
-                  style={{ flex: 1, borderRadius: 14, backgroundColor: '#FFFFFF', padding: 14, borderWidth: 2, borderColor: selectedPkg === pkg.id ? pkg.color : '#F3F4F6', alignItems: 'center' }}>
-                  <Ionicons name={pkg.icon} size={20} color={pkg.color} />
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: '#1B1B27', marginTop: 6 }}>{pkg.label}</Text>
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>{pkg.tag}</Text>
-                  <Text style={{ fontFamily: 'Anton', fontSize: 16, color: pkg.color, marginTop: 6 }}>{fmt(pkg.amount)}</Text>
-                  {pkg.popular && <View style={{ position: 'absolute', top: -8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2 }}><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 8, fontWeight: '700', color: '#FFFFFF' }}>POPULAR</Text></View>}
-                  {selectedPkg === pkg.id && <View style={{ position: 'absolute', top: 8, right: 8, width: 18, height: 18, borderRadius: 9, backgroundColor: pkg.color, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="checkmark" size={10} color="#FFF" /></View>}
-                </Pressable>
-              ))}
-            </View>
+              {/* Package selection */}
+              <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>Choose amount</Text>
+              <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.xl }}>
+                {PACKAGES.map((pkg) => {
+                  const isActive = selectedPkg === pkg.id;
+                  return (
+                    <PressableScale key={pkg.id} onPress={() => setSelectedPkg(pkg.id)}>
+                      <Card variant={isActive ? 'elevated' : 'flat'} padded={false} style={{ flex: 1, padding: space.md, alignItems: 'center', borderWidth: 2, borderColor: isActive ? pkg.accent : color.line }}>
+                        <Ionicons name={pkg.icon} size={20} color={pkg.accent} />
+                        <Text variant="caption" style={{ fontWeight: '700', marginTop: space.xs }}>{pkg.label}</Text>
+                        <Text variant="caption" tone="muted">{pkg.tag}</Text>
+                        <Numeric size={16} tone="ink" style={{ marginTop: space.xs }}>{fmt(pkg.amount)}</Numeric>
+                        {pkg.popular && <Badge label="POPULAR" tone="primary" />}
+                        {isActive && <Ionicons name="checkmark-circle" size={18} color={pkg.accent} style={{ position: 'absolute', top: 8, right: 8 }} />}
+                      </Card>
+                    </PressableScale>
+                  );
+                })}
+              </View>
 
-            {selectedPkgData && (
-              <>
-                {/* Bank method tabs */}
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 10 }}>Send {fmt(selectedPkgData.amount)} to</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-                  {(['easypaisa', 'jazzcash', 'bank'] as const).map((m) => (
-                    <Pressable key={m} onPress={() => setActiveMethod(m)}
-                      style={{ flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: activeMethod === m ? '#1B1B27' : '#FFFFFF', borderWidth: 1, borderColor: activeMethod === m ? '#1B1B27' : '#F3F4F6', alignItems: 'center' }}>
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: activeMethod === m ? '#FFFFFF' : '#6B7280' }}>{m === 'easypaisa' ? 'Easypaisa' : m === 'jazzcash' ? 'JazzCash' : 'Bank'}</Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                {/* Bank details */}
-                <View style={{ borderRadius: 14, backgroundColor: '#FFFFFF', padding: 16, borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 16 }}>
-                  {activeMethod !== 'bank' ? (
-                    <>
-                      <BankRow label={`${activeBank.label} Number`} value={activeBank.number} field="number" copied={copiedField} onCopy={copyText} />
-                      <BankRow label="Account Name" value={activeBank.name} field="name" copied={copiedField} onCopy={copyText} />
-                    </>
-                  ) : (
-                    <>
-                      <BankRow label="Bank Name" value={BANK.bank.bankName} field="bankName" copied={copiedField} onCopy={copyText} />
-                      <BankRow label="Account Title" value={BANK.bank.name} field="title" copied={copiedField} onCopy={copyText} />
-                      <BankRow label="Account Number" value={BANK.bank.number} field="accNum" copied={copiedField} onCopy={copyText} />
-                    </>
-                  )}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10, marginTop: 10 }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF' }}>Amount to send</Text>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: colors.primary }}>{fmt(selectedPkgData.amount)}</Text>
+              {selectedPkgData && (
+                <>
+                  {/* Bank method tabs */}
+                  <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>Send {fmt(selectedPkgData.amount)} to</Text>
+                  <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.lg }}>
+                    {(['easypaisa', 'jazzcash', 'bank'] as const).map((m) => (
+                      <PressableScale key={m} onPress={() => setActiveMethod(m)}>
+                        <View style={{ flex: 1, paddingVertical: space.sm, borderRadius: radius.md, backgroundColor: activeMethod === m ? color.navy : color.surface, borderWidth: 1, borderColor: activeMethod === m ? color.navy : color.line, alignItems: 'center', paddingHorizontal: space.md }}>
+                          <Text variant="caption" style={{ fontWeight: '700', color: activeMethod === m ? color.white : color.inkMuted }}>{m === 'easypaisa' ? 'Easypaisa' : m === 'jazzcash' ? 'JazzCash' : 'Bank'}</Text>
+                        </View>
+                      </PressableScale>
+                    ))}
                   </View>
-                </View>
 
-                {/* Transaction ID */}
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 8 }}>Transaction ID / TRX Ref</Text>
-                <TextInput value={transactionId} onChangeText={setTransactionId} placeholder="e.g. TRX-1234567890" placeholderTextColor="#D1D5DB"
-                  style={{ minHeight: 48, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#1B1B27', marginBottom: 16 }} />
-
-                {/* Receipt upload */}
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 8 }}>Payment screenshot</Text>
-                {receiptUri ? (
-                  <View style={{ borderRadius: 14, overflow: 'hidden', borderWidth: 2, borderColor: `${colors.primary}30`, marginBottom: 16 }}>
-                    <Image source={{ uri: receiptUri }} style={{ width: '100%', height: 180 }} resizeMode="cover" />
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, backgroundColor: '#FFFFFF' }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#6B7280' }}>Receipt attached</Text>
-                      </View>
-                      <Pressable onPress={() => { setReceiptUri(null); setReceiptFile(null); }}>
-                        <Ionicons name="close-circle" size={20} color="#EF4444" />
-                      </Pressable>
+                  {/* Bank details */}
+                  <Card variant="flat" style={{ marginBottom: space.lg }}>
+                    {activeMethod !== 'bank' ? (
+                      <>
+                        <BankRow label={`${activeBank.label} Number`} value={activeBank.number} field="number" copied={copiedField} onCopy={copyText} />
+                        <BankRow label="Account Name" value={activeBank.name} field="name" copied={copiedField} onCopy={copyText} />
+                      </>
+                    ) : (
+                      <>
+                        <BankRow label="Bank Name" value={BANK.bank.bankName} field="bankName" copied={copiedField} onCopy={copyText} />
+                        <BankRow label="Account Title" value={BANK.bank.name} field="title" copied={copiedField} onCopy={copyText} />
+                        <BankRow label="Account Number" value={BANK.bank.number} field="accNum" copied={copiedField} onCopy={copyText} />
+                      </>
+                    )}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.sm, marginTop: space.sm }}>
+                      <Text variant="caption" tone="muted">Amount to send</Text>
+                      <Text variant="body" style={{ fontWeight: '700', color: color.primary }}>{fmt(selectedPkgData.amount)}</Text>
                     </View>
-                  </View>
-                ) : (
-                  <Pressable onPress={pickReceipt}
-                    style={{ borderRadius: 14, borderWidth: 2, borderStyle: 'dashed', borderColor: '#D1D5DB', backgroundColor: '#FFFFFF', padding: 24, alignItems: 'center', marginBottom: 16 }}>
-                    <Ionicons name="image-outline" size={32} color="#D1D5DB" />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280', marginTop: 8 }}>Tap to attach screenshot</Text>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>PNG / JPG</Text>
-                  </Pressable>
-                )}
+                  </Card>
 
-                {/* Submit */}
-                <Pressable onPress={submitTopup} disabled={!transactionId.trim() || !receiptFile || submitting}
-                  style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 999, backgroundColor: transactionId.trim() && receiptFile && !submitting ? colors.primary : '#D1D5DB' }}>
-                  {submitting ? <ActivityIndicator color="#FFF" size="small" /> : (
-                    <>
-                      <Ionicons name="arrow-up-circle" size={18} color="#FFFFFF" />
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Submit Top-Up Request</Text>
-                    </>
+                  {/* Transaction ID */}
+                  <View style={{ marginBottom: space.lg }}>
+                    <TextField label="Transaction ID / TRX Ref" value={transactionId} onChangeText={setTransactionId} placeholder="e.g. TRX-1234567890" />
+                  </View>
+
+                  {/* Receipt upload */}
+                  <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>Payment screenshot</Text>
+                  {receiptUri ? (
+                    <Card variant="flat" style={{ borderRadius: radius.md, overflow: 'hidden', borderWidth: 2, borderColor: `${color.primary}30`, marginBottom: space.lg }}>
+                      <Image source={{ uri: receiptUri }} style={{ width: '100%', height: 180 }} resizeMode="cover" />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: space.sm }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
+                          <Ionicons name="checkmark-circle" size={16} color={color.success} />
+                          <Text variant="caption" tone="muted">Receipt attached</Text>
+                        </View>
+                        <PressableScale onPress={() => { setReceiptUri(null); setReceiptFile(null); }}>
+                          <Ionicons name="close-circle" size={20} color={color.error} />
+                        </PressableScale>
+                      </View>
+                    </Card>
+                  ) : (
+                    <PressableScale onPress={pickReceipt}>
+                      <Card variant="flat" style={{ borderRadius: radius.md, borderWidth: 2, borderStyle: 'dashed', borderColor: color.line, padding: space['2xl'], alignItems: 'center', marginBottom: space.lg }}>
+                        <Ionicons name="image-outline" size={32} color={color.line} />
+                        <Text variant="label" tone="muted" style={{ marginTop: space.sm, fontWeight: '700' }}>Tap to attach screenshot</Text>
+                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>PNG / JPG</Text>
+                      </Card>
+                    </PressableScale>
                   )}
-                </Pressable>
-              </>
-            )}
-          </View>
+
+                  {/* Submit */}
+                  <Button
+                    label="Submit Top-Up Request"
+                    variant="primary"
+                    icon={<Ionicons name="arrow-up-circle" size={18} color={color.white} />}
+                    onPress={submitTopup}
+                    disabled={!transactionId.trim() || !receiptFile || submitting}
+                    loading={submitting}
+                  />
+                </>
+              )}
+            </Card>
+          </FadeInUp>
         )}
 
         {/* Pending top-ups */}
         {pendingTopups.length > 0 && (
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#1B1B27', marginBottom: 10 }}>Top-up history</Text>
-            <View style={{ gap: 8 }}>
+          <FadeInUp delay={120}>
+            <SectionHeader title="Top-up history" />
+            <Stagger step={40}>
               {pendingTopups.map((t: any) => (
-                <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderRadius: 14, backgroundColor: '#F9FAFB', padding: 14, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                  <View>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#1B1B27' }}>{fmt(t.amount_sent)}</Text>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>TX: {t.transaction_id} Â· {new Date(t.created_at).toLocaleDateString()}</Text>
+                <Card key={t.id} variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View>
+                      <Text variant="bodyLg" style={{ fontWeight: '700' }}>{fmt(t.amount_sent)}</Text>
+                      <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>TX: {t.transaction_id} · {new Date(t.created_at).toLocaleDateString()}</Text>
+                    </View>
+                    <Badge
+                      label={t.status.charAt(0).toUpperCase() + t.status.slice(1)}
+                      tone={t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'error' : 'warning'}
+                    />
                   </View>
-                  <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: t.status === 'approved' ? '#D1FAE5' : t.status === 'rejected' ? '#FEE2E2' : '#FEF3C7' }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: t.status === 'approved' ? '#10B981' : t.status === 'rejected' ? '#EF4444' : '#F59E0B' }}>{t.status.charAt(0).toUpperCase() + t.status.slice(1)}</Text>
-                  </View>
-                </View>
+                </Card>
               ))}
-            </View>
-          </View>
+            </Stagger>
+          </FadeInUp>
         )}
 
         {/* Recent transactions */}
         {transactions.length > 0 && (
-          <View>
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#1B1B27', marginBottom: 10 }}>Recent transactions</Text>
-            <View style={{ gap: 8 }}>
+          <FadeInUp delay={140}>
+            <SectionHeader title="Recent transactions" />
+            <Stagger step={40}>
               {transactions.map((tx: any) => (
-                <View key={tx.id} style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 14, backgroundColor: '#FFFFFF', padding: 14, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: tx.amount > 0 ? '#ECFDF5' : '#FEF2F2', alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name={tx.amount > 0 ? 'trending-up' : 'trending-down'} size={16} color={tx.amount > 0 ? '#10B981' : '#EF4444'} />
+                <Card key={tx.id} variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: tx.amount > 0 ? color.successBg : color.errorBg, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={tx.amount > 0 ? 'trending-up' : 'trending-down'} size={16} color={tx.amount > 0 ? color.success : color.error} />
+                    </View>
+                    <View style={{ marginLeft: space.md, flex: 1 }}>
+                      <Text variant="label" style={{ fontWeight: '700' }}>{tx.description ?? tx.type ?? 'Transaction'}</Text>
+                      <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{tx.created_at ? new Date(tx.created_at).toLocaleDateString() : ''}</Text>
+                    </View>
+                    <Text variant="body" style={{ fontWeight: '700', color: tx.amount > 0 ? color.success : color.error }}>
+                      {tx.amount > 0 ? '+' : ''} {fmt(Math.abs(Number(tx.amount ?? 0)))}
+                    </Text>
                   </View>
-                  <View style={{ marginLeft: 12, flex: 1 }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#1B1B27' }}>{tx.description ?? tx.type ?? 'Transaction'}</Text>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#D1D5DB', marginTop: 2 }}>{tx.created_at ? new Date(tx.created_at).toLocaleDateString() : ''}</Text>
-                  </View>
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: tx.amount > 0 ? '#10B981' : '#EF4444' }}>
-                    {tx.amount > 0 ? '+' : ''} {fmt(Math.abs(Number(tx.amount ?? 0)))}
-                  </Text>
-                </View>
+                </Card>
               ))}
-            </View>
-          </View>
+            </Stagger>
+          </FadeInUp>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 function BankRow({ label, value, field, copied, onCopy }: { label: string; value: string; field: string; copied: string | null; onCopy: (v: string, f: string) => void }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF' }}>{label}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, fontWeight: '700', color: '#1B1B27' }}>{value}</Text>
-        <Pressable onPress={() => onCopy(value, field)}>
-          <Ionicons name={copied === field ? 'checkmark' : 'copy-outline'} size={14} color={copied === field ? '#10B981' : '#9CA3AF'} />
-        </Pressable>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: color.line }}>
+      <Text variant="caption" tone="muted">{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+        <Text variant="label" style={{ fontWeight: '700' }}>{value}</Text>
+        <PressableScale onPress={() => onCopy(value, field)}>
+          <Ionicons name={copied === field ? 'checkmark' : 'copy-outline'} size={14} color={copied === field ? color.success : color.inkMuted} />
+        </PressableScale>
       </View>
     </View>
   );
 }
-

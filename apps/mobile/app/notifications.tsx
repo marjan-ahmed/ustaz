@@ -1,10 +1,12 @@
-import { FlatList, Pressable, Text, View, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { colors } from '@ustaz/shared/theme';
 import { type AppNotification } from '@/hooks/useNotifications';
 import { useNotificationsContext } from '@/context/NotificationsContext';
+import {
+  Card, Drift, EmptyState, FadeInUp, IsoServiceScene, NumberTicker, PressableScale, Screen, Stagger, Text,
+} from '@/components/mobile-ui';
+import { color, font, radius, shadow, space } from '@/theme/tokens';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -18,41 +20,43 @@ function timeAgo(dateStr: string): string {
 
 function NotifItem({ item, isRead, onPress }: { item: AppNotification; isRead: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.item, isRead && styles.itemRead]}
-    >
-      <View style={[styles.iconWrap, isRead && styles.iconWrapRead]}>
-        <Ionicons
-          name={item.status === 'accepted' ? 'checkmark-circle' : item.status === 'rejected' ? 'close-circle' : 'notifications'}
-          size={20}
-          color={isRead ? '#9CA3AF' : colors.primary}
-        />
-      </View>
-      <View style={styles.itemContent}>
-        <View style={styles.itemHeader}>
-          <Text style={[styles.itemService, isRead && styles.itemServiceRead]} numberOfLines={1}>
-            {item.service_type}
-          </Text>
-          <Text style={styles.itemTime}>{timeAgo(item.created_at)}</Text>
+    <PressableScale onPress={onPress}>
+      <Card variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg, opacity: isRead ? 0.6 : 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: isRead ? color.surfaceAlt : `${color.primary}14`, alignItems: 'center', justifyContent: 'center', marginRight: space.md }}>
+            <Ionicons
+              name={item.status === 'accepted' ? 'checkmark-circle' : item.status === 'rejected' ? 'close-circle' : 'notifications'}
+              size={20}
+              color={isRead ? color.inkMuted : color.primary}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+              <Text variant="body" style={{ fontWeight: '700', flex: 1 }} numberOfLines={1}>
+                {item.service_type}
+              </Text>
+              <Text variant="caption" tone="muted" style={{ marginLeft: space.sm }}>{timeAgo(item.created_at)}</Text>
+            </View>
+            <Text variant="label" tone={isRead ? 'muted' : 'soft'} numberOfLines={2}>
+              {item.message}
+            </Text>
+            {item.address && (
+              <Text variant="caption" tone="muted" numberOfLines={1} style={{ marginTop: space.xs }}>
+                <Ionicons name="location-outline" size={11} color={color.inkMuted} /> {item.address}
+              </Text>
+            )}
+          </View>
+          {!isRead && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color.primary, marginLeft: space.sm, marginTop: 6 }} />}
         </View>
-        <Text style={[styles.itemMessage, isRead && styles.itemMessageRead]} numberOfLines={2}>
-          {item.message}
-        </Text>
-        {item.address && (
-          <Text style={styles.itemAddress} numberOfLines={1}>
-            <Ionicons name="location-outline" size={11} color="#9CA3AF" /> {item.address}
-          </Text>
-        )}
-      </View>
-      {!isRead && <View style={styles.unreadDot} />}
-    </Pressable>
+      </Card>
+    </PressableScale>
   );
 }
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const { notifications, readIds, markAsRead, markAllAsRead } = useNotificationsContext();
+  const unreadCount = notifications.filter((n) => !readIds.has(n.id)).length;
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -60,28 +64,37 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+    <Screen bg={color.white} edges={['top']}>
+      <View style={{ flex: 1, paddingHorizontal: space.lg }}>
         {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={safeBack} style={styles.backBtn}>
-            <Ionicons name="chevron-back" size={24} color="#1B1B27" />
-          </Pressable>
-          <Text style={styles.title}>Notifications</Text>
-          {notifications.some((n) => !readIds.has(n.id)) && (
-            <Pressable onPress={markAllAsRead}>
-              <Text style={styles.markAll}>Read all</Text>
-            </Pressable>
-          )}
-        </View>
+        <FadeInUp>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: space.md, marginBottom: space.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <PressableScale onPress={safeBack} style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="chevron-back" size={24} color={color.navy} />
+              </PressableScale>
+              <Text variant="h1" style={{ marginLeft: space.md }}>Notifications</Text>
+              {unreadCount > 0 && (
+                <View style={{ marginLeft: space.sm, minWidth: 26, height: 26, borderRadius: 13, backgroundColor: color.navy, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
+                  <NumberTicker value={unreadCount} duration={500} style={{ fontFamily: font.body, fontSize: 12, fontWeight: '700', color: color.white, textAlign: 'center' }} />
+                </View>
+              )}
+            </View>
+            {unreadCount > 0 && (
+              <PressableScale onPress={markAllAsRead}>
+                <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>Read all</Text>
+              </PressableScale>
+            )}
+          </View>
+        </FadeInUp>
 
         {/* List */}
         {notifications.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons name="notifications-off-outline" size={48} color="#D1D5DB" />
-            <Text style={styles.emptyTitle}>No notifications yet</Text>
-            <Text style={styles.emptySub}>You'll see service requests and updates here</Text>
-          </View>
+          <EmptyState
+            illustration={<Drift distance={6}><IsoServiceScene size={140} variant="general" /></Drift>}
+            title="No notifications yet"
+            subtitle="You'll see service requests and updates here"
+          />
         ) : (
           <FlatList
             data={notifications}
@@ -103,123 +116,6 @@ export default function NotificationsScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    marginBottom: 8,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontFamily: 'Anton',
-    fontSize: 22,
-    color: '#1B1B27',
-  },
-  markAll: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  itemRead: {
-    opacity: 0.6,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF7ED',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  iconWrapRead: {
-    backgroundColor: '#F9FAFB',
-  },
-  itemContent: {
-    flex: 1,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 3,
-  },
-  itemService: {
-    fontFamily: 'Anton',
-    fontSize: 15,
-    color: '#1B1B27',
-    flex: 1,
-  },
-  itemServiceRead: {
-    color: '#6B7280',
-  },
-  itemTime: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginLeft: 8,
-  },
-  itemMessage: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    color: '#374151',
-    lineHeight: 18,
-  },
-  itemMessageRead: {
-    color: '#9CA3AF',
-  },
-  itemAddress: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-    marginLeft: 8,
-    marginTop: 6,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 100,
-  },
-  emptyTitle: {
-    fontFamily: 'Anton',
-    fontSize: 18,
-    color: '#6B7280',
-    marginTop: 12,
-  },
-  emptySub: {
-    fontFamily: 'AtkinsonHyperlegible',
-    fontSize: 13,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-});

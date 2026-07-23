@@ -1,16 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ExpoLinking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
-import { colors } from '@ustaz/shared/theme';
 import { sendPhoneOtp, verifyPhoneOtp } from '@/lib/ustaz-api';
 import { getStoredRole, setStoredRole } from '@/lib/role';
 import { supabase } from '@/lib/supabase';
 import OtpInput from '@/components/OtpInput';
+import {
+  Button, Card, GlowBackdrop, IconTile, PatternBackdrop, PressableScale, SegmentedControl, Text, TextField,
+} from '@/components/mobile-ui';
+import { color, radius, space, touch } from '@/theme/tokens';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -409,66 +412,74 @@ export default function AuthScreen() {
         ? phoneStep === 'phone' ? 'What\'s your\nphone number?' : ''
         : 'Sign in to\nUstaz';
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32 }}>
-          <Pressable
-            onPress={safeBack}
-            style={{ marginBottom: 24, width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Ionicons name="chevron-back" size={20} color="#1B1B27" />
-          </Pressable>
+  const phoneField = (
+    <TextField
+      ref={phoneInputRef}
+      label="Phone number"
+      value={phone.replace('+92', '')}
+      onChangeText={(v: string) => setPhone('+92' + v.replace(/\D/g, ''))}
+      placeholder="300 123 4567"
+      keyboardType="phone-pad"
+      maxLength={11}
+      left={
+        <View style={{
+          paddingHorizontal: space.lg, height: touch.minTarget + 6,
+          alignItems: 'center', justifyContent: 'center',
+          backgroundColor: color.line, borderRightWidth: 1, borderRightColor: color.line,
+        }}>
+          <Text variant="body" style={{ fontWeight: '700' }}>+92</Text>
+        </View>
+      }
+    />
+  );
 
-          <View style={{ marginBottom: 24 }}>
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.cream }} edges={['top']}>
+      <PatternBackdrop variant="dots" tone="navy" opacity={0.04} glow={false} />
+      <GlowBackdrop top={-100} right={-60} size={280} opacity={0.12} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: space['2xl'] }}>
+          <PressableScale onPress={safeBack} style={{ marginBottom: space.xl, width: 40, height: 40, borderRadius: radius.full, backgroundColor: color.surface, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="chevron-back" size={20} color={color.ink} />
+          </PressableScale>
+
+          <View style={{ marginBottom: space.xl }}>
             {title ? (
               <>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, color: colors.primary }}>Secure access</Text>
-                <Text style={{ fontFamily: 'Anton', fontSize: 36, lineHeight: 44, color: '#1B1B27', marginTop: 8 }}>{title}</Text>
+                <Text variant="caption" tone="primary" style={{ textTransform: 'uppercase', letterSpacing: 2, fontWeight: '700' }}>Secure access</Text>
+                <Text variant="display" style={{ marginTop: space.sm }}>{title}</Text>
               </>
             ) : null}
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, lineHeight: 22, color: '#9CA3AF', marginTop: title ? 12 : 0 }}>
+            <Text variant="bodyLg" tone="muted" style={{ marginTop: title ? space.md : 0 }}>
               {providerIntent ? 'Enter your phone number and we\'ll set up your provider account. No OTP needed — you can verify your phone later.' : 'Continue with social login, email/password, or the existing phone OTP flow.'}
             </Text>
           </View>
 
           {providerIntent ? (
-            <View style={{ gap: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 18, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: `${colors.primary}33`, marginBottom: 8 }}>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="hammer" size={18} color="#FFFFFF" />
-                </View>
-                <Text style={{ flex: 1, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, lineHeight: 19, fontWeight: '700', color: colors.primary }}>
+            <View style={{ gap: space.md }}>
+              <Card variant="flat" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.sm }}>
+                <IconTile>
+                  <Ionicons name="hammer" size={18} color={color.primary} />
+                </IconTile>
+                <Text variant="label" tone="primary" style={{ flex: 1, fontWeight: '700' }}>
                   Enter your phone number to get started as a provider.
                 </Text>
-              </View>
+              </Card>
 
-              <View>
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Phone number</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 54, borderRadius: 18, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', overflow: 'hidden' }}>
-                  <View style={{ paddingHorizontal: 16, height: 54, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', borderRightWidth: 1, borderRightColor: '#E5E7EB' }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#1B1B27' }}>+92</Text>
-                  </View>
-                  <TextInput
-                    ref={phoneInputRef}
-                    value={phone.replace('+92', '')}
-                    onChangeText={(v: string) => setPhone('+92' + v.replace(/\D/g, ''))}
-                    placeholder="300 123 4567"
-                    placeholderTextColor="#D1D5DB"
-                    keyboardType="phone-pad"
-                    maxLength={11}
-                    style={{ flex: 1, minHeight: 52, paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#1B1B27' }}
-                  />
-                </View>
-              </View>
-
-              <PrimaryButton busy={busy} label="Continue to Registration" onPress={handleProviderSignup} />
+              {phoneField}
+              <Button label="Continue to Registration" onPress={handleProviderSignup} loading={busy} style={{ marginTop: space.sm }} />
             </View>
           ) : (
-            <View style={{ flexDirection: 'row', padding: 4, borderRadius: 999, backgroundColor: '#F3F4F6', marginBottom: 18 }}>
-              <TabButton label="Social" active={tab === 'social'} onPress={() => { setTab('social'); clearMessages(); }} />
-              <TabButton label="Email" active={tab === 'email'} onPress={() => { setTab('email'); clearMessages(); }} />
-              <TabButton label="Phone" active={tab === 'phone'} onPress={() => { setTab('phone'); clearMessages(); }} />
+            <View style={{ marginBottom: space.lg }}>
+              <SegmentedControl
+                segments={[
+                  { key: 'social', label: 'Social' },
+                  { key: 'email', label: 'Email' },
+                  { key: 'phone', label: 'Phone' },
+                ]}
+                value={tab}
+                onChange={(key) => { setTab(key as AuthTab); clearMessages(); }}
+              />
             </View>
           )}
 
@@ -476,11 +487,11 @@ export default function AuthScreen() {
           {message ? <Notice tone="success" text={message} /> : null}
 
           {!providerIntent && tab === 'social' && (
-            <View style={{ gap: 12, marginTop: 8 }}>
+            <View style={{ gap: space.md, marginTop: space.sm }}>
               <SocialButton
                 label="Continue with Google"
                 icon="logo-google"
-                color="#DB4437"
+                brandColor="#DB4437"
                 busy={busyProvider === 'google'}
                 disabled={busy}
                 onPress={() => signInWithProvider('google')}
@@ -488,72 +499,82 @@ export default function AuthScreen() {
               <SocialButton
                 label="Continue with Facebook"
                 icon="logo-facebook"
-                color="#1877F2"
+                brandColor="#1877F2"
                 busy={busyProvider === 'facebook'}
                 disabled={busy}
                 onPress={() => signInWithProvider('facebook')}
               />
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, lineHeight: 18, color: '#9CA3AF', textAlign: 'center', marginTop: 8 }}>
+              <Text variant="caption" tone="muted" center style={{ marginTop: space.sm }}>
                 Uses the same Supabase Google and Facebook providers as the web app.
               </Text>
             </View>
           )}
 
           {!providerIntent && tab === 'email' && (
-            <View style={{ gap: 14 }}>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <ModeButton label="Sign in" active={emailMode === 'signin'} onPress={() => { setEmailMode('signin'); clearMessages(); }} />
-                <ModeButton label="Create account" active={emailMode === 'signup'} onPress={() => { setEmailMode('signup'); clearMessages(); }} />
-              </View>
+            <View style={{ gap: space.md }}>
+              <SegmentedControl
+                segments={[
+                  { key: 'signin', label: 'Sign in' },
+                  { key: 'signup', label: 'Create account' },
+                ]}
+                value={emailMode}
+                onChange={(key) => { setEmailMode(key as EmailMode); clearMessages(); }}
+              />
 
-              <AuthField label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
-              <PasswordField label="Password" value={password} onChangeText={setPassword} visible={showPassword} onToggle={() => setShowPassword((v) => !v)} />
+              <TextField label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
+              <TextField
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Password"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                right={
+                  <Pressable onPress={() => setShowPassword((v) => !v)} style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={18} color={color.inkMuted} />
+                  </Pressable>
+                }
+              />
               {emailMode === 'signup' && (
-                <PasswordField label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} visible={showPassword} onToggle={() => setShowPassword((v) => !v)} />
+                <TextField
+                  label="Confirm password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  right={
+                    <Pressable onPress={() => setShowPassword((v) => !v)} style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={18} color={color.inkMuted} />
+                    </Pressable>
+                  }
+                />
               )}
 
-              <PrimaryButton busy={busy} label={emailMode === 'signup' ? 'Create account' : 'Sign in'} onPress={handleEmailAuth} />
+              <Button label={emailMode === 'signup' ? 'Create account' : 'Sign in'} onPress={handleEmailAuth} loading={busy} />
             </View>
           )}
 
           {!providerIntent && tab === 'phone' && (
-            <View style={{ gap: 14 }}>
+            <View style={{ gap: space.md }}>
               {phoneStep === 'phone' ? (
                 <>
-                  <View>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>Phone number</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 54, borderRadius: 18, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', overflow: 'hidden' }}>
-                      <View style={{ paddingHorizontal: 16, height: 54, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6', borderRightWidth: 1, borderRightColor: '#E5E7EB' }}>
-                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#1B1B27' }}>+92</Text>
-                      </View>
-                      <TextInput
-                        ref={phoneInputRef}
-                        value={phone.replace('+92', '')}
-                        onChangeText={(v: string) => setPhone('+92' + v.replace(/\D/g, ''))}
-                        placeholder="300 123 4567"
-                        placeholderTextColor="#D1D5DB"
-                        keyboardType="phone-pad"
-                        maxLength={11}
-                        style={{ flex: 1, minHeight: 52, paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#1B1B27' }}
-                      />
-                    </View>
-                  </View>
-                  <PrimaryButton busy={busy} label="Send code" onPress={sendCode} />
+                  {phoneField}
+                  <Button label="Send code" onPress={sendCode} loading={busy} />
                 </>
               ) : (
                 <>
-                  <View style={{ alignItems: 'center', marginBottom: 4 }}>
-                    <Text style={{ fontFamily: 'Anton', fontSize: 28, color: '#1B1B27', textAlign: 'center' }}>Enter the code</Text>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#9CA3AF', marginTop: 6, textAlign: 'center' }}>
+                  <View style={{ alignItems: 'center', marginBottom: space.xs }}>
+                    <Text variant="h1" center>Enter the code</Text>
+                    <Text variant="label" tone="muted" center style={{ marginTop: space.sm }}>
                       We sent a 6-digit code to{'\n'}
-                      <Text style={{ fontWeight: '700', color: '#1B1B27' }}>{phone}</Text>
+                      <Text variant="label" style={{ fontWeight: '700' }}>{phone}</Text>
                     </Text>
                   </View>
 
                   {busy && !code ? (
-                    <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                      <ActivityIndicator color={colors.primary} size="large" />
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#9CA3AF', marginTop: 12 }}>Sending code...</Text>
+                    <View style={{ alignItems: 'center', paddingVertical: space['3xl'] }}>
+                      <Text variant="label" tone="muted" style={{ marginTop: space.md }}>Sending code...</Text>
                     </View>
                   ) : (
                     <OtpInput
@@ -566,30 +587,30 @@ export default function AuthScreen() {
                     />
                   )}
 
-                  <View style={{ alignItems: 'center', marginTop: 8, minHeight: 44, justifyContent: 'center' }}>
+                  <View style={{ alignItems: 'center', marginTop: space.sm, minHeight: touch.minTarget, justifyContent: 'center' }}>
                     {countdown > 0 ? (
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#9CA3AF' }}>
-                        Resend code in <Text style={{ fontWeight: '700', color: colors.primary }}>{countdown}s</Text>
+                      <Text variant="label" tone="muted">
+                        Resend code in <Text variant="label" tone="primary" style={{ fontWeight: '700' }}>{countdown}s</Text>
                       </Text>
                     ) : (
-                      <Pressable onPress={resendCode} disabled={busy} style={{ minHeight: 44, justifyContent: 'center' }}>
-                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: colors.primary }}>
+                      <PressableScale onPress={resendCode} disabled={busy} style={{ minHeight: touch.minTarget, justifyContent: 'center' }}>
+                        <Text variant="label" tone="primary" style={{ fontWeight: '700' }}>
                           {busy ? 'Sending...' : 'Resend code'}
                         </Text>
-                      </Pressable>
+                      </PressableScale>
                     )}
                   </View>
 
-                  <Pressable onPress={() => { setPhoneStep('phone'); setCode(''); setOtpError(false); clearMessages(); Keyboard.dismiss(); }} style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#9CA3AF' }}>Use a different number</Text>
-                  </Pressable>
+                  <PressableScale onPress={() => { setPhoneStep('phone'); setCode(''); setOtpError(false); clearMessages(); Keyboard.dismiss(); }} style={{ minHeight: touch.minTarget, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text variant="label" tone="muted" style={{ fontWeight: '700' }}>Use a different number</Text>
+                  </PressableScale>
                 </>
               )}
             </View>
           )}
 
-          <View style={{ marginTop: 'auto', paddingTop: 28 }}>
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, lineHeight: 18, color: '#D1D5DB', textAlign: 'center' }}>
+          <View style={{ marginTop: 'auto', paddingTop: space.xl }}>
+            <Text variant="caption" tone="muted" center>
               By continuing, you agree to Ustaz's Terms of Service and Privacy Policy.
             </Text>
           </View>
@@ -599,83 +620,33 @@ export default function AuthScreen() {
   );
 }
 
-function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function SocialButton({ label, icon, brandColor, busy, disabled, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; brandColor: string; busy: boolean; disabled: boolean; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={{ flex: 1, minHeight: 40, borderRadius: 999, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? '#FFFFFF' : 'transparent' }}>
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: active ? '#1B1B27' : '#9CA3AF' }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function ModeButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={{ flex: 1, minHeight: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? '#FFF7ED' : '#F9FAFB', borderWidth: 1, borderColor: active ? `${colors.primary}55` : '#F3F4F6' }}>
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: active ? colors.primary : '#6B7280' }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function AuthField({ label, textAlign, ...props }: any) {
-  return (
-    <View>
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>{label}</Text>
-      <TextInput
-        {...props}
-        placeholderTextColor="#D1D5DB"
-        style={{ minHeight: 54, borderRadius: 18, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#1B1B27', textAlign: textAlign ?? 'left' }}
-      />
-    </View>
-  );
-}
-
-function PasswordField({ label, value, onChangeText, visible, onToggle }: { label: string; value: string; onChangeText: (value: string) => void; visible: boolean; onToggle: () => void }) {
-  return (
-    <View>
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 8 }}>{label}</Text>
-      <View style={{ minHeight: 54, borderRadius: 18, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', flexDirection: 'row', alignItems: 'center', paddingLeft: 16 }}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={!visible}
-          placeholder="Password"
-          placeholderTextColor="#D1D5DB"
-          autoCapitalize="none"
-          style={{ flex: 1, minHeight: 52, fontFamily: 'AtkinsonHyperlegible', fontSize: 16, color: '#1B1B27' }}
-        />
-        <Pressable onPress={onToggle} style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name={visible ? 'eye-off' : 'eye'} size={18} color="#9CA3AF" />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-function PrimaryButton({ label, busy, onPress }: { label: string; busy: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} disabled={busy} style={{ minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: busy ? '#D1D5DB' : colors.primary, shadowColor: busy ? 'transparent' : colors.primary, shadowOpacity: busy ? 0 : 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: busy ? 0 : 6 }}>
-      {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>{label}</Text>}
-    </Pressable>
-  );
-}
-
-function SocialButton({ label, icon, color, busy, disabled, onPress }: { label: string; icon: keyof typeof Ionicons.glyphMap; color: string; busy: boolean; disabled: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} disabled={disabled} style={{ minHeight: 56, borderRadius: 18, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-      {busy ? <ActivityIndicator color={color} /> : <Ionicons name={icon} size={20} color={color} />}
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: disabled ? '#9CA3AF' : '#1B1B27' }}>{label}</Text>
-    </Pressable>
+    <PressableScale
+      onPress={onPress}
+      disabled={disabled}
+      style={{
+        minHeight: touch.minTarget + 8, borderRadius: radius.md, borderWidth: 1, borderColor: color.line,
+        backgroundColor: color.surface, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm,
+      }}
+    >
+      {busy ? null : <Ionicons name={icon} size={20} color={brandColor} />}
+      <Text variant="bodyLg" style={{ fontWeight: '700', color: disabled ? color.inkMuted : color.ink }}>
+        {busy ? 'Connecting...' : label}
+      </Text>
+    </PressableScale>
   );
 }
 
 function Notice({ tone, text, action }: { tone: 'error' | 'success'; text: string; action?: { label: string; onPress: () => void } }) {
   const isError = tone === 'error';
   return (
-    <View style={{ marginBottom: 14, borderRadius: 14, backgroundColor: isError ? '#FEF2F2' : '#ECFDF5', padding: 12 }}>
-      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, lineHeight: 18, color: isError ? '#EF4444' : '#10B981' }}>{text}</Text>
+    <View style={{ marginBottom: space.md, borderRadius: radius.md, backgroundColor: isError ? color.errorBg : color.successBg, padding: space.md }}>
+      <Text variant="label" style={{ color: isError ? color.error : color.success }}>{text}</Text>
       {action && (
-        <Pressable onPress={action.onPress} style={{ marginTop: 8, minHeight: 36, justifyContent: 'center' }}>
-          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: colors.primary }}>{action.label}</Text>
-        </Pressable>
+        <PressableScale onPress={action.onPress} style={{ marginTop: space.sm, minHeight: 36, justifyContent: 'center' }}>
+          <Text variant="label" tone="primary" style={{ fontWeight: '700' }}>{action.label}</Text>
+        </PressableScale>
       )}
     </View>
   );

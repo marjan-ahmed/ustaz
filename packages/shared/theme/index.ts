@@ -10,6 +10,9 @@ export const colors = {
 
 export const fonts = {
   heading: 'ClashGrotesk',
+  headingMedium: 'ClashGroteskMedium',
+  headingSemibold: 'ClashGroteskSemibold',
+  headingBold: 'ClashGroteskBold',
   headingAlt: 'Anton',
   body: 'AtkinsonHyperlegible',
   urdu: 'Gulzar',

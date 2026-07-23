@@ -1,6 +1,7 @@
 import '../global.css';
 
 import { useEffect, useRef } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -20,6 +21,10 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Anton: require('../assets/fonts/Anton-Regular.ttf'),
     AtkinsonHyperlegible: require('../assets/fonts/AtkinsonHyperlegible-Regular.ttf'),
+    ClashGrotesk: require('../assets/fonts/ClashGrotesk-Regular.ttf'),
+    ClashGroteskMedium: require('../assets/fonts/ClashGrotesk-Medium.ttf'),
+    ClashGroteskSemibold: require('../assets/fonts/ClashGrotesk-Semibold.ttf'),
+    ClashGroteskBold: require('../assets/fonts/ClashGrotesk-Bold.ttf'),
     Gulzar: Gulzar_400Regular,
     IBMPlexSansArabic: IBMPlexSansArabic_400Regular,
   });
@@ -72,18 +77,20 @@ export default function RootLayout() {
   }
 
   return (
-    <NotificationsProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="splash" options={{ animation: 'none' }} />
-        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
-        <Stack.Screen name="role-select" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="auth" options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="(customer)" options={{ animation: 'none' }} />
-        <Stack.Screen name="(provider)" options={{ animation: 'none' }} />
-        <Stack.Screen name="provider-register" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
-      </Stack>
-      <StatusBar style="light" backgroundColor={colors.primary} />
-    </NotificationsProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NotificationsProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="splash" options={{ animation: 'none' }} />
+          <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+          <Stack.Screen name="role-select" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="auth" options={{ animation: 'slide_from_bottom' }} />
+          <Stack.Screen name="(customer)" options={{ animation: 'none' }} />
+          <Stack.Screen name="(provider)" options={{ animation: 'none' }} />
+          <Stack.Screen name="provider-register" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+        </Stack>
+        <StatusBar style="light" backgroundColor={colors.primary} />
+      </NotificationsProvider>
+    </GestureHandlerRootView>
   );
 }

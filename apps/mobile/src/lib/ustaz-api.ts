@@ -27,6 +27,7 @@ export type ServiceRequestStatus =
   | 'arriving'
   | 'arrived'
   | 'in_progress'
+  | 'work_in_progress'
   | 'completed'
   | 'cancelled'
   | 'rejected'
@@ -356,7 +357,7 @@ export async function getProviderPendingRequests(userId: string) {
 
   const { data: requests } = await supabase
     .from('service_requests')
-    .select('id, user_id, service_type, request_latitude, request_longitude, request_details, status, created_at')
+    .select('id, user_id, service_type, address, request_latitude, request_longitude, request_details, status, created_at')
     .in('id', requestIds);
 
   const requestMap = new Map((requests ?? []).map((r: any) => [r.id, r]));

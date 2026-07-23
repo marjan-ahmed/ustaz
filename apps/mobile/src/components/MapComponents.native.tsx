@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { View, Text } from 'react-native';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Circle, Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 
 class MapErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -30,4 +30,4 @@ function SafeMapView(props: any) {
   );
 }
 
-export { SafeMapView as MapView, Marker, Polyline, PROVIDER_GOOGLE };
+export { SafeMapView as MapView, Circle, Marker, Polyline, PROVIDER_GOOGLE };

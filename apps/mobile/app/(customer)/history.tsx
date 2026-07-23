@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '@ustaz/shared/theme';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { fileWarrantyClaim, getCustomerHistory, statusLabel, type HistoryRow } from '@/lib/ustaz-api';
 import { useAuth } from '@/lib/useAuth';
+import { Badge, Button, Card, CircularGauge, Drift, EmptyState, FadeInUp, IsoServiceScene, Screen, SectionHeader, Skeleton, Stagger, Text, TextField } from '@/components/mobile-ui';
+import { color, radius, space } from '@/theme/tokens';
 
 const WARRANTY_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
 
@@ -12,23 +11,25 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleString('en-PK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
-function warrantyLeft(completedAt: string | null) {
+function warrantyMsLeft(completedAt: string | null): number | null {
   if (!completedAt) return null;
   const ms = new Date(completedAt).getTime() + WARRANTY_WINDOW_MS - Date.now();
-  if (ms <= 0) return null;
-  const hours = Math.floor(ms / 3_600_000);
-  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h left`;
-  const mins = Math.floor((ms % 3_600_000) / 60_000);
-  return `${hours}h ${mins}m left`;
+  return ms > 0 ? ms : null;
 }
 
-function statusColor(status: string) {
-  switch (status) {
-    case 'completed': return '#10B981';
-    case 'cancelled': return '#EF4444';
-    case 'in_progress': case 'work_in_progress': return '#3B82F6';
-    default: return colors.primary;
-  }
+function warrantyLeft(completedAt: string | null) {
+  const ms = warrantyMsLeft(completedAt);
+  if (ms === null) return null;
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d ${hours % 24}h left`;
+  return `${hours}h ${Math.floor((ms % 3_600_000) / 60_000)}m left`;
+}
+
+function statusTone(status: string): 'success' | 'error' | 'primary' | 'warning' {
+  if (status === 'completed') return 'success';
+  if (status === 'cancelled') return 'error';
+  if (status === 'in_progress' || status === 'work_in_progress') return 'primary';
+  return 'warning';
 }
 
 export default function HistoryScreen() {
@@ -62,81 +63,101 @@ export default function HistoryScreen() {
     finally { setClaiming(null); }
   }
 
-  if (authLoading || !isSignedIn) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.primary} /></View></SafeAreaView>;
+  if (authLoading || !isSignedIn) return (
+    <Screen bg={color.cream} edges={['top']}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={color.primary} />
+      </View>
+    </Screen>
+  );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}>
-        <Text style={{ fontFamily: 'Anton', fontSize: 26, color: '#1B1B27', marginBottom: 20 }}>My Jobs</Text>
+    <Screen bg={color.cream} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: 120 }}>
+        <FadeInUp>
+          <Text variant="h1" style={{ marginBottom: space.lg }}>My Jobs</Text>
+        </FadeInUp>
 
-        {error ? <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: '#FEF2F2', padding: 16 }}><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#EF4444' }}>{error}</Text></View> : null}
-        {message ? <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: '#ECFDF5', padding: 16 }}><Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#10B981' }}>{message}</Text></View> : null}
+        {error && <FadeInUp><Card variant="flat" style={{ backgroundColor: color.errorBg, marginBottom: space.md }}><Text variant="label" style={{ color: color.error }}>{error}</Text></Card></FadeInUp>}
+        {message && <FadeInUp><Card variant="flat" style={{ backgroundColor: color.successBg, marginBottom: space.md }}><Text variant="label" style={{ color: color.success }}>{message}</Text></Card></FadeInUp>}
 
-        {loading ? <View style={{ alignItems: 'center', paddingVertical: 32 }}><ActivityIndicator color={colors.primary} /></View>
-        : rows.length === 0 ? (
-          <View style={{ alignItems: 'center', borderRadius: 20, backgroundColor: '#F9FAFB', paddingVertical: 64, paddingHorizontal: 32, borderWidth: 1, borderColor: '#F3F4F6' }}>
-            <MaterialCommunityIcons name="clipboard-text-outline" size={48} color="#D1D5DB" />
-            <Text style={{ fontFamily: 'Anton', fontSize: 22, color: '#1B1B27', marginTop: 16 }}>No jobs yet</Text>
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8 }}>Create a service request from the Find tab and it will appear here.</Text>
+        {loading ? (
+          <View style={{ gap: space.md }}>
+            {[1, 2, 3].map((i) => <Skeleton key={i} h={120} r={radius.xl} />)}
           </View>
+        ) : rows.length === 0 ? (
+          <FadeInUp delay={60}>
+            <EmptyState
+              illustration={<Drift distance={6}><IsoServiceScene size={140} variant="tracking" /></Drift>}
+              title="No jobs yet"
+              subtitle="Create a service request from the Find tab and it will appear here."
+            />
+          </FadeInUp>
         ) : (
-          <View style={{ gap: 10 }}>
-            {rows.map((row) => {
-              const remaining = warrantyLeft(row.completed_at);
-              const canClaim = row.status === 'completed' && !!remaining && !row.warranty_status;
-              return (
-                <View key={row.request_id} style={{ borderRadius: 16, backgroundColor: '#FFFFFF', padding: 18, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#1B1B27' }}>{row.service_type}</Text>
-                      {row.provider_name ? <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#6B7280', marginTop: 4 }}>{row.provider_name}</Text> : null}
-                      {row.address ? <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{row.address}</Text> : null}
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <View style={{ borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: `${statusColor(row.status)}15` }}>
-                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: statusColor(row.status) }}>{statusLabel(row.status)}</Text>
+          <View style={{ gap: space.sm }}>
+            <Stagger step={50}>
+              {rows.map((row) => {
+                const remaining = warrantyLeft(row.completed_at);
+                const canClaim = row.status === 'completed' && !!remaining && !row.warranty_status;
+                return (
+                  <Card key={row.request_id} variant="elevated">
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: space.sm }}>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="h3">{row.service_type}</Text>
+                        {row.provider_name && <Text variant="label" tone="muted" style={{ marginTop: 2 }}>{row.provider_name}</Text>}
+                        {row.address && <Text variant="caption" tone="muted" style={{ marginTop: 2 }} numberOfLines={1}>{row.address}</Text>}
                       </View>
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#D1D5DB', marginTop: 4 }}>{fmtDate(row.created_at)}</Text>
-                    </View>
-                  </View>
-
-                  {row.completed_at && (
-                    <View style={{ marginTop: 14, borderRadius: 12, backgroundColor: '#F9FAFB', padding: 12 }}>
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, color: '#9CA3AF' }}>WARRANTY</Text>
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#6B7280', marginTop: 4 }}>
-                        {row.warranty_status ? `Status: ${row.warranty_status}` : remaining ? `Available: ${remaining}` : 'Window closed'}
-                      </Text>
-                    </View>
-                  )}
-
-                  {claimFor === row.request_id ? (
-                    <View style={{ marginTop: 14 }}>
-                      <TextInput value={claimDesc} onChangeText={setClaimDesc} multiline placeholder="What went wrong?" placeholderTextColor="#D1D5DB"
-                        style={{ minHeight: 72, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 14, paddingVertical: 10, fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#1B1B27', textAlignVertical: 'top' }} />
-                      <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                        <Pressable onPress={() => { setClaimFor(null); setClaimDesc(''); }} style={{ minHeight: 40, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: '#F3F4F6' }}>
-                          <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280' }}>Cancel</Text>
-                        </Pressable>
-                        <Pressable onPress={() => submitClaim(row.request_id)} disabled={!!claiming}
-                          style={{ minHeight: 40, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.primary }}>
-                          {claiming === row.request_id ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#FFFFFF' }}>Submit</Text>}
-                        </Pressable>
+                      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                        <Badge label={statusLabel(row.status)} tone={statusTone(row.status)} />
+                        <Text variant="caption" tone="muted">{fmtDate(row.created_at)}</Text>
                       </View>
                     </View>
-                  ) : canClaim ? (
-                    <Pressable onPress={() => setClaimFor(row.request_id)}
-                      style={{ marginTop: 14, minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 999, backgroundColor: `${colors.primary}10` }}>
-                      <MaterialCommunityIcons name="shield-check" size={16} color={colors.primary} />
-                      <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: colors.primary }}>Claim warranty</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              );
-            })}
+
+                    {row.completed_at && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.md, backgroundColor: color.surfaceAlt, padding: space.sm, marginBottom: space.sm }}>
+                        {!row.warranty_status && remaining && (
+                          <CircularGauge
+                            size={36} strokeWidth={4}
+                            progress={(warrantyMsLeft(row.completed_at) ?? 0) / WARRANTY_WINDOW_MS}
+                            color={color.primary}
+                            trackColor={color.line}
+                          />
+                        )}
+                        <View style={{ flex: 1 }}>
+                          <Text variant="caption" tone="muted" style={{ textTransform: 'uppercase', letterSpacing: 1, fontWeight: '700', marginBottom: 2 }}>Warranty</Text>
+                          <Text variant="label" tone={remaining ? 'primary' : 'muted'}>
+                            {row.warranty_status ? `Status: ${row.warranty_status}` : remaining ? `Available: ${remaining}` : 'Window closed'}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {claimFor === row.request_id ? (
+                      <View style={{ gap: space.sm }}>
+                        <TextField
+                          value={claimDesc} onChangeText={setClaimDesc} multiline
+                          placeholder="What went wrong?"
+                          style={{ minHeight: 72, textAlignVertical: 'top', paddingTop: space.sm }}
+                        />
+                        <View style={{ flexDirection: 'row', gap: space.sm }}>
+                          <Button label="Cancel" variant="soft" full={false} style={{ flex: 1 }} onPress={() => { setClaimFor(null); setClaimDesc(''); }} />
+                          <Button label="Submit" variant="primary" full={false} style={{ flex: 1 }} loading={claiming === row.request_id} disabled={!!claiming} onPress={() => submitClaim(row.request_id)} />
+                        </View>
+                      </View>
+                    ) : canClaim ? (
+                      <Button
+                        label="🛡️ Claim Warranty"
+                        variant="soft"
+                        onPress={() => setClaimFor(row.request_id)}
+                      />
+                    ) : null}
+                  </Card>
+                );
+              })}
+            </Stagger>
           </View>
         )}
-        <View style={{ height: 100 }} />
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </Screen>
   );
 }

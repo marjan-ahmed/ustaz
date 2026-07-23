@@ -1,9 +1,10 @@
 ﻿import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View, Modal } from 'react-native';
+import { ActivityIndicator, View, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@ustaz/shared/theme';
 import { supabase } from '@/lib/supabase';
 import { sendPushNotification } from '@/lib/ustaz-api';
+import { Badge, Button, Card, LottieScene, PressableScale, Text, TextField, lottieSources } from './mobile-ui';
+import { color, radius, space } from '../theme/tokens';
 
 interface RatingModalProps {
   visible: boolean;
@@ -85,87 +86,83 @@ export default function RatingModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-        <View style={{ width: '100%', maxWidth: 380, borderRadius: 24, backgroundColor: '#FFFFFF', overflow: 'hidden' }}>
+      <View style={{ flex: 1, backgroundColor: color.scrim, justifyContent: 'center', alignItems: 'center', padding: space.xl }}>
+        <Card variant="elevated" style={{ width: '100%', maxWidth: 380, borderRadius: radius['2xl'] }}>
           {/* Header */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}>
-            <Text style={{ fontFamily: 'Anton', fontSize: 20, color: '#1B1B27' }}>{submitted ? 'Thank you!' : `Rate ${ratedUserName}`}</Text>
-            <Pressable onPress={handleClose} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="close" size={16} color="#6B7280" />
-            </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg }}>
+            <Text variant="h2">{submitted ? 'Thank you!' : `Rate ${ratedUserName}`}</Text>
+            <PressableScale onPress={handleClose} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="close" size={16} color={color.inkMuted} />
+            </PressableScale>
           </View>
 
           {submitted ? (
             /* Success state */
-            <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 28 }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                <Ionicons name="checkmark-circle" size={40} color="#10B981" />
-              </View>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#10B981', marginBottom: 4 }}>Rating submitted!</Text>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#6B7280', textAlign: 'center' }}>Thank you for your feedback.</Text>
+            <View style={{ alignItems: 'center' }}>
+              <LottieScene source={lottieSources.jobComplete} size={140} loop={false} />
+              <Text variant="bodyLg" style={{ fontWeight: '700', color: color.success, marginBottom: space.xs }}>Rating submitted!</Text>
+              <Text variant="label" tone="muted" center>Thank you for your feedback.</Text>
 
               {/* Favorite button */}
-              <Pressable onPress={toggleFavorite} disabled={savingFavorite}
-                style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12,
-                  backgroundColor: isFavorited ? '#FEE2E2' : '#FFF7ED', borderWidth: 1, borderColor: isFavorited ? '#FECACA' : '#FDBA74' }}>
+              <PressableScale onPress={toggleFavorite} disabled={savingFavorite}
+                style={{ marginTop: space.xl, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.xl, paddingVertical: space.md, borderRadius: radius.md,
+                  backgroundColor: isFavorited ? color.errorBg : `${color.primary}14`, borderWidth: 1, borderColor: isFavorited ? '#FECACA' : `${color.primary}30` }}>
                 {savingFavorite ? (
-                  <ActivityIndicator color={colors.primary} size="small" />
+                  <ActivityIndicator color={color.primary} size="small" />
                 ) : (
-                  <Ionicons name={isFavorited ? 'heart' : 'heart-outline'} size={20} color={isFavorited ? '#EF4444' : colors.primary} />
+                  <Ionicons name={isFavorited ? 'heart' : 'heart-outline'} size={20} color={isFavorited ? color.error : color.primary} />
                 )}
-                <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: isFavorited ? '#EF4444' : colors.primary }}>
+                <Text variant="body" style={{ fontWeight: '700', color: isFavorited ? color.error : color.primary }}>
                   {isFavorited ? 'Saved to favorites' : `Save ${ratedUserName} as favorite`}
                 </Text>
-              </Pressable>
+              </PressableScale>
             </View>
           ) : (
             /* Rating form */
-            <View style={{ paddingHorizontal: 20, paddingBottom: 24 }}>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#6B7280', textAlign: 'center', marginBottom: 20 }}>
-                How was your experience with{'\n'}<Text style={{ fontWeight: '700', color: '#1B1B27' }}>{ratedUserName}</Text>?
+            <View>
+              <Text variant="label" tone="muted" center style={{ marginBottom: space.xl }}>
+                How was your experience with{'\n'}<Text style={{ fontWeight: '700', color: color.ink }}>{ratedUserName}</Text>?
               </Text>
 
               {/* Star selector */}
-              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.sm, marginBottom: space.sm }}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Pressable key={star} onPress={() => setRating(star)} style={{ padding: 4 }}>
+                  <PressableScale key={star} onPress={() => setRating(star)} style={{ padding: space.xs }}>
                     <Ionicons
                       name={star <= rating ? 'star' : 'star-outline'}
-                      size={36}
-                      color={star <= rating ? '#F59E0B' : '#D1D5DB'}
+                      size={40}
+                      color={star <= rating ? '#F59E0B' : color.line}
                     />
-                  </Pressable>
+                  </PressableScale>
                 ))}
               </View>
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginBottom: 20, height: 16 }}>
+              <Text variant="caption" tone="muted" center style={{ marginBottom: space.xl, height: 16 }}>
                 {RATING_LABELS[rating]}
               </Text>
 
               {/* Comment */}
-              <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, fontWeight: '700', color: '#6B7280', marginBottom: 8 }}>
-                Comment <Text style={{ fontWeight: '400', color: '#D1D5DB' }}>(optional)</Text>
+              <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>
+                Comment <Text style={{ fontWeight: '400', color: color.line }}>(optional)</Text>
               </Text>
-              <TextInput value={comment} onChangeText={setComment} placeholder="Share your feedback about the service..." placeholderTextColor="#D1D5DB" multiline numberOfLines={3}
-                style={{ minHeight: 80, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 16, paddingVertical: 12, fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#1B1B27', textAlignVertical: 'top' }} />
+              <TextField value={comment} onChangeText={setComment} placeholder="Share your feedback about the service..." multiline numberOfLines={3}
+                style={{ minHeight: 80, textAlignVertical: 'top', paddingTop: space.sm }} />
 
-              {error ? <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#EF4444', marginTop: 10, textAlign: 'center' }}>{error}</Text> : null}
+              {error ? <Text variant="label" style={{ color: color.error, marginTop: space.md, textAlign: 'center' }}>{error}</Text> : null}
 
               {/* Submit */}
-              <Pressable onPress={handleSubmit} disabled={rating === 0 || isSubmitting}
-                style={{ marginTop: 16, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 999, backgroundColor: rating > 0 && !isSubmitting ? '#F59E0B' : '#E5E7EB' }}>
-                {isSubmitting ? <ActivityIndicator color="#FFFFFF" size="small" /> : (
-                  <>
-                    <Ionicons name="star" size={18} color="#FFFFFF" />
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 16, fontWeight: '700', color: '#FFFFFF' }}>Submit Rating</Text>
-                  </>
-                )}
-              </Pressable>
+              <Button
+                label="Submit Rating"
+                variant={rating > 0 && !isSubmitting ? 'primary' : 'soft'}
+                icon={<Ionicons name="star" size={18} color={rating > 0 ? color.white : color.inkMuted} />}
+                onPress={handleSubmit}
+                disabled={rating === 0 || isSubmitting}
+                loading={isSubmitting}
+                style={{ marginTop: space.xl }}
+              />
             </View>
           )}
-        </View>
+        </Card>
       </View>
     </Modal>
   );
 }
-
-

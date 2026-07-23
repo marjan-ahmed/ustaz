@@ -1,22 +1,20 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Keyboard, KeyboardAvoidingView, Platform, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@ustaz/shared/theme';
 import { useAuth } from '@/lib/useAuth';
 import { loadConversations, loadMessages, sendChatMessage, subscribeToChat, type ChatMessage, type Conversation } from '@/lib/ustaz-api';
 import { supabase } from '@/lib/supabase';
+import { Drift, EmptyState, FadeInUp, IsoServiceScene, PressableScale, Screen, Text } from '@/components/mobile-ui';
+import { color, font, radius, space } from '@/theme/tokens';
 
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 110 : 95;
 
-interface OptimisticMessage extends ChatMessage {
-  _pending?: boolean;
-}
+interface OptimisticMessage extends ChatMessage { _pending?: boolean; }
 
 export default function CustomerChatScreen() {
   const { user, loading: authLoading, isSignedIn } = useAuth();
-  const router = useRouter();
   const params = useLocalSearchParams<{ peer?: string }>();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<string | null>(params.peer ?? null);
@@ -30,30 +28,21 @@ export default function CustomerChatScreen() {
 
   const loadConvos = useCallback(async () => {
     if (!user) return;
-    try {
-      const data = await loadConversations(user.id, false);
-      setConversations(data);
-    } catch {}
+    try { setConversations(await loadConversations(user.id, false)); } catch {}
   }, [user]);
 
   useEffect(() => { loadConvos(); }, [loadConvos]);
 
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
-    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
+    const show = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const s = Keyboard.addListener(show, () => setKeyboardVisible(true));
+    const h = Keyboard.addListener(hide, () => setKeyboardVisible(false));
+    return () => { s.remove(); h.remove(); };
   }, []);
 
-  // Auto-select peer from query param
   useEffect(() => {
-    if (params.peer && conversations.length > 0) {
-      setSelected(params.peer);
-    }
+    if (params.peer && conversations.length > 0) setSelected(params.peer);
   }, [params.peer, conversations]);
 
   useEffect(() => {
@@ -62,25 +51,15 @@ export default function CustomerChatScreen() {
     loadMessages(selected, user.id).then((data) => { setMessages(data); setLoading(false); }).catch(() => setLoading(false));
   }, [selected, user]);
 
-  // Realtime subscription
   useEffect(() => {
     if (!selected || !user) return;
     const channel = subscribeToChat(user.id, (msg) => {
-      const inThisChat =
-        (msg.sender_id === user.id && msg.recipient_id === selected) ||
-        (msg.sender_id === selected && msg.recipient_id === user.id);
+      const inThisChat = (msg.sender_id === user.id && msg.recipient_id === selected) || (msg.sender_id === selected && msg.recipient_id === user.id);
       if (!inThisChat) return;
-
       setMessages((prev) => {
         if (msg.sender_id === user.id) {
-          const idx = prev.findIndex(
-            (m) => m._pending && m.message === msg.message && m.recipient_id === msg.recipient_id,
-          );
-          if (idx >= 0) {
-            const next = prev.slice();
-            next[idx] = { ...msg };
-            return next;
-          }
+          const idx = prev.findIndex((m) => m._pending && m.message === msg.message && m.recipient_id === msg.recipient_id);
+          if (idx >= 0) { const next = prev.slice(); next[idx] = { ...msg }; return next; }
         }
         if (prev.some((m) => m.id === msg.id)) return prev;
         return [...prev, msg];
@@ -92,21 +71,10 @@ export default function CustomerChatScreen() {
   async function handleSend() {
     if (!draft.trim() || !user || !selected || sending) return;
     const text = draft.trim();
-    setDraft('');
-    setSending(true);
-
+    setDraft(''); setSending(true);
     const peer = conversations.find((c) => c.peerId === selected);
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    const optimistic: OptimisticMessage = {
-      id: tempId,
-      sender_id: user.id,
-      recipient_id: selected,
-      message: text,
-      created_at: new Date().toISOString(),
-      _pending: true,
-    };
-    setMessages((prev) => [...prev, optimistic]);
-
+    setMessages((prev) => [...prev, { id: tempId, sender_id: user.id, recipient_id: selected, message: text, created_at: new Date().toISOString(), _pending: true }]);
     try {
       const real = await sendChatMessage({ requestId: peer?.requestId, senderId: user.id, recipientId: selected, message: text });
       setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...real, _pending: false } : m)));
@@ -117,101 +85,113 @@ export default function CustomerChatScreen() {
     setSending(false);
   }
 
-  if (authLoading || !isSignedIn) return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}><View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.primary} /></View></SafeAreaView>;
+  if (authLoading || !isSignedIn) return (
+    <Screen bg={color.cream} edges={['top']}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={color.primary} /></View>
+    </Screen>
+  );
 
   const peer = conversations.find((c) => c.peerId === selected);
   const composerBottomPadding = keyboardVisible ? Math.max(insets.bottom, 8) : TAB_BAR_HEIGHT;
 
-  // Conversation list view
   if (!selected) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-        <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8 }}>
-          <Text style={{ fontFamily: 'Anton', fontSize: 26, color: '#1B1B27' }}>Messages</Text>
-        </View>
+      <Screen bg={color.cream} edges={['top']}>
+        <FadeInUp>
+          <View style={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.sm }}>
+            <Text variant="h1">Messages</Text>
+          </View>
+        </FadeInUp>
         {conversations.length === 0 ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Ionicons name="chatbubbles-outline" size={48} color="#D1D5DB" />
-            <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 12 }}>Chat with your provider after accepting a service request.</Text>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl }}>
+            <EmptyState
+              illustration={<Drift distance={6}><IsoServiceScene size={140} variant="general" /></Drift>}
+              title="No messages yet"
+              subtitle="Chat with your provider after accepting a service request."
+            />
           </View>
         ) : (
-          <FlatList data={conversations} keyExtractor={(c) => c.peerId}
+          <FlatList
+            data={conversations}
+            keyExtractor={(c) => c.peerId}
             renderItem={({ item }) => (
-              <Pressable onPress={() => setSelected(item.peerId)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontFamily: 'Anton', fontSize: 16, color: colors.primary }}>{item.peerName?.charAt(0)?.toUpperCase() ?? 'U'}</Text>
+              <PressableScale onPress={() => setSelected(item.peerId)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, borderBottomWidth: 1, borderBottomColor: color.line }}>
+                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${color.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontFamily: font.display, fontSize: 18, color: color.primary }}>{item.peerName?.charAt(0)?.toUpperCase() ?? 'U'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, fontWeight: '700', color: '#1B1B27' }}>{item.peerName}</Text>
-                    {item.lastAt ? <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, color: '#9CA3AF' }}>{item.lastAt}</Text> : null}
+                    <Text variant="label" style={{ fontWeight: '700' }}>{item.peerName}</Text>
+                    {item.lastAt && <Text variant="caption" tone="muted">{item.lastAt}</Text>}
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 13, color: '#6B7280' }} numberOfLines={1}>{item.lastMessage || 'Start a conversation'}</Text>
+                    <Text variant="body" tone="muted" numberOfLines={1} style={{ flex: 1 }}>{item.lastMessage || 'Start a conversation'}</Text>
                     {item.unread > 0 && (
-                      <View style={{ minWidth: 20, height: 20, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}>
-                        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>{item.unread}</Text>
+                      <View style={{ minWidth: 20, height: 20, borderRadius: 10, backgroundColor: color.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginLeft: 8 }}>
+                        <Text style={{ fontFamily: font.body, fontSize: 11, fontWeight: '700', color: color.white }}>{item.unread}</Text>
                       </View>
                     )}
                   </View>
                 </View>
-              </Pressable>
+              </PressableScale>
             )}
           />
         )}
-      </SafeAreaView>
+      </Screen>
     );
   }
 
-  // Message thread view
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
-        <Pressable onPress={() => setSelected(null)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="arrow-back" size={18} color="#374151" />
-        </Pressable>
-        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontFamily: 'Anton', fontSize: 14, color: colors.primary }}>{peer?.peerName?.charAt(0)?.toUpperCase() ?? 'U'}</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: color.cream }} edges={['top']}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm, borderBottomWidth: 1, borderBottomColor: color.line, backgroundColor: color.cream }}>
+        <PressableScale onPress={() => setSelected(null)} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="arrow-back" size={18} color={color.ink} />
+        </PressableScale>
+        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${color.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontFamily: font.display, fontSize: 14, color: color.primary }}>{peer?.peerName?.charAt(0)?.toUpperCase() ?? 'U'}</Text>
         </View>
-        <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 15, fontWeight: '700', color: '#1B1B27' }}>{peer?.peerName ?? 'Chat'}</Text>
+        <Text variant="h3">{peer?.peerName ?? 'Chat'}</Text>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         {loading ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={colors.primary} /></View>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={color.primary} /></View>
         ) : (
-          <FlatList ref={flatListRef} data={messages} keyExtractor={(m) => m.id}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(m) => m.id}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-            contentContainerStyle={{ padding: 16, paddingBottom: 16, gap: 8 }}
+            contentContainerStyle={{ padding: space.md, gap: space.sm }}
             renderItem={({ item }) => {
               const isMine = item.sender_id === user?.id;
               return (
-                <View style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', maxWidth: '78%' }}>
-                  <View style={{ borderRadius: 16, borderTopRightRadius: isMine ? 4 : 16, borderTopLeftRadius: isMine ? 16 : 4, backgroundColor: isMine ? colors.primary : '#F3F4F6', paddingHorizontal: 14, paddingVertical: 10 }}>
-                    <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: isMine ? '#FFFFFF' : '#1B1B27' }}>{item.message}</Text>
+                <FadeInUp distance={8} style={{ alignSelf: isMine ? 'flex-end' : 'flex-start', maxWidth: '78%' }}>
+                  <View style={{ borderRadius: radius.xl, borderTopRightRadius: isMine ? 4 : radius.xl, borderTopLeftRadius: isMine ? radius.xl : 4, backgroundColor: isMine ? color.primary : color.surfaceAlt, paddingHorizontal: space.md, paddingVertical: space.sm }}>
+                    <Text style={{ fontFamily: font.body, fontSize: 14, color: isMine ? color.white : color.ink }}>{item.message}</Text>
                   </View>
-                  <Text style={{ fontFamily: 'AtkinsonHyperlegible', fontSize: 10, color: '#9CA3AF', marginTop: 2, paddingHorizontal: 4 }}>{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-                </View>
+                  <Text variant="caption" tone="muted" style={{ marginTop: 2, paddingHorizontal: 4 }}>{new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                </FadeInUp>
               );
             }}
           />
         )}
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 10, paddingBottom: composerBottomPadding, borderTopWidth: 1, borderTopColor: '#F3F4F6', backgroundColor: '#FFFFFF' }}>
-          <TextInput value={draft} onChangeText={setDraft} placeholder="Type a message..." placeholderTextColor="#D1D5DB"
-            style={{ flex: 1, minHeight: 40, borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB', paddingHorizontal: 16, fontFamily: 'AtkinsonHyperlegible', fontSize: 14, color: '#1B1B27' }}
-            onSubmitEditing={handleSend} returnKeyType="send" />
-          <Pressable onPress={handleSend} disabled={!draft.trim() || sending}
-            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: draft.trim() ? colors.primary : '#D1D5DB', alignItems: 'center', justifyContent: 'center' }}>
-            {sending ? <ActivityIndicator color="#FFF" size="small" /> : <Ionicons name="send" size={16} color="#FFFFFF" />}
-          </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: composerBottomPadding, borderTopWidth: 1, borderTopColor: color.line, backgroundColor: color.cream }}>
+          <TextInput
+            value={draft} onChangeText={setDraft}
+            placeholder="Type a message..." placeholderTextColor={color.line}
+            style={{ flex: 1, minHeight: 40, borderRadius: 20, borderWidth: 1.5, borderColor: color.line, backgroundColor: color.surfaceAlt, paddingHorizontal: space.md, fontFamily: font.body, fontSize: 14, color: color.ink }}
+            onSubmitEditing={handleSend} returnKeyType="send"
+          />
+          <PressableScale onPress={handleSend} disabled={!draft.trim() || sending}
+            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: draft.trim() ? color.primary : color.line, alignItems: 'center', justifyContent: 'center' }}>
+            {sending ? <ActivityIndicator color={color.white} size="small" /> : <Ionicons name="send" size={16} color={color.white} />}
+          </PressableScale>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-
-
-

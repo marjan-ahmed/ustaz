@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { colors } from '@ustaz/shared/theme';
+import { color, font, radius } from '@/theme/tokens';
 
 interface OtpInputProps {
   length?: number;
@@ -76,18 +76,18 @@ export default function OtpInput({ length = 6, value, onChange, onComplete, auto
               style={{
                 width: 48,
                 height: 56,
-                borderRadius: 14,
+                borderRadius: radius.md,
                 borderWidth: 2,
-                borderColor: error ? '#EF4444' : isFilled ? colors.primary : isActive ? `${colors.primary}88` : '#E5E7EB',
-                backgroundColor: isFilled ? `${colors.primary}08` : '#F9FAFB',
+                borderColor: error ? color.error : isFilled ? color.primary : isActive ? `${color.primary}88` : color.line,
+                backgroundColor: isFilled ? `${color.primary}08` : color.surfaceAlt,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
               {isFilled ? (
-                <Text style={{ fontFamily: 'Anton', fontSize: 24, color: '#1B1B27' }}>{digit}</Text>
+                <Text style={{ fontFamily: font.numeric, fontSize: 24, color: color.ink }}>{digit}</Text>
               ) : isActive ? (
-                <Animated.View style={{ width: 2, height: 24, backgroundColor: colors.primary, opacity: cursorOpacity, borderRadius: 1 }} />
+                <Animated.View style={{ width: 2, height: 24, backgroundColor: color.primary, opacity: cursorOpacity, borderRadius: 1 }} />
               ) : null}
             </View>
           );
