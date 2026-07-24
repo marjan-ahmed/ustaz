@@ -7,9 +7,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { ActivityIndicator, View } from 'react-native';
 import { colors } from '@ustaz/shared/theme';
-import { Gulzar_400Regular } from '@expo-google-fonts/gulzar';
+import { Lalezar_400Regular } from '@expo-google-fonts/lalezar';
 import { IBMPlexSansArabic_400Regular } from '@expo-google-fonts/ibm-plex-sans-arabic';
 import { NotificationsProvider } from '@/context/NotificationsContext';
+import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
+import { LanguageProvider } from '@/i18n';
 import {
   ensureDefaultNotificationChannel,
   getNotificationsModule,
@@ -25,8 +27,8 @@ export default function RootLayout() {
     ClashGroteskMedium: require('../assets/fonts/ClashGrotesk-Medium.ttf'),
     ClashGroteskSemibold: require('../assets/fonts/ClashGrotesk-Semibold.ttf'),
     ClashGroteskBold: require('../assets/fonts/ClashGrotesk-Bold.ttf'),
-    Gulzar: Gulzar_400Regular,
     IBMPlexSansArabic: IBMPlexSansArabic_400Regular,
+    Lalezar: Lalezar_400Regular,
   });
 
   const notificationListener = useRef<any>(null);
@@ -78,19 +80,23 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NotificationsProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="splash" options={{ animation: 'none' }} />
-          <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
-          <Stack.Screen name="role-select" options={{ animation: 'slide_from_right' }} />
-          <Stack.Screen name="auth" options={{ animation: 'slide_from_bottom' }} />
-          <Stack.Screen name="(customer)" options={{ animation: 'none' }} />
-          <Stack.Screen name="(provider)" options={{ animation: 'none' }} />
-          <Stack.Screen name="provider-register" options={{ animation: 'slide_from_right' }} />
-          <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
-        </Stack>
-        <StatusBar style="light" backgroundColor={colors.primary} />
-      </NotificationsProvider>
+      <LanguageProvider>
+        <TabBarVisibilityProvider>
+          <NotificationsProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="splash" options={{ animation: 'none' }} />
+            <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+            <Stack.Screen name="role-select" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="auth" options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="(customer)" options={{ animation: 'none' }} />
+            <Stack.Screen name="(provider)" options={{ animation: 'none' }} />
+            <Stack.Screen name="provider-register" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+          <StatusBar style="light" backgroundColor={colors.primary} />
+          </NotificationsProvider>
+        </TabBarVisibilityProvider>
+      </LanguageProvider>
     </GestureHandlerRootView>
   );
 }

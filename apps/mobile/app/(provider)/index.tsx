@@ -24,6 +24,7 @@ import {
 } from '@/components/mobile-ui';
 import { color, font, gradient, radius, shadow, space } from '@/theme/tokens';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLanguage } from '@/i18n';
 
 const nextAction: Partial<Record<string, { action: 'completed'; label: string; icon: string }>> = {
   arrived: { action: 'completed', label: 'Complete job', icon: 'checkmark-circle' },
@@ -43,6 +44,7 @@ function formatPakistaniTime(isoString: string): string {
 export default function ProviderHome() {
   const { user, loading: authLoading, isSignedIn } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
   const { unreadCount } = useNotificationsContext();
   const [pending, setPending] = useState<ProviderNotification[]>([]);
   const [active, setActive] = useState<ServiceRequest[]>([]);
@@ -171,14 +173,15 @@ export default function ProviderHome() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: 120 }}
       >
+        <View>
         {/* Header */}
         <FadeInUp>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg }}>
             <View>
-              <Text variant="caption" tone="primary" style={{ textTransform: 'uppercase', letterSpacing: 2, fontWeight: '700' }}>USTAZ</Text>
+              <Text variant="caption" tone="primary" style={{ textTransform: 'uppercase', letterSpacing: 2, fontWeight: '700' }}>{t('dashboard.brandLabel')}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <Text variant="h1">Provider Hub</Text>
-                {isSharing && <Badge label="LIVE" tone="success" />}
+                <Text variant="h1">{t('dashboard.title')}</Text>
+                {isSharing && <Badge label={t('dashboard.live')} tone="success" />}
               </View>
             </View>
             <NotificationBell unreadCount={unreadCount} />
@@ -194,10 +197,10 @@ export default function ProviderHome() {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
                   <Text variant="caption" tone="inverseSoft" style={{ textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: space.xs }}>
-                    Wallet balance
+                    {t('dashboard.walletBalance')}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <Text style={{ fontFamily: font.numeric, fontSize: 20, color: color.white, marginRight: 6 }}>Rs.</Text>
+                    <Text style={{ fontFamily: font.numeric, fontSize: 20, color: color.white, marginRight: 6 }} lang="en">Rs.</Text>
                     <NumberTicker
                       value={walletBalance}
                       formatter={(n) => Math.round(n).toLocaleString('en-PK')}
@@ -211,12 +214,12 @@ export default function ProviderHome() {
                 <View style={{ marginTop: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: 'rgba(239,68,68,0.18)', borderRadius: radius.md, padding: space.sm }}>
                   <Ionicons name="warning" size={14} color="#FCA5A5" />
                   <Text variant="caption" style={{ color: '#FCA5A5', flex: 1 }}>
-                    Top up to Rs. {PROVIDER_MIN_WALLET_BALANCE} to accept jobs
+                    {t('dashboard.minBalanceWarning', { min: PROVIDER_MIN_WALLET_BALANCE })}
                   </Text>
                 </View>
               )}
               <View style={{ marginTop: space.lg }}>
-                <Button label="Top Up Wallet" variant="soft" full={false} onPress={() => router.push('/(provider)/wallet')} />
+                <Button label={t('dashboard.topUp')} variant="soft" full={false} onPress={() => router.push('/(provider)/wallet')} />
               </View>
             </LinearGradient>
           </View>
@@ -233,9 +236,9 @@ export default function ProviderHome() {
               </>
             ) : (
               <>
-                <StatTile value={String(stats?.completed_jobs ?? stats?.completed_count ?? 0)} label="Jobs done" />
-                <StatTile value={String(pending.length)} label="Pending" tone="primary" bg={`${color.primary}10`} />
-                <StatTile value={String(active.length)} label="Active" tone="ink" bg={color.successBg} />
+                <StatTile value={String(stats?.completed_jobs ?? stats?.completed_count ?? 0)} label={t('dashboard.jobsDone')} />
+                <StatTile value={String(pending.length)} label={t('dashboard.pending')} tone="primary" bg={`${color.primary}10`} />
+                <StatTile value={String(active.length)} label={t('dashboard.active')} tone="ink" bg={color.successBg} />
               </>
             )}
           </View>
@@ -298,7 +301,7 @@ export default function ProviderHome() {
         {/* Pending requests */}
         {pending.length > 0 && (
           <>
-            <SectionHeader title="New Requests" action={`${pending.length}`} />
+            <SectionHeader title={t('dashboard.newRequests')} action={`${pending.length}`} />
             <View style={{ gap: space.sm, marginBottom: space.lg }}>
               <Stagger step={50}>
                 {pending.map((req) => (
@@ -309,23 +312,23 @@ export default function ProviderHome() {
                         {req.requestDetails?.address && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                             <Ionicons name="location-outline" size={13} color={color.inkMuted} />
-                            <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }}>{req.requestDetails.address}</Text>
+                            <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }} lang="en">{req.requestDetails.address}</Text>
                           </View>
                         )}
                         {req.createdAt && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                             <Ionicons name="time-outline" size={13} color={color.inkMuted} />
-                            <Text variant="caption" tone="muted">
+                            <Text variant="caption" tone="muted" lang="en">
                               {new Date(req.createdAt).toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit', hour12: true })}
                             </Text>
                           </View>
                         )}
                       </View>
-                      <Badge label="NEW" tone="primary" />
+                      <Badge label={t('dashboard.new')} tone="primary" />
                     </View>
                     <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.sm }}>
                       <Button
-                        label="Reject"
+                        label={t('dashboard.reject')}
                         variant="soft"
                         full={false}
                         style={{ flex: 1 }}
@@ -334,7 +337,7 @@ export default function ProviderHome() {
                         onPress={() => handleRequest(req.requestId, 'reject')}
                       />
                       <Button
-                        label="Accept"
+                        label={t('dashboard.accept')}
                         variant="primary"
                         full={false}
                         style={{ flex: 1 }}
@@ -351,12 +354,12 @@ export default function ProviderHome() {
         )}
 
         {/* Active jobs */}
-        <SectionHeader title="Active Jobs" />
+        <SectionHeader title={t('dashboard.activeJobs')} />
         {active.length === 0 ? (
           <FadeInUp delay={120}>
             <Card variant="flat" style={{ alignItems: 'center', paddingVertical: space['3xl'] }}>
               <Ionicons name="construct-outline" size={40} color={color.line} />
-              <Text variant="label" tone="muted" center style={{ marginTop: space.md }}>No active jobs right now.</Text>
+              <Text variant="label" tone="muted" center style={{ marginTop: space.md }}>{t('dashboard.noActiveJobs')}</Text>
             </Card>
           </FadeInUp>
         ) : (
@@ -377,7 +380,7 @@ export default function ProviderHome() {
                     {request.address && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: space.sm }}>
                         <Ionicons name="location-outline" size={13} color={color.inkMuted} />
-                        <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }}>{request.address}</Text>
+                        <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }} lang="en">{request.address}</Text>
                       </View>
                     )}
                     {request.request_latitude && request.request_longitude && (
@@ -394,11 +397,11 @@ export default function ProviderHome() {
                     {action ? (
                       <View style={{ gap: space.sm }}>
                         <View style={{ borderRadius: radius.md, backgroundColor: color.successBg, padding: space.sm, borderWidth: 1, borderColor: '#BBF7D0' }}>
-                          <Text variant="caption" style={{ color: '#047857', fontWeight: '700' }}>Arrival confirmed automatically.</Text>
-                          <Text variant="caption" style={{ color: '#059669', marginTop: 2 }}>Complete the job only when the work is finished.</Text>
+                          <Text variant="caption" style={{ color: '#047857', fontWeight: '700' }}>{t('dashboard.arrivalConfirmed')}</Text>
+                           <Text variant="caption" style={{ color: '#059669', marginTop: 2 }}>{t('dashboard.completeOnlyWhenDone')}</Text>
                         </View>
                         <Button
-                          label="Complete Job"
+                          label={t('dashboard.completeJob')}
                           variant="primary"
                           loading={acting === `${request.id}:${action.action}`}
                           disabled={!!acting}
@@ -409,13 +412,13 @@ export default function ProviderHome() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, borderRadius: radius.md, backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', padding: space.sm }}>
                         <Ionicons name="navigate-circle-outline" size={22} color="#2563EB" />
                         <View style={{ flex: 1 }}>
-                          <Text variant="caption" style={{ fontWeight: '700', color: '#1D4ED8' }}>GPS is tracking arrival automatically.</Text>
-                          <Text variant="caption" style={{ color: '#2563EB', marginTop: 2 }}>Head to the customer. No manual arrival needed.</Text>
+                          <Text variant="caption" style={{ fontWeight: '700', color: '#1D4ED8' }}>{t('dashboard.gpsTracking')}</Text>
+                           <Text variant="caption" style={{ color: '#2563EB', marginTop: 2 }}>{t('dashboard.headToCustomer')}</Text>
                         </View>
                       </View>
                     ) : null}
                     <Button
-                      label="Chat with Customer"
+                      label={t('dashboard.chatWithCustomer')}
                       variant="soft"
                       style={{ marginTop: space.sm }}
                       onPress={() => router.push(`/(provider)/chat?peer=${request.user_id}`)}
@@ -426,6 +429,7 @@ export default function ProviderHome() {
             </Stagger>
           </View>
         )}
+        </View>
       </ScrollView>
     </Screen>
   );

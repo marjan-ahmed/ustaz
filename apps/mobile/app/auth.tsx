@@ -611,7 +611,14 @@ export default function AuthScreen() {
 
           <View style={{ marginTop: 'auto', paddingTop: space.xl }}>
             <Text variant="caption" tone="muted" center>
-              By continuing, you agree to Ustaz's Terms of Service and Privacy Policy.
+              By continuing, you agree to Ustaz's{' '}
+              <Text variant="caption" style={{ fontWeight: '700', color: color.primary }} onPress={() => ExpoLinking.openURL('https://ustaz-bice.vercel.app/terms')}>
+                Terms of Service
+              </Text>
+              {' '}and{' '}
+              <Text variant="caption" style={{ fontWeight: '700', color: color.primary }} onPress={() => ExpoLinking.openURL('https://ustaz-bice.vercel.app/privacy-policy')}>
+                Privacy Policy
+              </Text>
             </Text>
           </View>
         </ScrollView>

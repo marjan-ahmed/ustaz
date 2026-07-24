@@ -62,7 +62,9 @@ export const font = {
   headingMedium: 'ClashGroteskMedium',
   numeric: 'Anton', // large stat numbers only
   body: 'AtkinsonHyperlegible',
-  urdu: 'Gulzar',
+  urdu: 'Lalezar',
+  urduSemiBold: 'Lalezar',
+  urduBold: 'Lalezar',
   arabic: 'IBMPlexSansArabic',
 } as const;
 

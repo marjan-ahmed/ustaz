@@ -8,13 +8,16 @@ import { loadConversations, loadMessages, sendChatMessage, subscribeToChat, type
 import { supabase } from '@/lib/supabase';
 import { Drift, EmptyState, FadeInUp, IsoServiceScene, PressableScale, Screen, Text } from '@/components/mobile-ui';
 import { color, font, radius, space } from '@/theme/tokens';
+import { useLanguage } from '@/i18n';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 
-const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 110 : 95;
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 90 : 76;
 
 interface OptimisticMessage extends ChatMessage { _pending?: boolean; }
 
 export default function ProviderChatScreen() {
   const { user, loading: authLoading, isSignedIn } = useAuth();
+  const { t } = useLanguage();
   const params = useLocalSearchParams<{ peer?: string }>();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<string | null>(params.peer ?? null);
@@ -25,6 +28,12 @@ export default function ProviderChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const { setVisible: setTabBarVisible } = useTabBarVisibility();
+
+  useEffect(() => {
+    setTabBarVisible(!selected);
+    return () => setTabBarVisible(true);
+  }, [selected, setTabBarVisible]);
 
   const loadConvos = useCallback(async () => {
     if (!user) return;
@@ -92,22 +101,22 @@ export default function ProviderChatScreen() {
   );
 
   const peer = conversations.find((c) => c.peerId === selected);
-  const composerBottomPadding = keyboardVisible ? Math.max(insets.bottom, 8) : TAB_BAR_HEIGHT;
+  const composerBottomPadding = keyboardVisible ? Math.max(insets.bottom, 8) : selected ? insets.bottom : TAB_BAR_HEIGHT;
 
   if (!selected) {
     return (
       <Screen bg={color.cream} edges={['top']}>
         <FadeInUp>
           <View style={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.sm }}>
-            <Text variant="h1">Messages</Text>
+            <Text variant="h1">{t('chat.title')}</Text>
           </View>
         </FadeInUp>
         {conversations.length === 0 ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.xl }}>
             <EmptyState
               illustration={<Drift distance={6}><IsoServiceScene size={140} variant="general" /></Drift>}
-              title="No messages yet"
-              subtitle="Chat with customers after accepting a service request."
+              title={t('chat.noMessages')}
+              subtitle={t('chat.noMessagesSubtitle')}
             />
           </View>
         ) : (
@@ -126,7 +135,7 @@ export default function ProviderChatScreen() {
                     {item.lastAt && <Text variant="caption" tone="muted">{item.lastAt}</Text>}
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-                    <Text variant="body" tone="muted" numberOfLines={1} style={{ flex: 1 }}>{item.lastMessage || 'Start a conversation'}</Text>
+                    <Text variant="body" tone="muted" numberOfLines={1} style={{ flex: 1 }}>{item.lastMessage || t('chat.startConversation')}</Text>
                     {item.unread > 0 && (
                       <View style={{ minWidth: 20, height: 20, borderRadius: 10, backgroundColor: color.primary, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginLeft: 8 }}>
                         <Text style={{ fontFamily: font.body, fontSize: 11, fontWeight: '700', color: color.white }}>{item.unread}</Text>
@@ -181,7 +190,7 @@ export default function ProviderChatScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: composerBottomPadding, borderTopWidth: 1, borderTopColor: color.line, backgroundColor: color.cream }}>
           <TextInput
             value={draft} onChangeText={setDraft}
-            placeholder="Type a message..." placeholderTextColor={color.line}
+            placeholder={t('chat.typeMessage')} placeholderTextColor={color.line}
             style={{ flex: 1, minHeight: 40, borderRadius: 20, borderWidth: 1.5, borderColor: color.line, backgroundColor: color.surfaceAlt, paddingHorizontal: space.md, fontFamily: font.body, fontSize: 14, color: color.ink }}
             onSubmitEditing={handleSend} returnKeyType="send"
           />

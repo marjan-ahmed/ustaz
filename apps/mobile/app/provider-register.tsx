@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Platform, KeyboardAvoidingView, Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, KeyboardAvoidingView, Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -497,7 +497,16 @@ export default function ProviderRegisterScreen() {
                     <View style={[s.checkbox, form.agreedToTerms && s.checkboxChecked]}>
                       {form.agreedToTerms && <Ionicons name="checkmark" size={14} color={color.white} />}
                     </View>
-                    <Text variant="label" style={{ flex: 1 }}>I agree to the Terms of Service and Privacy Policy</Text>
+                    <Text variant="label" style={{ flex: 1 }}>
+                      I agree to the{' '}
+                      <Text variant="label" style={{ fontWeight: '700', color: color.primary }} onPress={() => Linking.openURL('https://ustaz-bice.vercel.app/terms')}>
+                        Terms of Service
+                      </Text>
+                      {' '}and{' '}
+                      <Text variant="label" style={{ fontWeight: '700', color: color.primary }} onPress={() => Linking.openURL('https://ustaz-bice.vercel.app/privacy-policy')}>
+                        Privacy Policy
+                      </Text>
+                    </Text>
                   </PressableScale>
                   {errors.agreedToTerms && <Text variant="caption" style={{ color: color.error }}>{errors.agreedToTerms}</Text>}
 

@@ -7,9 +7,11 @@ import {
   Badge, Button, Card, EmptyState, FadeInUp, PressableScale, Screen, Stagger, Text,
 } from '@/components/mobile-ui';
 import { color, radius, shadow, space } from '@/theme/tokens';
+import { useLanguage } from '@/i18n';
 
 export default function WarrantyScreen() {
   const { user, loading: authLoading, isSignedIn } = useAuth();
+  const { t } = useLanguage();
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function WarrantyScreen() {
     <Screen bg={color.white} edges={['top']}>
       <View style={{ flex: 1, paddingHorizontal: space.lg, paddingTop: space.sm }}>
         <FadeInUp>
-          <Text variant="h1" style={{ marginBottom: space.xl }}>Warranty Claims</Text>
+          <Text variant="h1" style={{ marginBottom: space.xl }}>{t('warranty.title')}</Text>
         </FadeInUp>
 
         {error && (
@@ -64,22 +66,22 @@ export default function WarrantyScreen() {
         ) : claims.length === 0 ? (
           <EmptyState
             illustration={<MaterialCommunityIcons name="shield-check" size={64} color={color.line} />}
-            title="All clear"
-            subtitle="No pending warranty claims. When a customer reports an issue within 3 days, it will appear here."
+            title={t('warranty.allClear')}
+            subtitle={t('warranty.noPendingClaims')}
           />
         ) : (
           <Stagger step={50}>
             {claims.map((claim: any) => (
               <Card key={claim.id} variant="elevated" style={{ marginBottom: space.md, borderWidth: 1.5, borderColor: color.warning }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.sm }}>
-                  <Badge label="WARRANTY CLAIM" tone="warning" />
+                  <Badge label={t('warranty.warrantyClaim')} tone="warning" />
                 </View>
                 <Text variant="bodyLg" style={{ fontWeight: '700' }}>{claim.service_requests?.service_type ?? 'Service'}</Text>
                 {claim.address && <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{claim.address}</Text>}
                 {claim.description && <Text variant="label" tone="soft" style={{ marginTop: space.sm, lineHeight: 20 }}>{claim.description}</Text>}
                 <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.lg }}>
                   <Button
-                    label="I'll return & fix"
+                    label={t('warranty.returnAndFix')}
                     variant="primary"
                     full={false}
                     style={{ flex: 1 }}
@@ -88,7 +90,7 @@ export default function WarrantyScreen() {
                     onPress={() => handleResponse(claim.id, 'accepted')}
                   />
                   <Button
-                    label="Refuse"
+                    label={t('warranty.refuse')}
                     variant="soft"
                     full={false}
                     style={{ flex: 1 }}

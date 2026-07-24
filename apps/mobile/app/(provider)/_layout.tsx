@@ -1,23 +1,25 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuth } from '@/lib/useAuth';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import CustomTabBar from '@/components/CustomTabBar';
-
-const providerTabs = [
-  { name: 'index', icon: 'home', label: 'Home' },
-  { name: 'wallet', icon: 'wallet', label: 'Wallet' },
-  { name: 'warranty', icon: 'shield-checkmark', label: 'Warranty' },
-  { name: 'chat', icon: 'chatbubble-ellipses', label: 'Chat' },
-  { name: 'profile', icon: 'person', label: 'Profile' },
-];
 
 export default function ProviderTabLayout() {
   const { isSignedIn, loading } = useAuth();
   const router = useRouter();
+  const { visible: tabBarVisible } = useTabBarVisibility();
 
   useEffect(() => {
     if (!loading && !isSignedIn) router.replace({ pathname: '/auth', params: { intent: 'provider' } });
   }, [isSignedIn, loading, router]);
+
+  const providerTabs = [
+    { name: 'index', icon: 'home' },
+    { name: 'wallet', icon: 'wallet' },
+    { name: 'warranty', icon: 'shield-checkmark' },
+    { name: 'chat', icon: 'chatbubble-ellipses' },
+    { name: 'profile', icon: 'person' },
+  ];
 
   return (
     <Tabs
@@ -27,6 +29,7 @@ export default function ProviderTabLayout() {
           tabs={providerTabs}
           activeTab={props.state.routes[props.state.index]?.name ?? 'index'}
           onTabPress={(name) => props.navigation.navigate(name)}
+          visible={tabBarVisible}
         />
       )}
     >

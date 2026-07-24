@@ -15,6 +15,7 @@ import ProviderLanyard from '@/components/ProviderLanyard';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
+import { useLanguage, type Locale } from '@/i18n';
 
 const SERVICE_TYPES = ['Electrician', 'Plumbing', 'Carpentry', 'AC Maintenance', 'Solar Technician'];
 
@@ -44,6 +45,7 @@ interface ProviderStanding {
 export default function ProviderProfile() {
   const { user, isSignedIn, signOut } = useAuth();
   const router = useRouter();
+  const { t, locale, setLocale } = useLanguage();
   const [profile, setProfile] = useState<ProviderProfile | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [standing, setStanding] = useState<ProviderStanding | null>(null);
@@ -290,15 +292,15 @@ export default function ProviderProfile() {
         {/* Header — overlaid on lanyard */}
         <FadeInUp>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space.lg, paddingTop: space.sm, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-            <Text variant="h1">Profile</Text>
+            <Text variant="h1">{t('profile.title')}</Text>
             {!loading && profile && (
               editing ? (
                 <View style={{ flexDirection: 'row', gap: space.sm }}>
-                  <Button label="Cancel" variant="soft" full={false} onPress={cancelEditing} />
-                  <Button label="Save" variant="primary" full={false} loading={saving} disabled={saving} onPress={saveProfile} />
+                  <Button label={t('profile.cancel')} variant="soft" full={false} onPress={cancelEditing} />
+                  <Button label={t('profile.save')} variant="primary" full={false} loading={saving} disabled={saving} onPress={saveProfile} />
                 </View>
               ) : (
-                <Button label="Edit" variant="primary" full={false} icon={<Ionicons name="pencil" size={14} color={color.white} />} onPress={startEditing} />
+                <Button label={t('profile.edit')} variant="primary" full={false} icon={<Ionicons name="pencil" size={14} color={color.white} />} onPress={startEditing} />
               )
             )}
           </View>
@@ -346,7 +348,7 @@ export default function ProviderProfile() {
               <PressableScale onPress={handleDownloadID}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: space.md, paddingVertical: 12, borderRadius: radius.md, backgroundColor: `${color.primary}12`, borderWidth: 1, borderColor: `${color.primary}30` }}>
                 <Ionicons name="download-outline" size={16} color={color.primary} />
-                <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>Download ID Card</Text>
+                <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>{t('profile.downloadId')}</Text>
               </PressableScale>
             </View>
 
@@ -450,7 +452,7 @@ export default function ProviderProfile() {
 
             {/* Personal Information */}
             <FadeInUp delay={180}>
-              <SectionHeader title="Personal" />
+              <SectionHeader title={t('profile.personal')} />
               <Card variant="elevated" style={{ marginBottom: space.md }}>
                 {editing ? (
                   <View style={{ gap: space.md }}>
@@ -471,7 +473,7 @@ export default function ProviderProfile() {
 
             {/* Contact Information */}
             <FadeInUp delay={220}>
-              <SectionHeader title="Contact" />
+              <SectionHeader title={t('profile.contact')} />
               <Card variant="elevated" style={{ marginBottom: space.md }}>
                 <ProfileRow label="Phone" value={phone || user?.phone || 'Not provided'} />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.sm }}>
@@ -483,7 +485,7 @@ export default function ProviderProfile() {
 
             {/* Service Information */}
             <FadeInUp delay={260}>
-              <SectionHeader title="Service" />
+              <SectionHeader title={t('profile.service')} />
               <Card variant="elevated" style={{ marginBottom: space.md }}>
                 {editing ? (
                   <View>
@@ -513,6 +515,34 @@ export default function ProviderProfile() {
               </Card>
             </FadeInUp>
 
+            {/* Language */}
+            <FadeInUp delay={280}>
+              <SectionHeader title={t('profile.language')} />
+              <Card variant="elevated" padded={false} style={{ marginBottom: space.md }}>
+                <PressableScale
+                  onPress={() => setLocale(locale === 'en' ? 'ur' : 'en')}
+                  style={{ flexDirection: 'row', alignItems: 'center', padding: space.lg }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: `${color.primary}14`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="language" size={20} color={color.primary} />
+                  </View>
+                  <View style={{ marginLeft: space.md, flex: 1 }}>
+                    <Text variant="bodyLg" style={{ fontWeight: '700' }}>
+                      {locale === 'en' ? t('profile.english') : t('profile.urdu')}
+                    </Text>
+                    <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>
+                      {locale === 'en' ? 'اردو میں تبدیل کریں' : 'Switch to English'}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
+                    <View style={{ width: 36, height: 20, borderRadius: 10, backgroundColor: color.primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color.white, marginLeft: locale === 'en' ? -8 : 8 }} />
+                    </View>
+                  </View>
+                </PressableScale>
+              </Card>
+            </FadeInUp>
+
             {/* Actions */}
             <FadeInUp delay={300}>
               <Stagger step={40}>
@@ -523,8 +553,8 @@ export default function ProviderProfile() {
                         <Ionicons name="home-outline" size={20} color={color.navy} />
                       </View>
                       <View style={{ marginLeft: space.md, flex: 1 }}>
-                        <Text variant="bodyLg" style={{ fontWeight: '700' }}>Switch to Customer</Text>
-                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>Find and book services</Text>
+                        <Text variant="bodyLg" style={{ fontWeight: '700' }}>{t('profile.switchToCustomer')}</Text>
+                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{t('profile.switchToCustomerDesc')}</Text>
                       </View>
                       <Ionicons name="chevron-forward" size={18} color={color.line} />
                     </View>
@@ -538,8 +568,8 @@ export default function ProviderProfile() {
                         <Ionicons name="log-out-outline" size={20} color={color.error} />
                       </View>
                       <View style={{ marginLeft: space.md, flex: 1 }}>
-                        <Text variant="bodyLg" style={{ fontWeight: '700', color: color.error }}>Sign out</Text>
-                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>End your current session</Text>
+                        <Text variant="bodyLg" style={{ fontWeight: '700', color: color.error }}>{t('profile.signOut')}</Text>
+                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{t('profile.signOutDesc')}</Text>
                       </View>
                       <Ionicons name="chevron-forward" size={18} color={color.line} />
                     </View>
@@ -552,7 +582,7 @@ export default function ProviderProfile() {
 
         <View style={{ height: 20 }} />
         <View style={{ alignItems: 'center' }}>
-          <Text variant="caption" tone="muted">Ustaz v0.1.0</Text>
+          <Text variant="caption" tone="muted">{t('profile.version')}</Text>
         </View>
       </ScrollView>
     </Screen>

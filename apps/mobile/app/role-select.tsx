@@ -1,26 +1,31 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { setStoredRole, type UserRole } from '@/lib/role';
-import { Button, FadeInUp, GlowBackdrop, PatternBackdrop, Screen, Stagger, Text } from '@/components/mobile-ui';
+import { Button, FadeInUp, PatternBackdrop, Screen, Stagger, Text } from '@/components/mobile-ui';
 import { color, radius, shadow, space } from '@/theme/tokens';
 import { PressableScale } from '@/components/motion';
 
-const ROLES: { key: UserRole; title: string; sub: string; icon: React.ReactNode; cta: string }[] = [
+const needServiceImg = require('../assets/images/needservice-removebg-preview.png');
+const wantServiceImg = require('../assets/images/wantservice-removebg-preview.png');
+
+const ROLES: {
+  key: UserRole;
+  title: string;
+  sub: string;
+  image: any;
+}[] = [
   {
     key: 'customer',
     title: 'Need a service?',
     sub: 'Find and book trusted professionals for home repairs, installations, and more.',
-    icon: <Ionicons name="home-outline" size={26} color={color.white} />,
-    cta: 'Find a provider',
+    image: needServiceImg,
   },
   {
     key: 'provider',
     title: 'Want to earn?',
     sub: 'Accept jobs, grow your business, and earn with Pakistan\'s trusted marketplace.',
-    icon: <MaterialCommunityIcons name="wrench-outline" size={26} color={color.white} />,
-    cta: 'Start earning',
+    image: wantServiceImg,
   },
 ];
 
@@ -37,7 +42,7 @@ export default function RoleSelectScreen() {
   return (
     <Screen bg={color.cream} edges={['top']}>
       <PatternBackdrop variant="dots" tone="orange" opacity={0.05} glow={false} />
-      <View style={{ flex: 1, paddingHorizontal: space.xl, paddingTop: space.xl }}>
+      <View style={{ flex: 1, paddingHorizontal: space.lg, paddingTop: space.xl }}>
         <FadeInUp>
           <Text variant="caption" tone="primary" style={{ textTransform: 'uppercase', letterSpacing: 2, fontWeight: '700' }}>
             Welcome to Ustaz
@@ -48,8 +53,8 @@ export default function RoleSelectScreen() {
           </Text>
         </FadeInUp>
 
-        <View style={{ flex: 1, justifyContent: 'center', gap: space.lg }}>
-          <Stagger step={80} initialDelay={100}>
+        <View style={{ flex: 1, justifyContent: 'center', gap: space.md }}>
+          <Stagger step={100} initialDelay={120}>
             {ROLES.map((role) => {
               const active = selected === role.key;
               return (
@@ -57,35 +62,25 @@ export default function RoleSelectScreen() {
                   <View style={[
                     {
                       borderRadius: radius['2xl'],
-                      padding: space.xl,
-                      minHeight: 160,
                       borderWidth: 2,
                       borderColor: active ? color.primary : color.line,
-                      backgroundColor: active ? color.cream : color.surface,
+                      backgroundColor: color.surface,
                       overflow: 'hidden',
+                      minHeight: 260,
                     },
                     active ? shadow.brand : shadow.sm,
                   ]}>
-                    {active && <GlowBackdrop top={-40} right={-40} size={160} opacity={0.18} />}
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.lg }}>
-                      <View style={{
-                        width: 52, height: 52, borderRadius: radius.md,
-                        backgroundColor: active ? color.primary : color.line,
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {role.icon}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text variant="h3" tone={active ? 'primary' : 'ink'}>{role.title}</Text>
-                        <Text variant="label" tone="muted" style={{ marginTop: space.xs }}>{role.sub}</Text>
-                      </View>
+                    <View style={{ alignItems: 'center', paddingTop: space.xl, paddingHorizontal: space.lg }}>
+                      <Image
+                        source={role.image}
+                        style={{ width: 160, height: 160 }}
+                        resizeMode="contain"
+                      />
                     </View>
-                    {active && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.md }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color.primary }} />
-                        <Text variant="caption" tone="primary" style={{ fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>Selected</Text>
-                      </View>
-                    )}
+                    <View style={{ paddingHorizontal: space.xl, paddingBottom: space.xl, alignItems: 'center' }}>
+                      <Text variant="h2" tone={active ? 'primary' : 'ink'} center>{role.title}</Text>
+                      <Text variant="body" tone="muted" center style={{ marginTop: space.xs }}>{role.sub}</Text>
+                    </View>
                   </View>
                 </PressableScale>
               );

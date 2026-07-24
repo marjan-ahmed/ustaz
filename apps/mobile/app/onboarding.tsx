@@ -88,7 +88,7 @@ export default function OnboardingScreen() {
             illustration={
               <TiltCard style={{ borderRadius: 24 }}>
                 <Bob amplitude={8}>
-                  <Image source={require('../assets/images/electrician.png')} style={{ width: 230, height: 230 }} resizeMode="contain" />
+                  <Image source={require('../assets/images/electrician-illus-Photoroom.png')} style={{ width: 230, height: 230 }} resizeMode="contain" />
                 </Bob>
               </TiltCard>
             }
@@ -121,7 +121,7 @@ export default function OnboardingScreen() {
                   <PulseRadar size={260} color={color.primary} />
                 </View>
                 <Bob amplitude={8}>
-                  <Image source={require('../assets/images/plumber.png')} style={{ width: 220, height: 220 }} resizeMode="contain" />
+                  <Image source={require('../assets/images/plumber-illus-Photoroom.png')} style={{ width: 220, height: 220 }} resizeMode="contain" />
                 </Bob>
               </View>
             }

@@ -1,20 +1,22 @@
 import { Image, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/useAuth';
 import { setStoredRole } from '@/lib/role';
 import { supabase } from '@/lib/supabase';
 import { Card, FadeInUp, GlowBackdrop, PressableScale, Screen, Stagger, Text } from '@/components/mobile-ui';
 import { color, font, radius, shadow, space } from '@/theme/tokens';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLanguage } from '@/i18n';
 
-type MenuItem = { icon: string; label: string; sub: string; onPress: () => void; danger?: boolean };
+type MenuItem = { icon: string; labelKey: string; subKey: string; onPress: () => void; danger?: boolean };
 
 export default function CustomerProfile() {
   const { user, isSignedIn, signOut } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
-  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || user?.phone || 'Customer';
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || user?.phone || t('profile.notSignedIn');
   const userEmail = user?.user_metadata?.email || user?.email || '';
   const userAvatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
   const initials = userName.charAt(0).toUpperCase();
@@ -34,17 +36,17 @@ export default function CustomerProfile() {
   }
 
   const menu: MenuItem[] = [
-    { icon: 'heart', label: 'Favorite Providers', sub: 'Quick rebook your trusted ustaz', onPress: () => router.push('/(customer)/favorites') },
-    { icon: 'location', label: 'Saved Addresses', sub: 'Manage your locations', onPress: () => router.push('/(customer)/saved-addresses') },
-    { icon: 'construct-outline', label: 'Switch to Provider', sub: 'Accept jobs and earn money', onPress: switchRole },
-    { icon: 'log-out-outline', label: 'Sign out', sub: 'End your current session', onPress: handleSignOut, danger: true },
+    { icon: 'heart', labelKey: 'profile.favoriteProviders', subKey: 'profile.favoriteProvidersDesc', onPress: () => router.push('/(customer)/favorites') },
+    { icon: 'location', labelKey: 'profile.savedAddresses', subKey: 'profile.savedAddressesDesc', onPress: () => router.push('/(customer)/saved-addresses') },
+    { icon: 'construct-outline', labelKey: 'profile.switchToProvider', subKey: 'profile.switchToProviderDesc', onPress: switchRole },
+    { icon: 'log-out-outline', labelKey: 'profile.signOut', subKey: 'profile.signOutDesc', onPress: handleSignOut, danger: true },
   ];
 
   return (
     <Screen bg={color.cream} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: 120 }}>
         <FadeInUp>
-          <Text variant="h1" style={{ marginBottom: space.lg }}>Profile</Text>
+          <Text variant="h1" style={{ marginBottom: space.lg }}>{t('tabs.profile')}</Text>
         </FadeInUp>
 
         {/* Avatar hero card */}
@@ -61,8 +63,8 @@ export default function CustomerProfile() {
                   </View>
                 )}
                 <View style={{ flex: 1 }}>
-                  <Text variant="h3">{isSignedIn ? userName : 'Not signed in'}</Text>
-                  <Text variant="label" tone="muted" style={{ marginTop: 2 }}>{isSignedIn ? (userEmail || 'Customer account') : 'Sign in to book services'}</Text>
+                  <Text variant="h3">{isSignedIn ? userName : t('profile.notSignedIn')}</Text>
+                  <Text variant="label" tone="muted" style={{ marginTop: 2 }}>{isSignedIn ? (userEmail || t('profile.customerAccount')) : t('profile.signInToBook')}</Text>
                 </View>
               </View>
             </LinearGradient>
@@ -73,7 +75,7 @@ export default function CustomerProfile() {
         <View style={{ gap: space.sm }}>
           <Stagger step={50} initialDelay={80}>
             {menu.map((item, i) => (
-              <PressableScale key={item.label} onPress={item.onPress}>
+              <PressableScale key={item.labelKey} onPress={item.onPress}>
                 <Card variant="elevated" padded={false} style={{ flexDirection: 'row', alignItems: 'center', padding: space.lg, gap: space.md }}>
                   <View style={{
                     width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center',
@@ -82,8 +84,8 @@ export default function CustomerProfile() {
                     <Ionicons name={item.icon as any} size={20} color={item.danger ? color.error : i % 2 === 0 ? color.primary : color.navy} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text variant="label" style={{ fontWeight: '700', color: item.danger ? color.error : color.ink }}>{item.label}</Text>
-                    <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>{item.sub}</Text>
+                    <Text variant="label" style={{ fontWeight: '700', color: item.danger ? color.error : color.ink }}>{t(item.labelKey)}</Text>
+                    <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>{t(item.subKey)}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={color.line} />
                 </Card>
@@ -92,7 +94,7 @@ export default function CustomerProfile() {
           </Stagger>
         </View>
 
-        <Text variant="caption" tone="muted" center style={{ marginTop: space['2xl'] }}>Ustaz v0.1.0</Text>
+        <Text variant="caption" tone="muted" center style={{ marginTop: space['2xl'] }}>{t('profile.version')}</Text>
       </ScrollView>
     </Screen>
   );

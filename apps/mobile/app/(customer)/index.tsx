@@ -25,19 +25,19 @@ const TRUST = [
 ];
 
 const SERVICE_ILLUSTRATIONS: Record<string, any> = {
-  Electrician: require('../../assets/images/electrician.png'),
-  Plumbing: require('../../assets/images/plumber.png'),
-  Carpentry: require('../../assets/images/carpenter.png'),
-  'AC Maintenance': require('../../assets/images/ac_repair.png'),
-  'Solar Technician': require('../../assets/images/solar.png'),
+  Electrician: require('../../assets/images/electrician-illus-Photoroom.png'),
+  Plumbing: require('../../assets/images/plumber-illus-Photoroom.png'),
+  Carpentry: require('../../assets/images/carpenter-illus-Photoroom.png'),
+  'AC Maintenance': require('../../assets/images/ac-technician-illus-Photoroom.png'),
+  'Solar Technician': require('../../assets/images/solar-illus-Photoroom.png'),
 };
 
 const SERVICE_BG: Record<string, string> = {
-  Electrician: '#FFF7ED',
-  Plumbing: '#EFF6FF',
-  Carpentry: '#F7FEE7',
-  'AC Maintenance': '#ECFEFF',
-  'Solar Technician': '#FFFBEB',
+  Electrician: '#FFEDD5',
+  Plumbing: '#DBEAFE',
+  Carpentry: '#D9F99D',
+  'AC Maintenance': '#CFFAFE',
+  'Solar Technician': '#FEF3C7',
 };
 
 const QUICK = serviceCategories.slice(0, 4);

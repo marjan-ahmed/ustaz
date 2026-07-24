@@ -22,6 +22,7 @@ import { BlurView } from 'expo-blur';
 import { color, font, gradient, radius, shadow, space, touch, type as typeScale } from '../../theme/tokens';
 import { PressableScale } from '../motion';
 import { haptic } from '../../lib/haptics';
+import { useLanguage } from '@/i18n';
 
 /* ---------------------------------------------------------------- Text --- */
 type Variant = keyof typeof typeScale;
@@ -36,19 +37,36 @@ const TONE: Record<TextTone, string> = {
   inverseSoft: 'rgba(255,255,255,0.72)',
 };
 
+function localeAwareFont(locale: string, base: string): string {
+  if (locale !== 'ur') return base;
+  if (base === font.body) return font.urdu;
+  if (base === font.heading) return font.urduSemiBold;
+  if (base === font.headingMedium) return font.urdu;
+  if (base === font.display) return font.urduBold;
+  return font.urdu;
+}
+
 export function Text({
   variant = 'body',
   tone = 'ink',
   center,
+  lang,
   style,
   children,
   ...props
-}: TextProps & { variant?: Variant; tone?: TextTone; center?: boolean }) {
+}: TextProps & { variant?: Variant; tone?: TextTone; center?: boolean; lang?: 'en' | 'ur' }) {
   const t = typeScale[variant];
+  const { locale } = useLanguage();
+  const effectiveLocale = lang ?? locale;
   return (
     <RNText
       style={[
-        { fontFamily: t.family, fontSize: t.size, lineHeight: t.line, color: TONE[tone] },
+        {
+          fontFamily: localeAwareFont(effectiveLocale, t.family),
+          fontSize: t.size,
+          lineHeight: t.line,
+          color: TONE[tone],
+        },
         center && { textAlign: 'center' },
         style,
       ]}

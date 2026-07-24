@@ -8,8 +8,9 @@ import { loadConversations, loadMessages, sendChatMessage, subscribeToChat, type
 import { supabase } from '@/lib/supabase';
 import { Drift, EmptyState, FadeInUp, IsoServiceScene, PressableScale, Screen, Text } from '@/components/mobile-ui';
 import { color, font, radius, space } from '@/theme/tokens';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 
-const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 110 : 95;
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 90 : 76;
 
 interface OptimisticMessage extends ChatMessage { _pending?: boolean; }
 
@@ -25,6 +26,12 @@ export default function CustomerChatScreen() {
   const flatListRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const { setVisible: setTabBarVisible } = useTabBarVisibility();
+
+  useEffect(() => {
+    setTabBarVisible(!selected);
+    return () => setTabBarVisible(true);
+  }, [selected, setTabBarVisible]);
 
   const loadConvos = useCallback(async () => {
     if (!user) return;
@@ -92,7 +99,7 @@ export default function CustomerChatScreen() {
   );
 
   const peer = conversations.find((c) => c.peerId === selected);
-  const composerBottomPadding = keyboardVisible ? Math.max(insets.bottom, 8) : TAB_BAR_HEIGHT;
+  const composerBottomPadding = keyboardVisible ? Math.max(insets.bottom, 8) : selected ? insets.bottom : TAB_BAR_HEIGHT;
 
   if (!selected) {
     return (

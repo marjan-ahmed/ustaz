@@ -10,6 +10,7 @@ import {
 } from '@/components/mobile-ui';
 import { color, font, gradient, radius, shadow, space } from '@/theme/tokens';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLanguage } from '@/i18n';
 
 const PACKAGES = [
   { id: 'starter', label: 'Starter', amount: 500, tag: 'Just testing', icon: 'flash' as const, accent: '#F59E0B' },
@@ -27,6 +28,7 @@ const fmt = (n: number) => `Rs. ${n.toLocaleString('en-PK', { minimumFractionDig
 
 export default function WalletScreen() {
   const { user, loading: authLoading, isSignedIn } = useAuth();
+  const { t } = useLanguage();
   const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +134,7 @@ export default function WalletScreen() {
     <Screen bg={color.white} edges={['top']}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
         <FadeInUp>
-          <Text variant="h1" style={{ marginBottom: space.xl }}>Wallet</Text>
+          <Text variant="h1" style={{ marginBottom: space.xl }}>{t('wallet.title')}</Text>
         </FadeInUp>
 
         {error && (
@@ -147,8 +149,8 @@ export default function WalletScreen() {
           <FadeInUp>
             <Card variant="elevated" style={{ marginBottom: space.md, alignItems: 'center' }}>
               <LottieScene source={lottieSources.walletTopupSuccess} size={120} loop={false} />
-              <Text variant="bodyLg" style={{ fontWeight: '700', marginTop: space.xs }}>Top-up request submitted!</Text>
-              <Text variant="label" tone="muted" center>Admin will verify and credit your wallet.</Text>
+              <Text variant="bodyLg" style={{ fontWeight: '700', marginTop: space.xs }}>{t('wallet.topUpSuccess')}</Text>
+              <Text variant="label" tone="muted" center>{t('wallet.adminVerify')}</Text>
             </Card>
           </FadeInUp>
         )}
@@ -162,7 +164,7 @@ export default function WalletScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
                   <Text variant="caption" tone="inverseSoft" style={{ textTransform: 'uppercase', letterSpacing: 1.5 }}>
-                    Current balance
+                    {t('wallet.currentBalance')}
                   </Text>
                   <NumberTicker
                     value={balance}
@@ -174,19 +176,19 @@ export default function WalletScreen() {
               </View>
               {isBelowMinimum && (
                 <View style={{ marginTop: space.md, borderRadius: radius.md, backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.28)', padding: space.sm }}>
-                  <Text variant="caption" style={{ color: '#FCA5A5', fontWeight: '700' }}>Minimum balance required</Text>
+                  <Text variant="caption" style={{ color: '#FCA5A5', fontWeight: '700' }}>{t('wallet.minBalanceRequired')}</Text>
                   <Text variant="caption" tone="inverseSoft" style={{ marginTop: space.xs }}>
-                    Keep at least {fmt(PROVIDER_MIN_WALLET_BALANCE)} to receive or accept service requests.
+                    {t('wallet.keepAtLeast', { amount: fmt(PROVIDER_MIN_WALLET_BALANCE) })}
                   </Text>
                 </View>
               )}
               <View style={{ flexDirection: 'row', gap: space.md, marginTop: space.xl }}>
                 <View style={{ flex: 1, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.08)', padding: space.md }}>
-                  <Text variant="caption" tone="inverseSoft">Total earned</Text>
+                  <Text variant="caption" tone="inverseSoft">{t('wallet.totalEarned')}</Text>
                   <Text variant="bodyLg" tone="inverse" style={{ fontWeight: '700', marginTop: space.xs }}>{fmt(Number(wallet?.total_earned ?? 0))}</Text>
                 </View>
                 <View style={{ flex: 1, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.08)', padding: space.md }}>
-                  <Text variant="caption" tone="inverseSoft">Commission paid</Text>
+                  <Text variant="caption" tone="inverseSoft">{t('wallet.commissionPaid')}</Text>
                   <Text variant="bodyLg" tone="inverse" style={{ fontWeight: '700', marginTop: space.xs }}>{fmt(Number(wallet?.total_commission_paid ?? 0))}</Text>
                 </View>
               </View>
@@ -197,7 +199,7 @@ export default function WalletScreen() {
         {/* Top Up Button / Flow */}
         {!showTopup ? (
           <FadeInUp delay={100}>
-            <Button label="Top Up Wallet" variant="primary" icon={<Ionicons name="add-circle" size={20} color={color.white} />} onPress={() => setShowTopup(true)} />
+            <Button label={t('wallet.topUpWallet')} variant="primary" icon={<Ionicons name="add-circle" size={20} color={color.white} />} onPress={() => setShowTopup(true)} />
           </FadeInUp>
         ) : (
           <FadeInUp delay={100}>
@@ -205,7 +207,7 @@ export default function WalletScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: space.lg }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                   <Ionicons name="wallet" size={20} color={color.primary} />
-                  <Text variant="bodyLg" style={{ fontWeight: '700' }}>Top up wallet</Text>
+                  <Text variant="bodyLg" style={{ fontWeight: '700' }}>{t('wallet.topUpTitle')}</Text>
                 </View>
                 <PressableScale onPress={resetTopup} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="close" size={14} color={color.inkMuted} />
@@ -213,7 +215,7 @@ export default function WalletScreen() {
               </View>
 
               {/* Package selection */}
-              <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>Choose amount</Text>
+              <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>{t('wallet.chooseAmount')}</Text>
               <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.xl }}>
                 {PACKAGES.map((pkg) => {
                   const isActive = selectedPkg === pkg.id;
@@ -224,7 +226,7 @@ export default function WalletScreen() {
                         <Text variant="caption" style={{ fontWeight: '700', marginTop: space.xs }}>{pkg.label}</Text>
                         <Text variant="caption" tone="muted">{pkg.tag}</Text>
                         <Numeric size={16} tone="ink" style={{ marginTop: space.xs }}>{fmt(pkg.amount)}</Numeric>
-                        {pkg.popular && <Badge label="POPULAR" tone="primary" />}
+                        {pkg.popular && <Badge label={t('wallet.popular')} tone="primary" />}
                         {isActive && <Ionicons name="checkmark-circle" size={18} color={pkg.accent} style={{ position: 'absolute', top: 8, right: 8 }} />}
                       </Card>
                     </PressableScale>
@@ -272,14 +274,14 @@ export default function WalletScreen() {
                   </View>
 
                   {/* Receipt upload */}
-                  <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>Payment screenshot</Text>
+                  <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>{t('wallet.paymentScreenshot')}</Text>
                   {receiptUri ? (
                     <Card variant="flat" style={{ borderRadius: radius.md, overflow: 'hidden', borderWidth: 2, borderColor: `${color.primary}30`, marginBottom: space.lg }}>
                       <Image source={{ uri: receiptUri }} style={{ width: '100%', height: 180 }} resizeMode="cover" />
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: space.sm }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
                           <Ionicons name="checkmark-circle" size={16} color={color.success} />
-                          <Text variant="caption" tone="muted">Receipt attached</Text>
+                          <Text variant="caption" tone="muted">{t('wallet.receiptAttached')}</Text>
                         </View>
                         <PressableScale onPress={() => { setReceiptUri(null); setReceiptFile(null); }}>
                           <Ionicons name="close-circle" size={20} color={color.error} />
@@ -290,7 +292,7 @@ export default function WalletScreen() {
                     <PressableScale onPress={pickReceipt}>
                       <Card variant="flat" style={{ borderRadius: radius.md, borderWidth: 2, borderStyle: 'dashed', borderColor: color.line, padding: space['2xl'], alignItems: 'center', marginBottom: space.lg }}>
                         <Ionicons name="image-outline" size={32} color={color.line} />
-                        <Text variant="label" tone="muted" style={{ marginTop: space.sm, fontWeight: '700' }}>Tap to attach screenshot</Text>
+                        <Text variant="label" tone="muted" style={{ marginTop: space.sm, fontWeight: '700' }}>{t('wallet.tapToAttach')}</Text>
                         <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>PNG / JPG</Text>
                       </Card>
                     </PressableScale>
@@ -298,7 +300,7 @@ export default function WalletScreen() {
 
                   {/* Submit */}
                   <Button
-                    label="Submit Top-Up Request"
+                    label={t('wallet.submitTopUp')}
                     variant="primary"
                     icon={<Ionicons name="arrow-up-circle" size={18} color={color.white} />}
                     onPress={submitTopup}
@@ -314,7 +316,7 @@ export default function WalletScreen() {
         {/* Pending top-ups */}
         {pendingTopups.length > 0 && (
           <FadeInUp delay={120}>
-            <SectionHeader title="Top-up history" />
+            <SectionHeader title={t('wallet.topUpHistory')} />
             <Stagger step={40}>
               {pendingTopups.map((t: any) => (
                 <Card key={t.id} variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>
@@ -337,7 +339,7 @@ export default function WalletScreen() {
         {/* Recent transactions */}
         {transactions.length > 0 && (
           <FadeInUp delay={140}>
-            <SectionHeader title="Recent transactions" />
+            <SectionHeader title={t('wallet.recentTransactions')} />
             <Stagger step={40}>
               {transactions.map((tx: any) => (
                 <Card key={tx.id} variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>

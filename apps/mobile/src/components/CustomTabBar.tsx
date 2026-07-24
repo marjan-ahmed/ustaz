@@ -1,37 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Text, View, StyleSheet, Platform, type LayoutChangeEvent } from 'react-native';
+import { Animated, Pressable, View, StyleSheet, Platform, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { color, font, radius, shadow } from '@/theme/tokens';
+import { color, shadow } from '@/theme/tokens';
 import { haptic } from '@/lib/haptics';
 import { getPillTranslateX } from './CustomTabBar.layout';
 
 interface TabItem {
   name: string;
   icon: string;
-  label: string;
 }
 
 interface CustomTabBarProps {
   tabs: TabItem[];
   activeTab: string;
   onTabPress: (name: string) => void;
+  visible?: boolean;
 }
 
-const PILL_SIZE = 46;
-const BAR_HORIZONTAL_PADDING = 4;
+const BAR_HEIGHT = 56;
+const PILL_SIZE = 48;
+const ICON_SIZE = 26;
+const BAR_MARGIN_H = 12;
+const BAR_PADDING_H = 8;
+const BAR_RADIUS = 22;
+const PILL_RADIUS = PILL_SIZE / 2;
+const BOTTOM_SAFE_IOS = 24;
+const BOTTOM_SAFE_ANDROID = 12;
 
 function AnimatedTab({ tab, isActive, onPress }: { tab: TabItem; isActive: boolean; onPress: () => void }) {
-  const iconScale = useRef(new Animated.Value(isActive ? 1 : 0.85)).current;
-  const iconOpacity = useRef(new Animated.Value(isActive ? 1 : 0.55)).current;
-  const labelY = useRef(new Animated.Value(isActive ? 0 : 2)).current;
-  const labelOpacity = useRef(new Animated.Value(isActive ? 1 : 0.5)).current;
+  const iconScale = useRef(new Animated.Value(isActive ? 1 : 0.82)).current;
+  const iconOpacity = useRef(new Animated.Value(isActive ? 1 : 0.38)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(iconScale, { toValue: isActive ? 1 : 0.85, useNativeDriver: true, tension: 200, friction: 16 }),
-      Animated.timing(iconOpacity, { toValue: isActive ? 1 : 0.55, duration: 200, useNativeDriver: true }),
-      Animated.spring(labelY, { toValue: isActive ? 0 : 2, useNativeDriver: true, tension: 200, friction: 18 }),
-      Animated.timing(labelOpacity, { toValue: isActive ? 1 : 0.5, duration: 200, useNativeDriver: true }),
+      Animated.spring(iconScale, { toValue: isActive ? 1 : 0.82, useNativeDriver: true, tension: 200, friction: 16 }),
+      Animated.timing(iconOpacity, { toValue: isActive ? 1 : 0.38, duration: 200, useNativeDriver: true }),
     ]).start();
   }, [isActive]);
 
@@ -40,21 +43,27 @@ function AnimatedTab({ tab, isActive, onPress }: { tab: TabItem; isActive: boole
       <Animated.View style={[styles.iconWrap, { transform: [{ scale: iconScale }], opacity: iconOpacity }]}>
         <Ionicons
           name={tab.icon as any}
-          size={22}
+          size={ICON_SIZE}
           color={isActive ? color.white : color.inkMuted}
         />
       </Animated.View>
-      <Animated.Text style={[styles.label, { transform: [{ translateY: labelY }], opacity: labelOpacity, color: isActive ? color.ink : color.inkMuted }]}>
-        {tab.label}
-      </Animated.Text>
     </Pressable>
   );
 }
 
-export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabBarProps) {
+export default function CustomTabBar({ tabs, activeTab, onTabPress, visible = true }: CustomTabBarProps) {
   const slideX = useRef(new Animated.Value(0)).current;
   const pillScale = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const [barWidth, setBarWidth] = useState(0);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: visible ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [visible]);
 
   function onBarLayout(e: LayoutChangeEvent) {
     const w = e.nativeEvent.layout.width;
@@ -71,7 +80,7 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
       tabCount: tabs.length,
       activeIndex: idx,
       pillSize: PILL_SIZE,
-      paddingHorizontal: BAR_HORIZONTAL_PADDING,
+      paddingHorizontal: BAR_PADDING_H,
     });
 
     Animated.sequence([
@@ -84,7 +93,16 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
   }, [activeTab, barWidth, tabs.length]);
 
   return (
-    <View style={styles.outer}>
+    <Animated.View
+      style={[
+        styles.outer,
+        {
+          opacity: fadeAnim,
+          pointerEvents: visible ? 'auto' : 'none',
+          transform: [{ translateY: visible ? 0 : 80 }],
+        },
+      ]}
+    >
       <View style={styles.bar} onLayout={onBarLayout}>
         {barWidth > 0 && (
           <Animated.View
@@ -105,7 +123,7 @@ export default function CustomTabBar({ tabs, activeTab, onTabPress }: CustomTabB
           />
         ))}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -116,22 +134,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+    paddingBottom: Platform.OS === 'ios' ? BOTTOM_SAFE_IOS : BOTTOM_SAFE_ANDROID,
   },
   bar: {
     flexDirection: 'row',
     alignSelf: 'stretch',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: color.surface,
-    borderRadius: radius['2xl'],
-    marginHorizontal: 7,
-    height: 76,
-    paddingHorizontal: BAR_HORIZONTAL_PADDING,
+    borderRadius: BAR_RADIUS,
+    marginHorizontal: BAR_MARGIN_H,
+    height: BAR_HEIGHT,
+    paddingHorizontal: BAR_PADDING_H,
     shadowColor: color.navy,
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 16,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
     borderWidth: 1,
     borderColor: color.line,
     overflow: 'hidden',
@@ -139,11 +158,11 @@ const styles = StyleSheet.create({
   },
   pill: {
     position: 'absolute',
-    top: 7,
+    top: (BAR_HEIGHT - PILL_SIZE) / 2,
     left: 0,
     width: PILL_SIZE,
     height: PILL_SIZE,
-    borderRadius: PILL_SIZE / 2,
+    borderRadius: PILL_RADIUS,
     backgroundColor: color.navy,
     ...shadow.brand,
   },
@@ -151,22 +170,13 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 13,
-    paddingBottom: 10,
+    height: BAR_HEIGHT,
     zIndex: 1,
   },
   iconWrap: {
-    width: 44,
-    height: 44,
+    width: PILL_SIZE,
+    height: PILL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: {
-    fontFamily: font.body,
-    fontSize: 10,
-    fontWeight: '600',
-    marginTop: 2,
-    zIndex: 1,
-  },
 });
-
