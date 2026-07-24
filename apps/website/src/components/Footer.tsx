@@ -162,7 +162,7 @@ function Footer() {
                   href="/terms"
                   className="hover:text-white transition-colors"
                 >
-                  Terms of Service
+                  Terms of Use
                 </Link>
               </li>
               <li>
