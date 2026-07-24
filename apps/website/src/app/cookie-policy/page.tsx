@@ -179,14 +179,14 @@ export default function CookiePolicy() {
             <p>The following first-party cookies and tokens are set by the Platform directly:</p>
             <ul>
               <li>
-                <strong><code>sb-<project-ref>-auth-token</code></strong> &mdash;
+                <strong><code>sb-&lt;project-ref&gt;-auth-token</code></strong> &mdash;
                 <em> Strictly Necessary.</em> HTTP-only, Secure, SameSite=Lax session cookie
                 managed by Supabase Auth. Encodes your signed JSON Web Token and refresh token
                 so server routes can authenticate you. <strong>Lifetime:</strong> until you sign
                 out or the JWT expires (default 1 hour, auto-refreshed).
               </li>
               <li>
-                <strong><code>sb-<project-ref>-auth-token-code-verifier</code></strong>{' '}
+                <strong><code>sb-&lt;project-ref&gt;-auth-token-code-verifier</code></strong>{' '}
                 &mdash; <em>Strictly Necessary.</em> Short-lived PKCE verifier used during sign-in
                 flows. Deleted automatically once authentication completes.
               </li>
