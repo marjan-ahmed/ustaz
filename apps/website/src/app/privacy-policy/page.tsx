@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "How Ustaz collects, uses, stores, and protects your personal data on our trust-professional platform.",
 };
 
-const LAST_UPDATED = "23 July 2026";
+const LAST_UPDATED = "24 July 2026";
 
 const sections = [
   ["scope", "1. Scope & Acceptance"],
@@ -56,10 +56,11 @@ export default function PrivacyPolicy() {
               uses, discloses, and safeguards your personal data when you use our platform. It
               applies to Customers, Ustaz Providers, and visitors of our website and mobile
               applications. By using our Platform, you consent to the collection and use of your
-              information as described here. For other terms, please see our{' '}
+              information as described here. For other terms, please see our{" "}
               <Link href="/terms" className="text-[#db4b0d] underline font-medium">
                 Terms of Use
-              </Link>.
+              </Link>
+              .
             </p>
             <div className="mt-6 rounded-md bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900">
               <strong>Plain-English summary:</strong> We collect your phone number, location, and
@@ -111,7 +112,7 @@ export default function PrivacyPolicy() {
             </h2>
             <p>
               For the purposes of this Policy, the data controller is <strong>Ustaz (Pvt) Ltd</strong>,
-              incorporated in Pakistan. Our registered contact for privacy matters is{' '}
+              incorporated in Pakistan. Our registered contact for privacy matters is{" "}
               <a href="mailto:privacy@ustaz.app" className="text-[#db4b0d] underline">
                 privacy@ustaz.app
               </a>.
@@ -138,6 +139,7 @@ export default function PrivacyPolicy() {
             <h3>From Providers (Ustaz)</h3>
             <ul>
               <li><strong>CNIC number and photograph</strong>: for identity verification.</li>
+              <li><strong>CNIC verification documents</strong>: front photo, back photo, and selfie submitted via the identity verification flow. Stored in the <code>verification_submissions</code> table with a <code>status</code> (pending, approved, rejected) and admin review notes.</li>
               <li><strong>Service category</strong>, experience details, optional certifications.</li>
               <li><strong>Wallet & financial</strong>: JazzCash/EasyPaisa/IBAN identifiers, top-up receipts, transaction ledger (commissions, penalties, top-ups).</li>
               <li><strong>Real-time GPS coordinates</strong>: only during active accepted Service Requests.</li>
@@ -180,16 +182,16 @@ export default function PrivacyPolicy() {
               <li>
                 <strong>Provider GPS</strong> is broadcast in near real-time only while a Service
                 Request is in an active state (<code>accepted</code>, <code>provider_enroute</code>,
-                <code>arriving</code>, <code>arrived</code>, <code>in_progress</code>, or{' '}
+                <code>arriving</code>, <code>arrived</code>, <code>in_progress</code>, or{" "}
                 <code>work_in_progress</code>) and only to the matched Customer.
               </li>
               <li>
-                <strong>Tracking automatically stops</strong> the moment the request is marked{' '}
+                <strong>Tracking automatically stops</strong> the moment the request is marked{" "}
                 <code>completed</code>, <code>cancelled</code>, or otherwise terminated. The
                 corresponding live-location records are removed from active storage.
               </li>
               <li>
-                Historical location pings are retained in <strong>aggregated, de-identified form</strong>{' '}
+                Historical location pings are retained in <strong>aggregated, de-identified form</strong>{" "}
                 for safety analytics for up to <strong>90 days</strong>, then deleted.
               </li>
               <li>
@@ -203,8 +205,9 @@ export default function PrivacyPolicy() {
               7. CNIC & KYC Verification
             </h2>
             <p>
-              Providers are required to submit their CNIC details for identity verification. CNIC
-              data and submitted documents:
+              Providers are required to submit their CNIC details for identity verification. This
+              includes the CNIC number, front and back photos, and a selfie. CNIC data and submitted
+              documents:
             </p>
             <ul>
               <li>Are encrypted at rest in our secure storage bucket;</li>
@@ -212,6 +215,12 @@ export default function PrivacyPolicy() {
               <li>Are <strong>not</strong> shared with Customers;</li>
               <li>Are retained for the duration of the Provider account and up to <strong>5 years</strong> after closure to comply with tax and regulatory requirements.</li>
             </ul>
+            <p>
+              Submitted verification documents are stored in the <code>verification_submissions</code>
+              table and reviewed by Ustaz administrators. The review status (<code>pending</code>,
+              <code>approved</code>, <code>rejected</code>) is recorded against the Provider&apos;s
+              account. Providers cannot accept Service Requests until their identity is verified.
+            </p>
 
             <h2 className="text-2xl font-extrabold mt-6" id="payments">
               8. Payment & Wallet Data
@@ -237,10 +246,16 @@ export default function PrivacyPolicy() {
             <p>
               In-app chat messages between Customer and Provider are stored on our servers and may
               be accessed by authorised Ustaz personnel solely for safety, dispute resolution, and
-              fraud-prevention purposes. <strong>Do not share sensitive financial information</strong>{' '}
+              fraud-prevention purposes. <strong>Do not share sensitive financial information</strong>{" "}
               (such as full bank credentials) through chat. Phone calls placed via the in-app
               dialer use your device&apos;s telephony stack and are <strong>not recorded</strong> by Ustaz.
             </p>
+            <ul>
+              <li><strong>Message retention</strong>: Chat messages are retained for <strong>2 years</strong>, or longer if subject to an active dispute or legal hold.</li>
+              <li><strong>Follow-up window</strong>: You can send messages to a Provider for up to <strong>7 days</strong> after a Service Request is marked completed. After this window, the chat becomes read-only.</li>
+              <li><strong>Immutability</strong>: Once sent, chat messages cannot be edited or deleted by either party. This is an intentional design choice to preserve a reliable record for dispute resolution.</li>
+              <li><strong>Access</strong>: Ustaz personnel may access chat content only for safety monitoring, dispute resolution, fraud investigation, or compliance with a lawful court order.</li>
+            </ul>
 
             <h2 className="text-2xl font-extrabold mt-6" id="cookies">
               10. Cookies & Local Storage
@@ -340,10 +355,10 @@ export default function PrivacyPolicy() {
               <li><strong>Lodge a complaint</strong> with the National Commission for Personal Data Protection (once operational under the Personal Data Protection Act).</li>
             </ul>
             <p>
-              To exercise any of these rights, email{' '}
+              To exercise any of these rights, email{" "}
               <a href="mailto:privacy@ustaz.app" className="text-[#db4b0d] underline">
                 privacy@ustaz.app
-              </a>{' '}
+              </a>{" "}
               with verification of your identity. We will respond within <strong>30 days</strong>.
             </p>
 
@@ -352,10 +367,10 @@ export default function PrivacyPolicy() {
             </h2>
             <p>
               The Platform is not directed to children under 18. We do not knowingly collect data
-              from minors. If you believe a minor has provided us with personal data, please contact{' '}
+              from minors. If you believe a minor has provided us with personal data, please contact{" "}
               <a href="mailto:privacy@ustaz.app" className="text-[#db4b0d] underline">
                 privacy@ustaz.app
-              </a>{' '}
+              </a>{" "}
               and we will delete the data promptly.
             </p>
 
@@ -398,15 +413,16 @@ export default function PrivacyPolicy() {
             </p>
             <ul>
               <li>Email: <a href="mailto:privacy@ustaz.app" className="text-[#db4b0d] underline">privacy@ustaz.app</a></li>
+              <li>WhatsApp: <a href="https://wa.me/923051126649" className="text-[#db4b0d] underline">+92 305 1126649</a></li>
               <li>Postal: Ustaz (Pvt) Ltd, Karachi, Sindh, Pakistan</li>
               <li>In-app: <Link href="/contact" className="text-[#db4b0d] underline">Contact page</Link></li>
             </ul>
 
             <hr className="my-12" />
             <p className="text-sm text-gray-500">
-              See also our{' '}
+              See also our{" "}
               <Link href="/terms" className="text-[#db4b0d] underline">Terms of Use</Link>
-              {' '}for the contractual terms governing your use of the Platform.
+              {" "}for the contractual terms governing your use of the Platform.
             </p>
           </article>
         </div>

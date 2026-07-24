@@ -9,7 +9,7 @@ export const metadata = {
     'Terms of Use for the Ustaz platform connecting customers with trust-professionals in Pakistan.',
 };
 
-const LAST_UPDATED = '6 June 2026';
+const LAST_UPDATED = '24 July 2026';
 
 const sections = [
   ['acceptance', '1. Acceptance & Modification'],
@@ -127,6 +127,12 @@ export default function TermsOfUse() {
               perform the service is formed directly between the Customer and the Provider upon
               acceptance of a Service Request.
             </p>
+            <p>
+              Ustaz operates an <strong>admin portal</strong> for internal operations, including
+              provider verification review, wallet top-up approval, and platform monitoring. The
+              admin portal uses a separate, isolated session and is accessible only to authorised
+              Ustaz personnel.
+            </p>
 
             <h2 className='text-2xl font-extrabold mt-6' id="eligibility">4. Eligibility</h2>
             <ul>
@@ -156,6 +162,12 @@ export default function TermsOfUse() {
               <li>You acknowledge that you are an <strong>independent contractor</strong>, not an employee, agent, or partner of Ustaz;</li>
               <li>You will not solicit Customers off-platform to avoid platform commission.</li>
             </ol>
+            <p>
+              <strong>CNIC verification is mandatory.</strong> Providers must submit their CNIC number,
+              front and back photos, and a selfie during registration. Accounts are not activated until
+              identity verification is approved by Ustaz administrators. Providers with unverified or
+              rejected identities cannot accept Service Requests.
+            </p>
 
             <h2 className='text-2xl font-extrabold mt-6' id="verification-disclaimer">7. Verification &amp; Trust Badges Disclaimer</h2>
             <div className="rounded-md bg-gray-50 border border-gray-200 px-4 py-3 my-4">
@@ -176,7 +188,7 @@ export default function TermsOfUse() {
             <p className="font-mono text-sm bg-gray-50 px-3 py-2 rounded border border-gray-200">
               notified → accepted → provider_enroute → arriving → arrived → in_progress → completed
             </p>
-            <p>Terminal (non-progressing) states: <code>cancelled</code>, <code>rejected</code>, <code>no_provider_found</code>.</p>
+            <p>Terminal (non-progressing) states: <code>cancelled</code>, <code>rejected</code>, <code>no_ustaz_found</code>.</p>
             <h3>Cancellation</h3>
             <ul>
               <li><strong>Before acceptance</strong>: free.</li>
@@ -268,6 +280,15 @@ export default function TermsOfUse() {
                 <strong>In-app chat</strong> messages between Customer and Provider are visible to
                 Ustaz operations for safety and dispute-resolution purposes. Do not share sensitive
                 financial information through chat.
+              </li>
+              <li>
+                <strong>Follow-up window</strong>: You can send messages to the other party for up to{' '}
+                <strong>7 days</strong> after a Service Request is marked completed. After this
+                window, the chat becomes read-only.
+              </li>
+              <li>
+                <strong>Immutability</strong>: Once sent, chat messages cannot be edited or deleted
+                by either party. This preserves a reliable record for dispute resolution.
               </li>
               <li>
                 <strong>Phone calls</strong> are routed through the dialer of your device; Ustaz

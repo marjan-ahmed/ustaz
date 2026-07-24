@@ -10,7 +10,7 @@ export const metadata = {
     'How Ustaz collects, uses, stores, and protects your personal data on our trust-professional platform.',
 };
 
-const LAST_UPDATED = '6 June 2026';
+const LAST_UPDATED = '24 July 2026';
 
 const sections = [
   ['scope', '1. Scope & Acceptance'],
@@ -121,6 +121,7 @@ export default function PrivacyPolicy() {
             <h3>From Providers (Ustaz)</h3>
             <ul>
               <li><strong>CNIC number and photograph</strong>: for identity verification.</li>
+              <li><strong>CNIC verification documents</strong>: front photo, back photo, and selfie submitted via the identity verification flow. Stored in the <code>verification_submissions</code> table with a <code>status</code> (pending, approved, rejected) and admin review notes.</li>
               <li><strong>Service category</strong>, experience details, optional certifications.</li>
               <li><strong>Wallet &amp; financial</strong>: JazzCash/EasyPaisa/IBAN identifiers, top-up receipts, transaction ledger (commissions, penalties, top-ups).</li>
               <li><strong>Real-time GPS coordinates</strong>: only during active accepted Service Requests.</li>
@@ -178,8 +179,9 @@ export default function PrivacyPolicy() {
 
             <h2 className='text-2xl font-extrabold mt-6' id="cnic-kyc">7. CNIC &amp; KYC Verification</h2>
             <p>
-              Providers are required to submit their CNIC details for identity verification. CNIC
-              data and submitted documents:
+              Providers are required to submit their CNIC details for identity verification. This
+              includes the CNIC number, front and back photos, and a selfie. CNIC data and submitted
+              documents:
             </p>
             <ul>
               <li>Are encrypted at rest in our secure storage bucket;</li>
@@ -187,6 +189,12 @@ export default function PrivacyPolicy() {
               <li>Are <strong>not</strong> shared with Customers;</li>
               <li>Are retained for the duration of the Provider account and up to <strong>5 years</strong> after closure to comply with tax and regulatory requirements.</li>
             </ul>
+            <p>
+              Submitted verification documents are stored in the <code>verification_submissions</code>
+              table and reviewed by Ustaz administrators. The review status (<code>pending</code>,
+              <code>approved</code>, <code>rejected</code>) is recorded against the Provider&apos;s
+              account. Providers cannot accept Service Requests until their identity is verified.
+            </p>
 
             <h2 className='text-2xl font-extrabold mt-6' id="payments">8. Payment &amp; Wallet Data</h2>
             <p>
@@ -212,6 +220,12 @@ export default function PrivacyPolicy() {
               (such as full bank credentials) through chat. Phone calls placed via the in-app
               dialer use your device&apos;s telephony stack and are <strong>not recorded</strong> by Ustaz.
             </p>
+            <ul>
+              <li><strong>Message retention</strong>: Chat messages are retained for <strong>2 years</strong>, or longer if subject to an active dispute or legal hold.</li>
+              <li><strong>Follow-up window</strong>: You can send messages to a Provider for up to <strong>7 days</strong> after a Service Request is marked completed. After this window, the chat becomes read-only.</li>
+              <li><strong>Immutability</strong>: Once sent, chat messages cannot be edited or deleted by either party. This is an intentional design choice to preserve a reliable record for dispute resolution.</li>
+              <li><strong>Access</strong>: Ustaz personnel may access chat content only for safety monitoring, dispute resolution, fraud investigation, or compliance with a lawful court order.</li>
+            </ul>
 
             <h2 className='text-2xl font-extrabold mt-6' id="cookies">10. Cookies &amp; Local Storage</h2>
             <p>
@@ -341,6 +355,7 @@ export default function PrivacyPolicy() {
             </p>
             <ul>
               <li>Email: <a href="mailto:privacy@ustaz.app" className="text-[#db4b0d] underline">privacy@ustaz.app</a></li>
+              <li>WhatsApp: <a href="https://wa.me/923051126649" className="text-[#db4b0d] underline">+92 305 1126649</a></li>
               <li>Postal: Ustaz (Pvt) Ltd, Karachi, Sindh, Pakistan</li>
               <li>In-app: <Link href="/contact" className="text-[#db4b0d] underline">Contact page</Link></li>
             </ul>

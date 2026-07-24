@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Terms of Use for the Ustaz platform connecting customers with trust-professionals in Pakistan.",
 };
 
-const LAST_UPDATED = "23 July 2026";
+const LAST_UPDATED = "24 July 2026";
 
 const sections = [
   ["acceptance", "1. Acceptance & Modification"],
@@ -58,7 +58,7 @@ export default function TermsOfUse() {
               and use of the Ustaz platform (the &ldquo;<strong>Platform</strong>&rdquo;), operated
               in the Islamic Republic of Pakistan. Please read these Terms carefully. By creating an
               account, requesting a service, or registering as an Ustaz Provider, you agree to be
-              bound by these Terms and our{' '}
+              bound by these Terms and our{" "}
               <Link href="/privacy-policy" className="text-[#db4b0d] underline font-medium">
                 Privacy Policy
               </Link>
@@ -81,13 +81,8 @@ export default function TermsOfUse() {
               <ol className="text-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {sections.map(([id, label], idx) => (
                   <li key={id} className="">
-                    <a
-                      href={`#${id}`}
-                      className="flex items-center gap-3 text-gray-700 hover:text-[#db4b0d]"
-                    >
-                      <span className="flex-none w-6 h-6 bg-gray-100 text-gray-700 rounded-full flex items-center justify-center text-xs font-medium">
-                        {idx + 1}
-                      </span>
+                    <a href={`#${id}`} className="flex items-center gap-3 text-gray-700 hover:text-[#db4b0d]">
+                      <span className="flex-none w-6 h-6 bg-gray-100 text-gray-700 rounded-full flex items-center justify-center text-xs font-medium">{idx + 1}</span>
                       <span className="truncate">{label}</span>
                     </a>
                   </li>
@@ -96,13 +91,9 @@ export default function TermsOfUse() {
             </div>
           </nav>
 
-          <article
-            id="terms-article"
-            className="prose prose-slate max-w-none prose-headings:scroll-mt-24 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-p:leading-7 prose-li:leading-7"
-          >
-            <h2 className="text-2xl font-extrabold mt-6" id="acceptance">
-              1. Acceptance & Modification
-            </h2>
+          <article id="terms-article" className="prose prose-slate max-w-none prose-headings:scroll-mt-24 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-p:leading-7 prose-li:leading-7">
+
+            <h2 className='text-2xl font-extrabold mt-6'  id="acceptance">1. Acceptance &amp; Modification</h2>
             <p>
               By accessing or using the Platform, you agree to these Terms and any policies referenced
               herein, including our Privacy Policy. If you do not agree, you must not use the
@@ -115,20 +106,16 @@ export default function TermsOfUse() {
               updated Terms.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="definitions">
-              2. Definitions
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="definitions">2. Definitions</h2>
             <ul>
-              <li><strong>&ldquo;Customer&rdquo;</strong> — a user who creates a Service Request through the Platform.</li>
-              <li><strong>&ldquo;Ustaz&rdquo;</strong> or <strong>&ldquo;Provider&rdquo;</strong> — an independent trust-professional verified by phone OTP who offers services through the Platform.</li>
-              <li><strong>&ldquo;Service Request&rdquo;</strong> — an order placed by a Customer for a category of home service (plumbing, electrical, carpentry, AC maintenance, solar, etc.).</li>
-              <li><strong>&ldquo;Platform&rdquo;</strong> — the Ustaz web application, mobile applications, APIs, and supporting infrastructure.</li>
-              <li><strong>&ldquo;Wallet&rdquo;</strong> — a Provider&apos;s prepaid balance held by Ustaz to settle platform fees.</li>
+              <li><strong>&ldquo;Customer&rdquo;</strong> &mdash; a user who creates a Service Request through the Platform.</li>
+              <li><strong>&ldquo;Ustaz&rdquo;</strong> or <strong>&ldquo;Provider&rdquo;</strong> &mdash; an independent trust-professional verified by phone OTP who offers services through the Platform.</li>
+              <li><strong>&ldquo;Service Request&rdquo;</strong> &mdash; an order placed by a Customer for a category of home service (plumbing, electrical, carpentry, AC maintenance, solar, etc.).</li>
+              <li><strong>&ldquo;Platform&rdquo;</strong> &mdash; the Ustaz web application, mobile applications, APIs, and supporting infrastructure.</li>
+              <li><strong>&ldquo;Wallet&rdquo;</strong> &mdash; a Provider&apos;s prepaid balance held by Ustaz to settle platform fees.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="marketplace">
-              3. The Ustaz Marketplace
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="marketplace">3. The Ustaz Marketplace</h2>
             <p>
               Ustaz operates a <strong>technology platform</strong> that connects Customers with
               independent Providers in their geographic vicinity. Ustaz does not perform any
@@ -141,10 +128,14 @@ export default function TermsOfUse() {
               perform the service is formed directly between the Customer and the Provider upon
               acceptance of a Service Request.
             </p>
+            <p>
+              Ustaz operates an <strong>admin portal</strong> for internal operations, including
+              provider verification review, wallet top-up approval, and platform monitoring. The
+              admin portal uses a separate, isolated session and is accessible only to authorised
+              Ustaz personnel.
+            </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="eligibility">
-              4. Eligibility
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="eligibility">4. Eligibility</h2>
             <ul>
               <li>You must be at least <strong>18 years old</strong> to use the Platform.</li>
               <li>You must be a resident of, or physically present in, the Islamic Republic of Pakistan (initial launch).</li>
@@ -152,22 +143,16 @@ export default function TermsOfUse() {
               <li>You may not use the Platform if you have previously been suspended or removed for cause.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="customer-account">
-              5. Customer Account
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="customer-account">5. Customer Account</h2>
             <p>
               Customer accounts are verified by phone OTP via SMS. One verified phone number = one
               account. You are responsible for maintaining the confidentiality of your account and
               for all activity on your account. You must promptly notify us of any unauthorized use
-              by contacting{' '}
-              <a href="mailto:support@ustaz.app" className="text-[#db4b0d] underline">
-                support@ustaz.app
-              </a>.
+              by contacting{" "}
+              <a href="mailto:support@ustaz.app" className="text-[#db4b0d] underline">support@ustaz.app</a>.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="provider-onboarding">
-              6. Ustaz Provider Onboarding & Representations
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="provider-onboarding">6. Ustaz Provider Onboarding &amp; Representations</h2>
             <p>By registering as a Provider, you represent and warrant that:</p>
             <ol>
               <li>You are at least <strong>18 years old</strong>;</li>
@@ -178,16 +163,20 @@ export default function TermsOfUse() {
               <li>You acknowledge that you are an <strong>independent contractor</strong>, not an employee, agent, or partner of Ustaz;</li>
               <li>You will not solicit Customers off-platform to avoid platform commission.</li>
             </ol>
+            <p>
+              <strong>CNIC verification is mandatory.</strong> Providers must submit their CNIC number,
+              front and back photos, and a selfie during registration. Accounts are not activated until
+              identity verification is approved by Ustaz administrators. Providers with unverified or
+              rejected identities cannot accept Service Requests.
+            </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="verification-disclaimer">
-              7. Verification & Trust Badges Disclaimer
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="verification-disclaimer">7. Verification &amp; Trust Badges Disclaimer</h2>
             <div className="rounded-md bg-gray-50 border border-gray-200 px-4 py-3 my-4">
               <p className="mb-0">
                 Any badges or labels such as &ldquo;<strong>Verified Ustaz</strong>&rdquo;,
                 &ldquo;<strong>KYC Approved</strong>&rdquo;, &ldquo;<strong>Top Rated</strong>&rdquo;,
                 or similar indicate <strong>only</strong> that the Provider has completed Ustaz&apos;s
-                onboarding workflow at the time of verification. Such labels do{' '}
+                onboarding workflow at the time of verification. Such labels do{" "}
                 <strong>not</strong> constitute Ustaz&apos;s endorsement, vouching, or guarantee of
                 the Provider&apos;s character, present qualifications, skill, integrity, or fitness
                 for any particular job. Ustaz makes no representation or warranty regarding any
@@ -195,14 +184,12 @@ export default function TermsOfUse() {
               </p>
             </div>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="state-machine">
-              8. Service Requests & Status Workflow
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="state-machine">8. Service Requests &amp; Status Workflow</h2>
             <p>A Service Request progresses through the following states:</p>
             <p className="font-mono text-sm bg-gray-50 px-3 py-2 rounded border border-gray-200">
               notified → accepted → provider_enroute → arriving → arrived → in_progress → completed
             </p>
-            <p>Terminal (non-progressing) states: <code>cancelled</code>, <code>rejected</code>, <code>no_provider_found</code>.</p>
+            <p>Terminal (non-progressing) states: <code>cancelled</code>, <code>rejected</code>, <code>no_ustaz_found</code>.</p>
             <h3>Cancellation</h3>
             <ul>
               <li><strong>Before acceptance</strong>: free.</li>
@@ -210,13 +197,11 @@ export default function TermsOfUse() {
               <li><strong>After the Provider has arrived (status <code>arrived</code> or later)</strong>: the Customer is responsible for the <strong>visit fee</strong> as agreed during the request.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="pricing-fees">
-              9. Pricing, Fees & Commission
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="pricing-fees">9. Pricing, Fees &amp; Commission</h2>
             <p>
               <strong>Cash flows between Customer and Provider directly.</strong> The Customer pays
               the Provider the agreed service fee plus the actual cost of any parts/materials
-              purchased on the Customer&apos;s behalf (with receipt). Ustaz is <strong>not</strong>{' '}
+              purchased on the Customer&apos;s behalf (with receipt). Ustaz is <strong>not</strong>{" "}
               the merchant of record for any materials.
             </p>
             <p>
@@ -232,9 +217,7 @@ export default function TermsOfUse() {
               statement.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="wallet-settlement">
-              10. Provider Wallet, Top-ups & Settlement
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="wallet-settlement">10. Provider Wallet, Top-ups &amp; Settlement</h2>
             <ul>
               <li>A minimum Wallet balance is required for a Provider to receive new Service Requests.</li>
               <li>Top-ups may be made via JazzCash, EasyPaisa, bank transfer (Raast / IBAN), or designated cash agents.</li>
@@ -244,26 +227,22 @@ export default function TermsOfUse() {
               <li>A Provider whose Wallet balance reaches <strong>zero</strong> is automatically taken offline and will not receive new Service Requests until the Wallet is topped up.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="ratings">
-              11. Ratings & Reviews
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="ratings">11. Ratings &amp; Reviews</h2>
             <p>
               After every completed Service Request, both Customer and Provider may rate the other
               from 1 to 5 stars with an optional comment. One rating per party per request. Ratings
-              are subject to our Content Policy — Ustaz reserves the right to remove reviews
+              are subject to our Content Policy &mdash; Ustaz reserves the right to remove reviews
               that contain defamatory content, personal attacks, profanity, or violate applicable
               law.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="warranty">
-              12. Service Warranty — 3-Day Free Re-fix
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="warranty">12. Service Warranty &mdash; 3-Day Free Re-fix</h2>
             <p>
-              To protect Customers, every completed Service Request carries a{' '}
+              To protect Customers, every completed Service Request carries a{" "}
               <strong>3-day workmanship warranty</strong>. If the same issue that was serviced
-              recurs within <strong>three (3) calendar days</strong> of the job being marked{' '}
-              <code>completed</code>, the Customer may submit a <strong>warranty claim</strong>{' '}
-              from their <Link href="/history" className="text-[#db4b0d] underline">My Jobs</Link>{' '}
+              recurs within <strong>three (3) calendar days</strong> of the job being marked{" "}
+              <code>completed</code>, the Customer may submit a <strong>warranty claim</strong>{" "}
+              from their <Link href="/history" className="text-[#db4b0d] underline">My Jobs</Link>{" "}
               history page.
             </p>
             <h3>How a claim works</h3>
@@ -272,7 +251,7 @@ export default function TermsOfUse() {
               <li>The matched Provider is notified immediately and must <strong>Accept</strong> (agree to return and re-fix the issue at no additional labour charge) or <strong>Refuse</strong> the claim.</li>
               <li>The re-fix covers the <strong>original workmanship only</strong>. New problems, unrelated faults, damage caused by misuse, third-party tampering, or the cost of genuinely new parts/materials are <strong>not</strong> covered and may be charged separately by agreement.</li>
             </ul>
-            <h3>Provider obligations & penalties</h3>
+            <h3>Provider obligations &amp; penalties</h3>
             <ul>
               <li>A Provider who <strong>accepts</strong> a valid claim must return within a reasonable time and remedy the recurring issue free of labour charge.</li>
               <li>A Provider who <strong>refuses</strong> a valid claim incurs a <strong>PKR 200 penalty</strong>, deducted from their Wallet (floored at zero), and a <strong>warranty strike</strong> recorded against their account. Accumulated strikes may lead to reduced visibility, suspension, or removal under &sect; 16.</li>
@@ -283,29 +262,34 @@ export default function TermsOfUse() {
               extended retroactively. Filing a claim after the window has elapsed is not possible.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="tracking">
-              13. Real-time Location Tracking
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="tracking">13. Real-time Location Tracking</h2>
             <p>
               <strong>Customer.</strong> When you create a Service Request, you consent to the
               Provider seeing your service address. After a Provider accepts, you consent to seeing
               the Provider&apos;s real-time GPS location until the service is completed.
             </p>
             <p>
-              <strong>Provider.</strong> Your real-time GPS location is broadcast{' '}
-              <strong>only</strong> while you have an active accepted Service Request and{' '}
+              <strong>Provider.</strong> Your real-time GPS location is broadcast{" "}
+              <strong>only</strong> while you have an active accepted Service Request and{" "}
               <strong>only</strong> to the matched Customer. Location data outside of an active
               request is not collected by Ustaz.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="communications">
-              14. Communications (Chat, Calls, Push)
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="communications">14. Communications (Chat, Calls, Push)</h2>
             <ul>
               <li>
                 <strong>In-app chat</strong> messages between Customer and Provider are visible to
                 Ustaz operations for safety and dispute-resolution purposes. Do not share sensitive
                 financial information through chat.
+              </li>
+              <li>
+                <strong>Follow-up window</strong>: You can send messages to the other party for up to{" "}
+                <strong>7 days</strong> after a Service Request is marked completed. After this
+                window, the chat becomes read-only.
+              </li>
+              <li>
+                <strong>Immutability</strong>: Once sent, chat messages cannot be edited or deleted
+                by either party. This preserves a reliable record for dispute resolution.
               </li>
               <li>
                 <strong>Phone calls</strong> are routed through the dialer of your device; Ustaz
@@ -319,9 +303,7 @@ export default function TermsOfUse() {
               </li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="prohibited">
-              15. Prohibited Conduct
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="prohibited">15. Prohibited Conduct</h2>
             <p>You may not:</p>
             <ul>
               <li>Misrepresent your identity, qualifications, or service category;</li>
@@ -333,9 +315,7 @@ export default function TermsOfUse() {
               <li>Scrape, reverse-engineer, or otherwise misuse the Platform&apos;s infrastructure.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="suspension">
-              16. Suspension, Strikes & Termination
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="suspension">16. Suspension, Strikes &amp; Termination</h2>
             <p>
               Ustaz may, at its sole discretion, suspend or permanently terminate your account for
               violating these Terms, sustained low ratings (below 3.0 over a meaningful sample),
@@ -350,34 +330,28 @@ export default function TermsOfUse() {
               independent of any monetary penalty already applied.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="warranties">
-              17. Disclaimer of Warranties
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="warranties">17. Disclaimer of Warranties</h2>
             <p className="uppercase text-sm bg-gray-50 border border-gray-200 px-4 py-3 rounded">
               The Platform is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo; without
               warranties of any kind, either express or implied. Ustaz expressly disclaims all
               warranties of merchantability, fitness for a particular purpose, non-infringement,
-              and any warranty arising out of course of dealing or usage of trade. Ustaz does{' '}
+              and any warranty arising out of course of dealing or usage of trade. Ustaz does{" "}
               <strong>not</strong> warrant the quality, safety, legality, accuracy, or reliability
               of any Provider&apos;s services.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="liability">
-              18. Limitation of Liability
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="liability">18. Limitation of Liability</h2>
             <p>
               To the maximum extent permitted by Pakistani law, Ustaz&apos;s total aggregate
-              liability to any user shall not exceed the higher of (a){' '}
-              <strong>PKR 25,000</strong>, or (b) the total platform fees you paid to Ustaz in the{' '}
+              liability to any user shall not exceed the higher of (a){" "}
+              <strong>PKR 25,000</strong>, or (b) the total platform fees you paid to Ustaz in the{" "}
               <strong>12 months preceding</strong> the event giving rise to the claim. Ustaz shall
               not be liable for indirect, incidental, special, consequential, or punitive damages,
               including lost profits, loss of data, property damage caused by a Provider, or
               personal injury sustained during a service.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="indemnity">
-              19. Indemnification
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="indemnity">19. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless Ustaz, its directors, employees,
               and contractors from and against any claims, liabilities, damages, losses, and
@@ -387,16 +361,12 @@ export default function TermsOfUse() {
               privacy right.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="dispute">
-              20. Dispute Resolution
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="dispute">20. Dispute Resolution</h2>
             <p>
               <strong>Step 1 — Internal resolution.</strong> Any dispute shall first be raised in
-              writing to Ustaz support at{' '}
-              <a href="mailto:support@ustaz.app" className="text-[#db4b0d] underline">
-                support@ustaz.app
-              </a>{' '}
-              with all relevant details. Ustaz will respond within <strong>14 business days</strong>{' '}
+              writing to Ustaz support at{" "}
+              <a href="mailto:support@ustaz.app" className="text-[#db4b0d] underline">support@ustaz.app</a>{" "}
+              with all relevant details. Ustaz will respond within <strong>14 business days</strong>{" "}
               and attempt good-faith resolution.
             </p>
             <p>
@@ -408,17 +378,13 @@ export default function TermsOfUse() {
               the exclusive jurisdiction of the courts of Karachi, Sindh, Pakistan.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="law">
-              21. Governing Law
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="law">21. Governing Law</h2>
             <p>
               These Terms are governed by and construed in accordance with the laws of the Islamic
               Republic of Pakistan, without regard to conflict-of-law principles.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="sharia">
-              22. Sharia Compliance
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="sharia">22. Sharia Compliance</h2>
             <p>
               Ustaz fees and transactions are structured to align with Islamic commercial
               principles. Service fees paid by Customers to Providers represent bay&apos;i (direct
@@ -427,9 +393,7 @@ export default function TermsOfUse() {
               gharar (excessive uncertainty), or financing of haram goods or services.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="misc">
-              23. Miscellaneous
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="misc">23. Miscellaneous</h2>
             <ul>
               <li><strong>Entire agreement.</strong> These Terms, together with our Privacy Policy, constitute the entire agreement between you and Ustaz.</li>
               <li><strong>Severability.</strong> If any provision is held unenforceable, the remaining provisions shall remain in full force.</li>
@@ -438,26 +402,21 @@ export default function TermsOfUse() {
               <li><strong>Force majeure.</strong> Ustaz is not liable for any failure or delay caused by events beyond its reasonable control.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="contact">
-              24. Contact
-            </h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="contact">24. Contact</h2>
             <p>
-              For questions regarding these Terms, please contact us at{' '}
-              <a href="mailto:legal@ustaz.app" className="text-[#db4b0d] underline">
-                legal@ustaz.app
-              </a>{' '}
-              or visit our{' '}
-              <Link href="/contact" className="text-[#db4b0d] underline">
-                contact page
-              </Link>.
+              For questions regarding these Terms, please contact us at{" "}
+              <a href="mailto:legal@ustaz.app" className="text-[#db4b0d] underline">legal@ustaz.app</a>{" "}
+              or visit our{" "}
+              <Link href="/contact" className="text-[#db4b0d] underline">contact page</Link>.
             </p>
 
             <hr className="my-12" />
             <p className="text-sm text-gray-500">
-              See also our{' '}
+              See also our{" "}
               <Link href="/privacy-policy" className="text-[#db4b0d] underline">Privacy Policy</Link>
-              {' '}for details on how we collect and use personal data.
+              {" "}for details on how we collect and use personal data.
             </p>
+
           </article>
         </div>
       </main>

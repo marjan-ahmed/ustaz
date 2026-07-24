@@ -10,7 +10,7 @@ export const metadata = {
     'How Ustaz uses cookies and similar storage technologies on its platform, and how you can control them.',
 };
 
-const LAST_UPDATED = '01 June 2026';
+const LAST_UPDATED = '24 July 2026';
 
 const sections = [
   ['what-are-cookies', '1. What Are Cookies'],
@@ -290,6 +290,12 @@ export default function CookiePolicy() {
                 background push notifications can fire when the Platform tab is closed. The
                 service worker does not cache personal data; it only handles incoming push
                 messages and any future PWA offline behaviour.
+              </li>
+              <li>
+                <strong>Mobile app (AsyncStorage)</strong>: On the Expo React Native mobile app,
+                language preference is stored via <code>AsyncStorage</code> instead of cookies.
+                This is platform-equivalent to the web <code>NEXT_LOCALE</code> cookie and serves
+                the same purpose.
               </li>
             </ul>
             <p>

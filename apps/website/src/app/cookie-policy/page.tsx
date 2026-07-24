@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "How Ustaz uses cookies and similar storage technologies on its platform, and how you can control them.",
 };
 
-const LAST_UPDATED = "23 July 2026";
+const LAST_UPDATED = "24 July 2026";
 
 const sections = [
   ["what-are-cookies", "1. What Are Cookies"],
@@ -47,11 +47,11 @@ export default function CookiePolicy() {
               &ldquo;<strong>us</strong>&rdquo;, &ldquo;<strong>our</strong>&rdquo;) uses cookies
               and similar storage technologies on the Ustaz web application, mobile applications,
               and supporting services (collectively, the &ldquo;<strong>Platform</strong>&rdquo;).
-              It is a companion to our{' '}
+              It is a companion to our{" "}
               <Link href="/privacy-policy" className="text-[#db4b0d] underline font-medium">
                 Privacy Policy
               </Link>
-              {' '}and our{' '}
+              {" "}and our{" "}
               <Link href="/terms" className="text-[#db4b0d] underline font-medium">
                 Terms of Use
               </Link>
@@ -105,7 +105,7 @@ export default function CookiePolicy() {
             </p>
             <p>
               In addition to traditional cookies, modern web platforms (including ours) rely on
-              other browser storage mechanisms such as <code>localStorage</code>,{' '}
+              other browser storage mechanisms such as <code>localStorage</code>,{" "}
               <code>IndexedDB</code>, and <strong>service workers</strong>. For the purposes of
               this Policy, &ldquo;<strong>cookies</strong>&rdquo; refers to all of these
               client-side storage technologies, except where otherwise specified in &sect; 6.
@@ -186,13 +186,13 @@ export default function CookiePolicy() {
                 out or the JWT expires (default 1 hour, auto-refreshed).
               </li>
               <li>
-                <strong><code>sb-&lt;project-ref&gt;-auth-token-code-verifier</code></strong>{' '}
+                <strong><code>sb-&lt;project-ref&gt;-auth-token-code-verifier</code></strong>{" "}
                 &mdash; <em>Strictly Necessary.</em> Short-lived PKCE verifier used during sign-in
                 flows. Deleted automatically once authentication completes.
               </li>
               <li>
                 <strong><code>NEXT_LOCALE</code></strong> &mdash; <em>Functional.</em> Your
-                selected language (en / ur / ar) used by{' '}
+                selected language (en / ur / ar) used by{" "}
                 <code>next-intl</code>. <strong>Lifetime:</strong> 1 year, refreshed on each
                 visit.
               </li>
@@ -219,7 +219,7 @@ export default function CookiePolicy() {
             <ul>
               <li>
                 <strong>Supabase</strong> (database, auth, real-time, storage). Sets the
-                authentication cookie listed in &sect; 4. Privacy Policy:{' '}
+                authentication cookie listed in &sect; 4. Privacy Policy:{" "}
                 <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">
                   supabase.com/privacy
                 </a>
@@ -228,7 +228,7 @@ export default function CookiePolicy() {
               <li>
                 <strong>Firebase Cloud Messaging</strong> (push notifications). Stores an FCM
                 registration token in IndexedDB used to deliver notifications to your device.
-                Privacy Policy:{' '}
+                Privacy Policy:{" "}
                 <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">
                   firebase.google.com/support/privacy
                 </a>
@@ -237,7 +237,7 @@ export default function CookiePolicy() {
               <li>
                 <strong>Google Maps Platform</strong> (maps + geocoding). Loads scripts and may
                 set cookies for fraud-prevention and to remember map preferences while you use
-                the embedded maps. Privacy Policy:{' '}
+                the embedded maps. Privacy Policy:{" "}
                 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
                   policies.google.com/privacy
                 </a>
@@ -246,7 +246,7 @@ export default function CookiePolicy() {
               <li>
                 <strong>Twilio Verify</strong> (SMS OTP). Used server-side via Edge Functions to
                 send verification codes. Twilio does not set cookies on the Platform itself, but
-                metadata about your verification is processed by Twilio under{' '}
+                metadata about your verification is processed by Twilio under{" "}
                 <a href="https://www.twilio.com/legal/privacy" target="_blank" rel="noopener noreferrer">
                   twilio.com/legal/privacy
                 </a>
@@ -254,7 +254,7 @@ export default function CookiePolicy() {
               </li>
               <li>
                 <strong>Vercel</strong> (web hosting). May set anti-bot and load-balancing
-                cookies at the edge. Privacy Policy:{' '}
+                cookies at the edge. Privacy Policy:{" "}
                 <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">
                   vercel.com/legal/privacy-policy
                 </a>
@@ -276,7 +276,7 @@ export default function CookiePolicy() {
             </p>
             <ul>
               <li>
-                <strong><code>localStorage</code></strong>: language preference (mirror of{' '}
+                <strong><code>localStorage</code></strong>: language preference (mirror of{" "}
                 <code>NEXT_LOCALE</code>), the most recently selected service category, and
                 short-lived flags such as &ldquo;notification permission asked&rdquo;.
               </li>
@@ -291,6 +291,12 @@ export default function CookiePolicy() {
                 service worker does not cache personal data; it only handles incoming push
                 messages and any future PWA offline behaviour.
               </li>
+              <li>
+                <strong>Mobile app (AsyncStorage)</strong>: On the Expo React Native mobile app,
+                language preference is stored via <code>AsyncStorage</code> instead of cookies.
+                This is platform-equivalent to the web <code>NEXT_LOCALE</code> cookie and serves
+                the same purpose.
+              </li>
             </ul>
             <p>
               Clearing site data in your browser removes all of the above. Doing so will sign
@@ -303,7 +309,7 @@ export default function CookiePolicy() {
             <p>
               We do <strong>not</strong> use third-party advertising cookies, retargeting
               pixels, conversion trackers, or social-media plugins that would identify you
-              across other websites. This is a deliberate decision rooted in our{' '}
+              across other websites. This is a deliberate decision rooted in our{" "}
               <Link href="/privacy-policy">Privacy Policy</Link> and is part of our trust
               positioning as a Pakistani service marketplace. If this ever changes &mdash; for
               example because we add an opt-in marketing channel &mdash; we will update this
@@ -322,29 +328,29 @@ export default function CookiePolicy() {
                 <strong>Chrome</strong>: <code>chrome://settings/cookies</code>
               </li>
               <li>
-                <strong>Edge</strong>: {' '}
+                <strong>Edge</strong>:{" "}
                 <code>edge://settings/content/cookies</code>
               </li>
               <li>
-                <strong>Firefox</strong>: Preferences → Privacy & Security → Cookies and
+                <strong>Firefox</strong>: Preferences &rarr; Privacy &amp; Security &rarr; Cookies and
                 Site Data.
               </li>
               <li>
-                <strong>Safari (macOS)</strong>: Safari → Settings → Privacy → Manage Website
+                <strong>Safari (macOS)</strong>: Safari &rarr; Settings &rarr; Privacy &rarr; Manage Website
                 Data.
               </li>
               <li>
-                <strong>Safari (iOS)</strong>: Settings → Safari → Advanced → Website Data.
+                <strong>Safari (iOS)</strong>: Settings &rarr; Safari &rarr; Advanced &rarr; Website Data.
               </li>
               <li>
-                <strong>Android Chrome</strong>: ⋮ menu → Settings → Site settings → Cookies.
+                <strong>Android Chrome</strong>: &ctdot; menu &rarr; Settings &rarr; Site settings &rarr; Cookies.
               </li>
             </ul>
             <p>
               Disabling <strong>Strictly Necessary</strong> cookies will sign you out and
               prevent core features (creating a request, sending a message, going online as a
               Provider) from working. Disabling <strong>Functional</strong> cookies will reset
-              your language and last-used service on every visit. Disabling{' '}
+              your language and last-used service on every visit. Disabling{" "}
               <strong>Performance</strong> cookies has no user-facing impact.
             </p>
             <p>
@@ -370,7 +376,7 @@ export default function CookiePolicy() {
             <p>
               The Platform is not directed at children under 18 and we do not knowingly set
               cookies on devices used by children. If you believe a child has used the Platform
-              and we hold data about them, contact us at{' '}
+              and we hold data about them, contact us at{" "}
               <a href="mailto:privacy@ustaz.app">privacy@ustaz.app</a> and we will delete the
               data promptly.
             </p>
@@ -385,7 +391,7 @@ export default function CookiePolicy() {
               </li>
               <li>
                 <strong>Persistent cookies</strong> (such as <code>NEXT_LOCALE</code>) expire on
-                their stated lifetime — usually 1 year — and are refreshed each
+                their stated lifetime &mdash; usually 1 year &mdash; and are refreshed each
                 visit.
               </li>
               <li>
@@ -429,11 +435,11 @@ export default function CookiePolicy() {
 
             <hr className="my-12" />
             <p className="text-sm text-gray-500">
-              See also our{' '}
+              See also our{" "}
               <Link href="/privacy-policy" className="text-[#db4b0d] underline">
                 Privacy Policy
-              </Link>{' '}
-              and{' '}
+              </Link>{" "}
+              and{" "}
               <Link href="/terms" className="text-[#db4b0d] underline">
                 Terms of Use
               </Link>
