@@ -26,10 +26,11 @@ import Footer from "../components/Footer"
 import { useTranslations } from "next-intl"
 import { useSupabaseUser } from "@/hooks/useSupabaseUser"
 import PhoneOtpAuth from "../components/PhoneOtpAuth"
-import { Loader2 } from "lucide-react"
+import { Loader2, ShieldAlert, RefreshCw } from "lucide-react"
 
 // Define TypeScript Interfaces
 interface IFormData {
+  fullName: string
   firstName: string
   lastName: string
   email: string
@@ -65,6 +66,7 @@ function App() {
   const [currentStep, setCurrentStep] = useState<number>(1)
   const router = useRouter()
   const [formData, setFormData] = useState<IFormData>({
+    fullName: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -82,6 +84,7 @@ function App() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [verificationError, setVerificationError] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
 
   // Bind provider profile to the authenticated user — never a random UUID.
@@ -186,6 +189,7 @@ function App() {
       if (error) throw error
       const { data: urlData } = supabase.storage.from('provider-docs').getPublicUrl(data.path)
       setFormData(prev => ({ ...prev, [type]: urlData.publicUrl }))
+      if (verificationError) setVerificationError("")
       if (errors[type]) {
         setErrors(prev => { const n = { ...prev }; delete n[type]; return n })
       }
@@ -213,12 +217,11 @@ function App() {
   let isValid = true
 
   if (currentStep === 1) {
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = t("errors.firstNameRequired")
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Please enter your full name as on your CNIC"
       isValid = false
-    }
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = t("errors.lastNameRequired")
+    } else if (formData.fullName.trim().length < 3) {
+      newErrors.fullName = "Please enter your complete name"
       isValid = false
     }
     if (!formData.cnic.trim()) {
@@ -364,9 +367,43 @@ function App() {
     setIsLoading(true)
     console.log("Attempting to send data to Supabase:", data)
     try {
+      // Split the full name into first/last for the DB columns (schema unchanged).
+      const nameParts = data.fullName.trim().split(/\s+/)
+      const firstName = nameParts[0] || data.fullName.trim()
+      const lastName = nameParts.slice(1).join(" ") || nameParts[0] || ""
+
+      // Cross-check the typed CNIC against the uploaded photo BEFORE creating the
+      // account. A confident fraud signal (number mismatch, duplicate, expired,
+      // under-18, front/back mismatch, not-a-CNIC) stops here and sends the user
+      // back to re-upload — no registration row is written. The recorded verdict
+      // is applied by the ustaz_registrations insert trigger.
+      try {
+        const vres = await fetch("/api/provider/verify-cnic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cnicNumber: data.cnic,
+            cnicFrontUrl: data.cnicFrontUrl,
+            cnicBackUrl: data.cnicBackUrl,
+            fullName: data.fullName,
+          }),
+        })
+        const vdata = await vres.json().catch(() => ({}))
+        if (vdata?.decision === "rejected") {
+          setIsLoading(false)
+          setVerificationError(vdata.reason || "CNIC verification failed. Please re-upload a clear photo.")
+          setCurrentStep(2)
+          return
+        }
+      } catch (vErr) {
+        // Verification service hiccup — don't hard-block onboarding; without a
+        // recorded verdict the provider lands 'unverified' and can't go online.
+        console.warn("CNIC verification call failed (non-fatal):", vErr)
+      }
+
       const dataToSave = {
-        firstName: data.firstName,
-        lastName: data.lastName,
+        firstName: firstName,
+        lastName: lastName,
         email: data.email || null,
         cnic: data.cnic,
         phoneCountryCode: "+92",
@@ -386,6 +423,7 @@ function App() {
         throw error
       }
       console.log("Data successfully sent to Supabase:", supabaseData)
+
       setIsLoading(false)
       setIsRegisteredSuccessfully(true)
       localStorage.setItem("isRegisteredSuccessfully", "true")
@@ -405,7 +443,7 @@ function App() {
   }
 
   // Derive full name for greeting
-  const userFullName = `${formData.firstName} ${formData.lastName}`.trim()
+  const userFullName = formData.fullName.trim()
 
   // Configuration for progress bar steps
   const steps = [
@@ -544,53 +582,29 @@ function App() {
                     </h2>
                     <p className="text-gray-600 text-lg">{t('personalInfoIntro')}</p>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {/* First Name */}
-                    <div className="group">
-                      <Label htmlFor="firstName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                        <User className="w-4 h-4 mr-2 text-orange-500" />
-                        {t('firstName')} <span className="text-red-500 ml-1">*</span>
-                      </Label>
-                      <Input
-                        id="firstName"
-                        type="text"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        className={`${
-                          errors.firstName
-                            ? "border-red-300 bg-red-50"
-                            : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                        }`}
-                        placeholder="Enter your first name"
-                      />
-                      {errors.firstName && (
-                        <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.firstName}</p>
-                      )}
-                    </div>
-                    {/* Last Name */}
-                    <div className="group">
-                      <Label htmlFor="lastName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
-                        <User className="w-4 h-4 mr-2 text-orange-500" />
-                        {t('lastName')} <span className="text-red-500 ml-1">*</span>
-                      </Label>
-                      <Input
-                        id="lastName"
-                        type="text"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        className={`${
-                          errors.lastName
-                            ? "border-red-300 bg-red-50"
-                            : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
-                        }`}
-                        placeholder="Enter your last name"
-                      />
-                      {errors.lastName && (
-                        <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.lastName}</p>
-                      )}
-                    </div>
+                  {/* Full Name (as printed on CNIC) */}
+                  <div className="group">
+                    <Label htmlFor="fullName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                      <User className="w-4 h-4 mr-2 text-orange-500" />
+                      Full Name <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      className={`${
+                        errors.fullName
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-orange-400 bg-white hover:border-gray-300"
+                      }`}
+                      placeholder="Enter your name exactly as printed on your CNIC"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Must match the name on your CNIC exactly.</p>
+                    {errors.fullName && (
+                      <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.fullName}</p>
+                    )}
                   </div>
                   {/* Email */}
                   <div className="group">
@@ -689,6 +703,53 @@ function App() {
                     </h2>
                     <p className="text-gray-600 text-lg">Upload clear photos of your identity card</p>
                   </div>
+
+                  {verificationError && (
+                    <div
+                      role="alert"
+                      className="relative overflow-hidden rounded-2xl border-2 p-5 shadow-lg"
+                      style={{
+                        borderColor: "rgba(219,75,13,0.35)",
+                        background: "linear-gradient(135deg, #FFF7ED 0%, #FFE7DC 100%)",
+                        animation: "cnicShake 0.55s cubic-bezier(.36,.07,.19,.97)",
+                      }}
+                    >
+                      <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full" style={{ background: "rgba(255,107,74,0.18)" }} />
+                      <div className="pointer-events-none absolute -bottom-10 -left-6 h-24 w-24 rounded-full" style={{ background: "rgba(219,75,13,0.10)" }} />
+                      <div className="relative flex items-start gap-4">
+                        <div
+                          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full text-white shadow-md"
+                          style={{ background: "#DB4B0D", animation: "cnicPulse 1.7s ease-in-out infinite" }}
+                        >
+                          <ShieldAlert className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-base font-extrabold" style={{ color: "#C24309" }}>
+                            CNIC verification failed
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-700">{verificationError}</p>
+                          <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: "#DB4B0D" }}>
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Re-upload a clear photo of your CNIC to continue
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <style jsx global>{`
+                    @keyframes cnicShake {
+                      0%, 100% { transform: translateX(0); }
+                      15% { transform: translateX(-8px); }
+                      30% { transform: translateX(8px); }
+                      45% { transform: translateX(-6px); }
+                      60% { transform: translateX(6px); }
+                      75% { transform: translateX(-3px); }
+                    }
+                    @keyframes cnicPulse {
+                      0%, 100% { box-shadow: 0 0 0 0 rgba(219,75,13,0.5); }
+                      50% { box-shadow: 0 0 0 10px rgba(219,75,13,0); }
+                    }
+                  `}</style>
 
                   {/* CNIC Front */}
                   <div className="group">

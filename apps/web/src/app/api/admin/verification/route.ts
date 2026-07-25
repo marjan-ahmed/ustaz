@@ -34,7 +34,8 @@ export async function GET() {
     .select(`
       *,
       provider:ustaz_registrations!verification_submissions_provider_id_fkey(
-        "firstName", "lastName", "phoneNumber", service_type, city
+        "firstName", "lastName", "phoneNumber", service_type, city,
+        cnic, cnic_ocr_result, cnic_ocr_number, cnic_ocr_details
       )
     `)
     .order('created_at', { ascending: false });

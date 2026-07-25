@@ -23,7 +23,37 @@ interface VerificationSubmission {
     phoneNumber: string;
     service_type: string;
     city: string;
+    cnic: string | null;
+    cnic_ocr_result: 'match' | 'mismatch' | 'unreadable' | null;
+    cnic_ocr_number: string | null;
+    cnic_ocr_details: {
+      number_match: boolean | null;
+      name_match: boolean | null;
+      front_back_match: boolean | null;
+      is_cnic: boolean | null;
+      cnic_expired: boolean | null;
+      age_ok: boolean | null;
+      duplicate: boolean | null;
+      extracted_cnic: string | null;
+      expiry: string | null;
+      dob: string | null;
+    } | null;
   } | null;
+}
+
+// A green/red/grey chip for one auto-check. `good` true=pass, false=fail, null=unknown.
+function CheckChip({ label, good }: { label: string; good: boolean | null }) {
+  const cls = good === true
+    ? 'bg-green-50 text-green-700 border-green-200'
+    : good === false
+    ? 'bg-red-50 text-red-700 border-red-200'
+    : 'bg-gray-50 text-gray-500 border-gray-200';
+  const icon = good === true ? '✓' : good === false ? '✗' : '?';
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}>
+      <span>{icon}</span>{label}
+    </span>
+  );
 }
 
 export default function AdminVerificationPage() {
@@ -144,6 +174,34 @@ export default function AdminVerificationPage() {
                   {/* Expanded Review Panel */}
                   {expandedId === sub.id && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
+                      {/* Automated CNIC cross-check */}
+                      <div className="mb-4 rounded-lg bg-gray-50 border border-gray-200 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold text-gray-600">Automated CNIC check</p>
+                          {sub.provider?.cnic_ocr_result ? (
+                            <span className="text-xs text-gray-500">
+                              typed <span className="font-mono">{sub.provider?.cnic ?? sub.cnic_number}</span>
+                              {' · '}read <span className="font-mono">{sub.provider?.cnic_ocr_number ?? '—'}</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">not run yet</span>
+                          )}
+                        </div>
+                        {sub.provider?.cnic_ocr_details ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            <CheckChip label="Number" good={sub.provider.cnic_ocr_details.number_match} />
+                            <CheckChip label="Name" good={sub.provider.cnic_ocr_details.name_match} />
+                            <CheckChip label="Front↔Back" good={sub.provider.cnic_ocr_details.front_back_match} />
+                            <CheckChip label="Not expired" good={sub.provider.cnic_ocr_details.cnic_expired === null ? null : !sub.provider.cnic_ocr_details.cnic_expired} />
+                            <CheckChip label="Age 18+" good={sub.provider.cnic_ocr_details.age_ok} />
+                            <CheckChip label="Unique" good={sub.provider.cnic_ocr_details.duplicate === null ? null : !sub.provider.cnic_ocr_details.duplicate} />
+                            <CheckChip label="Is a CNIC" good={sub.provider.cnic_ocr_details.is_cnic} />
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400">No automated result on file — review the photos manually.</p>
+                        )}
+                      </div>
+
                       {/* Photos */}
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div>

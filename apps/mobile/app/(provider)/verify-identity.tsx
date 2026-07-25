@@ -109,11 +109,22 @@ export default function VerifyIdentity() {
       });
       if (insertError) throw insertError;
 
-      const { error: updateError } = await supabase
-        .from('ustaz_registrations')
-        .update({ verification_status: 'pending_review' })
-        .eq('userId', user.id);
-      if (updateError) throw updateError;
+      // Run the OCR cross-check; the edge function owns verification_status
+      // (verified / rejected / pending_review) via service role.
+      try {
+        await supabase.functions.invoke('verify-cnic', {
+          body: {
+            firstName: (user.user_metadata?.full_name || user.user_metadata?.name || '').split(' ')[0] || '',
+            lastName: (user.user_metadata?.full_name || user.user_metadata?.name || '').split(' ').slice(1).join(' ') || '',
+            cnicNumber: cnicNumber.replace(/\D/g, ''),
+            cnicFrontUrl: frontUrl,
+            cnicBackUrl: backUrl,
+          },
+        });
+      } catch (vErr) {
+        // Non-fatal: submission is recorded; falls back to manual admin review.
+        console.warn('CNIC verification failed (non-fatal):', vErr);
+      }
 
       setStep('done');
     } catch (err: any) {
