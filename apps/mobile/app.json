@@ -69,6 +69,12 @@
         {
           "cameraPermission": "Allow Ustaz to capture receipt and warranty photos."
         }
+      ],
+      [
+        "@preeternal/react-native-document-scanner-plugin",
+        {
+          "cameraPermission": "Allow Ustaz to scan your CNIC (auto-crops the card)."
+        }
       ]
     ],
     "experiments": {

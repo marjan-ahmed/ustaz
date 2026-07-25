@@ -24,8 +24,7 @@ const DASH_WELCOME_KEY_PREFIX = 'ustaz_dash_welcome_';
 const TOTAL_STEPS = 7;
 
 interface FormData {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   cnic: string;
   phoneNumber: string;
   serviceTypes: string[];
@@ -39,7 +38,7 @@ interface PhotoUris {
 }
 
 const initial: FormData = {
-  firstName: '', lastName: '', cnic: '',
+  fullName: '', cnic: '',
   phoneNumber: '',
   serviceTypes: [], agreedToTerms: false,
 };
@@ -54,6 +53,7 @@ export default function ProviderRegisterScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -119,9 +119,40 @@ export default function ProviderRegisterScreen() {
     }
   }
 
+  // Document scanner: auto-detects the CNIC edges, crops, and removes the
+  // background — same result every time for both front and back. Lazy-imported
+  // so the native module never lands in the web bundle.
+  async function scanCnic(type: 'cnicFront' | 'cnicBack') {
+    try {
+      const DocumentScanner = (await import('@preeternal/react-native-document-scanner-plugin')).default;
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        maxNumDocuments: 1,
+        croppedImageQuality: 90,
+      });
+      if (scannedImages && scannedImages.length > 0) {
+        setVerifyError(null);
+        setPhotos(p => ({ ...p, [type]: scannedImages[0] }));
+      }
+    } catch (e) {
+      Alert.alert('Scan failed', 'Could not scan the card. Try again, or pick a photo from your gallery.');
+    }
+  }
+
   function showImageOptions(type: 'profile' | 'cnicFront' | 'cnicBack') {
+    if (type === 'cnicFront' || type === 'cnicBack') {
+      Alert.alert(
+        type === 'cnicFront' ? 'CNIC Front Photo' : 'CNIC Back Photo',
+        'Scan auto-crops the card. Gallery uses an existing photo.',
+        [
+          { text: 'Scan CNIC', onPress: () => scanCnic(type) },
+          { text: 'Gallery', onPress: () => pickImage(type) },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+      return;
+    }
     Alert.alert(
-      type === 'profile' ? 'Add Profile Photo' : type === 'cnicFront' ? 'CNIC Front Photo' : 'CNIC Back Photo',
+      'Add Profile Photo',
       'Choose an option',
       [
         { text: 'Camera', onPress: () => takePhoto(type) },
@@ -148,8 +179,8 @@ export default function ProviderRegisterScreen() {
     const e: Record<string, string> = {};
     switch (step) {
       case 1: // Name
-        if (!form.firstName.trim()) e.firstName = 'Required';
-        if (!form.lastName.trim()) e.lastName = 'Required';
+        if (!form.fullName.trim()) e.fullName = 'Required';
+        else if (form.fullName.trim().length < 3) e.fullName = 'Enter your complete name';
         break;
       case 2: // Profile photo
         if (!photos.profile) e.profile = 'Please add a profile photo';
@@ -210,11 +241,42 @@ export default function ProviderRegisterScreen() {
         photos.cnicBack ? uploadImage(photos.cnicBack, `${user.id}/cnic-back-${timestamp}.jpg`) : Promise.resolve(null),
       ]);
 
-      // Insert registration
+      // Split the full name into first/last for the DB columns (schema unchanged).
+      const fullName = form.fullName.trim();
+      const nameParts = fullName.split(/\s+/);
+      const firstName = nameParts[0] || fullName;
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+
+      // Cross-check the typed CNIC + name against the uploaded photo BEFORE creating
+      // the account. A confident fraud signal (number/name mismatch, duplicate,
+      // expired, under-18, front/back mismatch, not-a-CNIC) stops here and sends the
+      // user back to re-upload — no registration row is written. The recorded verdict
+      // is applied by the ustaz_registrations insert trigger.
+      try {
+        const { data: vres } = await supabase.functions.invoke('verify-cnic', {
+          body: {
+            fullName,
+            cnicNumber: form.cnic.trim(),
+            cnicFrontUrl,
+            cnicBackUrl,
+          },
+        });
+        if (vres?.decision === 'rejected') {
+          setVerifyError(vres.reason || 'CNIC verification failed. Re-upload a clear photo.');
+          setStep(4);
+          return;
+        }
+      } catch (vErr) {
+        // Non-fatal: without a recorded verdict the provider lands 'unverified'
+        // and the go-online gate keeps them from receiving jobs.
+        console.warn('CNIC verification failed (non-fatal):', vErr);
+      }
+
+      // Create the account (trigger applies the recorded verdict).
       const { error } = await supabase.from('ustaz_registrations').insert({
         userId: user.id,
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim(),
+        firstName,
+        lastName,
         cnic: form.cnic.trim(),
         phoneCountryCode: '+92',
         phoneNumber: form.phoneNumber.trim(),
@@ -227,6 +289,7 @@ export default function ProviderRegisterScreen() {
         phone_verified: true,
       });
       if (error) throw error;
+
       await AsyncStorage.setItem(DASH_WELCOME_KEY_PREFIX + user.id, '1');
       setSubmitted(true);
     } catch (err: any) {
@@ -265,7 +328,7 @@ export default function ProviderRegisterScreen() {
                 <View style={{ paddingHorizontal: space.md, paddingVertical: space.xs, borderRadius: radius.full, backgroundColor: 'rgba(16,185,129,0.18)', marginBottom: space.md }}>
                   <Text variant="caption" style={{ fontWeight: '700', color: '#34D399' }}>WELCOME TO USTAZ</Text>
                 </View>
-                <Text variant="display" tone="inverse" center>Congratulations,{'\n'}{form.firstName}!</Text>
+                <Text variant="display" tone="inverse" center>Congratulations,{'\n'}{form.fullName.trim().split(/\s+/)[0]}!</Text>
                 <Text variant="label" tone="inverseSoft" center style={{ marginTop: space.md, lineHeight: 21 }}>
                   Your provider profile is ready. Your first dashboard visit will show the welcome bonus card and wallet guidance.
                 </Text>
@@ -309,15 +372,13 @@ export default function ProviderRegisterScreen() {
                   </TiltCard>
                   <View>
                     <Text variant="display" center>What's your name?</Text>
-                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Let's start with the basics</Text>
+                    <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Exactly as printed on your CNIC</Text>
                   </View>
                   <View>
-                    <TextField label="First Name *" value={form.firstName} onChangeText={v => set('firstName', v)} placeholder="e.g. Ahmed" error={!!errors.firstName} />
-                    {errors.firstName && <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.firstName}</Text>}
-                  </View>
-                  <View>
-                    <TextField label="Last Name *" value={form.lastName} onChangeText={v => set('lastName', v)} placeholder="e.g. Khan" error={!!errors.lastName} />
-                    {errors.lastName && <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.lastName}</Text>}
+                    <TextField label="Full Name *" value={form.fullName} onChangeText={v => set('fullName', v)} placeholder="e.g. Ahmed Ali Khan" error={!!errors.fullName} />
+                    {errors.fullName
+                      ? <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.fullName}</Text>
+                      : <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>Must match the name on your CNIC exactly.</Text>}
                   </View>
                 </View>
               </FadeInUp>
@@ -383,22 +444,39 @@ export default function ProviderRegisterScreen() {
             {step === 4 && (
               <FadeInUp>
                 <View style={{ gap: space.xl, alignItems: 'center' }}>
+                  {verifyError && (
+                    <Card style={{ width: '100%', backgroundColor: '#FFF7ED', borderWidth: 2, borderColor: 'rgba(219,75,13,0.35)', padding: space.lg }}>
+                      <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'flex-start' }}>
+                        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#DB4B0D', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name="shield-half" size={22} color="#fff" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text variant="label" style={{ fontWeight: '800', color: '#C24309' }}>CNIC verification failed</Text>
+                          <Text variant="caption" style={{ marginTop: 4 }}>{verifyError}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: space.sm }}>
+                            <Ionicons name="refresh" size={14} color="#DB4B0D" />
+                            <Text variant="caption" style={{ fontWeight: '700', color: '#DB4B0D' }}>Retake a clear photo to continue</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </Card>
+                  )}
                   <View>
                     <Text variant="display" center>CNIC front photo</Text>
                     <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Take a clear photo of the front side</Text>
                   </View>
-                  <PressableScale onPress={() => showImageOptions('cnicFront')} style={s.photoRect}>
+                  <PressableScale onPress={() => { setVerifyError(null); showImageOptions('cnicFront'); }} style={s.photoRect}>
                     {photos.cnicFront ? (
                       <Image source={{ uri: photos.cnicFront }} style={s.photoRectImage} />
                     ) : (
                       <View style={{ alignItems: 'center', gap: space.sm }}>
                         <Ionicons name="camera" size={40} color={color.line} />
-                        <Text variant="label" tone="muted">Tap to capture</Text>
+                        <Text variant="label" tone="muted">Tap to scan CNIC</Text>
                       </View>
                     )}
                   </PressableScale>
                   {photos.cnicFront && (
-                    <PressableScale onPress={() => showImageOptions('cnicFront')} style={s.retakeBtn}>
+                    <PressableScale onPress={() => { setVerifyError(null); showImageOptions('cnicFront'); }} style={s.retakeBtn}>
                       <Ionicons name="refresh" size={16} color={color.primary} />
                       <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>Retake</Text>
                     </PressableScale>
@@ -422,7 +500,7 @@ export default function ProviderRegisterScreen() {
                     ) : (
                       <View style={{ alignItems: 'center', gap: space.sm }}>
                         <Ionicons name="camera" size={40} color={color.line} />
-                        <Text variant="label" tone="muted">Tap to capture</Text>
+                        <Text variant="label" tone="muted">Tap to scan CNIC</Text>
                       </View>
                     )}
                   </PressableScale>
@@ -484,7 +562,7 @@ export default function ProviderRegisterScreen() {
                   )}
 
                   <Card variant="flat">
-                    <SummaryRow icon="person" label="Name" value={`${form.firstName} ${form.lastName}`} />
+                    <SummaryRow icon="person" label="Name" value={form.fullName} />
                     <SummaryRow icon="card" label="CNIC" value={form.cnic} />
                     <SummaryRow icon="call" label="Phone" value={`+92 ${form.phoneNumber}`} />
                     <View style={{ height: 1, backgroundColor: color.line, marginVertical: space.xs }} />
