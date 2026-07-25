@@ -369,6 +369,25 @@ export default function BookScreen() {
     return () => { supabase.removeChannel(channel); };
   }, [currentRequestId]);
 
+  // Timeout: if no provider accepts within 60s, give up
+  useEffect(() => {
+    if (requestStatus !== 'notified_multiple') return;
+    const timer = setTimeout(async () => {
+      if (!currentRequestId) return;
+      try {
+        await supabase
+          .from('service_requests')
+          .update({ status: 'no_ustaz_found' })
+          .eq('id', currentRequestId)
+          .eq('status', 'notified_multiple');
+      } catch {}
+      setRequestStatus('no_ustaz_found');
+      setSearchMessage('No providers responded. Try again or choose a different service.');
+      setProviderSearchRadius(0);
+    }, 60_000);
+    return () => clearTimeout(timer);
+  }, [requestStatus, currentRequestId]);
+
   async function fetchAcceptedProvider(requestId: string, providerId: string) {
     try {
       const { data } = await supabase.rpc('get_assigned_provider', { p_request_id: requestId });
@@ -605,7 +624,9 @@ export default function BookScreen() {
 
   const showTrackingCard = currentRequestId && acceptedProvider && ACTIVE_STATUSES.includes(requestStatus);
   const showMap = userLat !== null || (currentRequestId && ACTIVE_STATUSES.includes(requestStatus));
-  const canCancel = currentRequestId && (requestStatus === 'notified_multiple' || requestStatus === 'accepted' || requestStatus === 'finding_provider');
+  const canCancel = currentRequestId && (
+    requestStatus === 'notified_multiple' || requestStatus === 'accepted'
+  );
   const isSearchingProvider = requestStatus === 'finding_provider' || requestStatus === 'notified_multiple';
   const findBusy = isSending || isResolvingAddress || isSearchingProvider;
 
