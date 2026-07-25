@@ -126,6 +126,14 @@ export default function BookScreen() {
   ).current;
 
   const [serviceType, setServiceType] = useState(initialService);
+
+  // Sync serviceType when URL param changes (e.g. navigating from home tab with a different service)
+  useEffect(() => {
+    if (params.service) {
+      setServiceType(params.service);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.service]);
   const [address, setAddress] = useState('');
   const [addressSuggestions, setAddressSuggestions] = useState<PlacePrediction[]>([]);
   const [isLoadingAddressSuggestions, setIsLoadingAddressSuggestions] = useState(false);
