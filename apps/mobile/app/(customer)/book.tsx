@@ -289,7 +289,7 @@ export default function BookScreen() {
       try {
         const { data } = await supabase
           .from('service_requests')
-          .select('id, status, accepted_by_provider_id, request_latitude, request_longitude, request_details')
+          .select('id, status, accepted_by_provider_id, request_latitude, request_longitude, request_details, created_at')
           .eq('user_id', user.id)
           .in('status', [...ACTIVE_STATUSES, 'completed'])
           .order('created_at', { ascending: false })
@@ -298,7 +298,23 @@ export default function BookScreen() {
 
         if (cancelled || !data) return;
         setCurrentRequestId(data.id);
-        // Only keep tracking status for active requests; completed/cancelled â†’ idle so the service selector works again
+
+        // If request is stuck at notified_multiple for > 60s with no provider, auto-expire
+        if (data.status === 'notified_multiple' && !data.accepted_by_provider_id && data.created_at) {
+          const elapsed = Date.now() - new Date(data.created_at).getTime();
+          if (elapsed > 60_000) {
+            await supabase
+              .from('service_requests')
+              .update({ status: 'no_ustaz_found' })
+              .eq('id', data.id)
+              .eq('status', 'notified_multiple');
+            setRequestStatus('no_ustaz_found');
+            setSearchMessage('Previous request expired. Start a new search.');
+            return;
+          }
+        }
+
+        // Only keep tracking status for active requests; completed/cancelled → idle so the service selector works again
         const activeStatuses = ['notified_multiple', 'accepted', 'provider_enroute', 'arriving', 'arrived', 'in_progress', 'work_in_progress'];
         setRequestStatus(activeStatuses.includes(data.status) ? (data.status as RequestStatusDB) : 'idle');
         if (typeof data.request_latitude === 'number' && typeof data.request_longitude === 'number') {
