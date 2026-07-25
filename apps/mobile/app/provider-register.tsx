@@ -124,17 +124,20 @@ export default function ProviderRegisterScreen() {
   // so the native module never lands in the web bundle.
   async function scanCnic(type: 'cnicFront' | 'cnicBack') {
     try {
-      const DocumentScanner = (await import('@preeternal/react-native-document-scanner-plugin')).default;
-      const { scannedImages } = await DocumentScanner.scanDocument({
+      const { scanDocument } = await import('expo-document-scanner');
+      const result = await scanDocument({
+        quality: 0.92,
         maxNumDocuments: 1,
-        croppedImageQuality: 90,
       });
-      if (scannedImages && scannedImages.length > 0) {
+      if (result.pages && result.pages.length > 0) {
         setVerifyError(null);
-        setPhotos(p => ({ ...p, [type]: scannedImages[0] }));
+        setPhotos(p => ({ ...p, [type]: result.pages[0].uri }));
       }
-    } catch (e) {
-      Alert.alert('Scan failed', 'Could not scan the card. Try again, or pick a photo from your gallery.');
+    } catch (e: any) {
+      const msg = e?.message ?? '';
+      if (!msg.toLowerCase().includes('cancel')) {
+        Alert.alert('Scan failed', 'Could not scan the card. Try again, or pick a photo from your gallery.');
+      }
     }
   }
 

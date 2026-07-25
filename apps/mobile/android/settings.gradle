@@ -37,3 +37,17 @@ expoAutolinking.useExpoVersionCatalog()
 
 include ':app'
 includeBuild(expoAutolinking.reactNativeGradlePlugin)
+
+// Nitro Modules - required by expo-document-scanner (not auto-detected by Expo autolinking)
+def nitroPath = new File(rootDir, "../node_modules/react-native-nitro-modules/android")
+if (nitroPath.exists()) {
+  include ':react-native-nitro-modules'
+  project(':react-native-nitro-modules').projectDir = nitroPath
+}
+
+// expo-document-scanner (Nitro Module)
+def scannerPath = new File(rootDir, "../node_modules/expo-document-scanner/android")
+if (scannerPath.exists()) {
+  include ':expo-document-scanner'
+  project(':expo-document-scanner').projectDir = scannerPath
+}
