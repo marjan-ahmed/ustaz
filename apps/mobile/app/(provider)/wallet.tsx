@@ -172,7 +172,7 @@ export default function WalletScreen() {
                     style={{ fontFamily: font.numeric, fontSize: 36, color: color.white, marginTop: space.sm }}
                   />
                 </View>
-                <IsoWalletScene size={90} />
+                <IsoWalletScene size={64} />
               </View>
               {isBelowMinimum && (
                 <View style={{ marginTop: space.md, borderRadius: radius.md, backgroundColor: 'rgba(239,68,68,0.18)', borderWidth: 1, borderColor: 'rgba(248,113,113,0.28)', padding: space.sm }}>

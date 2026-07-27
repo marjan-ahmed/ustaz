@@ -82,9 +82,6 @@ export default function CustomerHome() {
                     Pakistan's trusted
                   </Text>
                   <Text variant="h2" tone="inverse">Find a pro{'\n'}near you</Text>
-                  <Text variant="label" tone="inverseSoft" style={{ marginTop: space.xs }}>
-                    Live tracking · 3-day guarantee
-                  </Text>
                 </View>
                 <View style={{ width: 130, height: 130, alignItems: 'center', justifyContent: 'center' }}>
                   <IsoServiceScene size={100} />

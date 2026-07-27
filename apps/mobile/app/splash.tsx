@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { hasCompletedOnboarding, getStoredRole } from '@/lib/role';
 import { IconTile, IsoServiceScene, Marquee, OrbitRing, PatternBackdrop, Text } from '@/components/mobile-ui';
-import { color, font } from '@/theme/tokens';
+import { color, font, radius } from '@/theme/tokens';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const TICKER = ['500+ verified pros', 'Live tracking', '3-day guarantee', 'Cash or wallet'];
@@ -70,9 +70,16 @@ export default function SplashScreen() {
             />
           </View>
         </View>
-        <Animated.Text style={[{ fontFamily: font.display, fontSize: 38, color: color.white, letterSpacing: 3, marginTop: 8 }]}>
-          USTAZ
-        </Animated.Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 }}>
+          <Animated.Text style={[{ fontFamily: font.display, fontSize: 38, color: color.white, letterSpacing: 3 }]}>
+            USTAZ
+          </Animated.Text>
+          <View style={{ backgroundColor: color.primary, borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6 }}>
+            <Text variant="caption" style={{ color: color.white, fontSize: 10, fontWeight: '700', letterSpacing: 1 }}>
+              BETA
+            </Text>
+          </View>
+        </View>
       </Animated.View>
 
       <Animated.View style={[{ position: 'absolute', bottom: 46, alignItems: 'center', gap: 12, width: '100%' }, tagStyle]}>

@@ -136,6 +136,7 @@ function ProcessPage() {
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [acceptedProvider, setAcceptedProvider] = useState<ProviderInfo | null>(null);
+  const [visitingFee, setVisitingFee] = useState<number | null>(null);
   const [providerLiveLocation, setProviderLiveLocation] = useState<LiveLocation | null>(null);
   // State for rating modal
   const [showRating, setShowRating] = useState(false);
@@ -506,6 +507,7 @@ const handlePlaceSelect = useCallback((
 
       setCurrentRequestId(null);
       setAcceptedProvider(null);
+      setVisitingFee(null);
       setProviderLiveLocation(null);
       setAvailableProviders([]);
       setSelectedProviderIds([]);
@@ -562,6 +564,7 @@ const handlePlaceSelect = useCallback((
 
       setCurrentRequestId(null);
       setAcceptedProvider(null);
+      setVisitingFee(null);
       setProviderLiveLocation(null);
       setAvailableProviders([]); // Clear providers list
       setSelectedProviderIds([]); // Clear selected providers
@@ -659,6 +662,7 @@ const handlePlaceSelect = useCallback((
 
           if (newStatus === 'accepted' && acceptedByProviderId) {
             console.log('Provider accepted request, starting live location tracking for request:', requestId);
+            setVisitingFee((payload.new as any).visiting_fee ?? null);
             fetchAcceptedProviderDetails(acceptedByProviderId);
             subscribeToProviderLiveLocation(requestId);
             // Immediately seed the map from DB in case provider already has a location
@@ -1349,6 +1353,7 @@ const handlePlaceSelect = useCallback((
                       provider={acceptedProvider}
                       liveLocation={providerLiveLocation}
                       status={requestStatus}
+                      visitingFee={visitingFee}
                       onRequestChat={handleRequestChat}
                       onCallProvider={handleCallProvider}
                     />

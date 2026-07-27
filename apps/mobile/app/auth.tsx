@@ -126,6 +126,22 @@ export default function AuthScreen() {
         }
       }
       await setStoredRole('provider');
+
+      // If this phone number is already a registered provider, go straight to
+      // the dashboard instead of re-running registration.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: existingRegistration } = await supabase
+          .from('ustaz_registrations')
+          .select('userId')
+          .eq('userId', user.id)
+          .maybeSingle();
+        if (existingRegistration) {
+          router.replace('/(provider)');
+          return;
+        }
+      }
+
       router.replace('/provider-register');
     } catch (err: any) {
       setError(err?.message ?? 'Could not create account. Try again.');

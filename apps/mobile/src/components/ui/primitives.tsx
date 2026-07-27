@@ -150,11 +150,12 @@ export function Button({
   ];
 
   if (variant === 'primary') {
+    // Plain fill, not LinearGradient: the gradient native view paints opaque
+    // white instead of the gradient on first render inside a freshly-mounted
+    // RN Modal window, hiding the white label text behind it entirely.
     return (
-      <PressableScale onPress={handle} disabled={isDisabled} style={[shared, shadow.brand] as ViewStyle[]}>
-        <LinearGradient colors={gradient.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.btnFill}>
-          {body}
-        </LinearGradient>
+      <PressableScale onPress={handle} disabled={isDisabled} style={[shared, styles.btnFill, { backgroundColor: color.primary }, shadow.brand] as ViewStyle[]}>
+        {body}
       </PressableScale>
     );
   }

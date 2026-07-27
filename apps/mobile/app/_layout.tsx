@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, AppState, View } from 'react-native';
 import { colors } from '@ustaz/shared/theme';
 import { Lalezar_400Regular } from '@expo-google-fonts/lalezar';
 import { IBMPlexSansArabic_400Regular } from '@expo-google-fonts/ibm-plex-sans-arabic';
@@ -17,6 +17,7 @@ import {
   getNotificationsModule,
   routeForNotificationData,
 } from '@/lib/notifications';
+import { supabase } from '@/lib/supabase';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -33,6 +34,17 @@ export default function RootLayout() {
 
   const notificationListener = useRef<any>(null);
   const responseListener = useRef<any>(null);
+
+  // Supabase's token-refresh timer doesn't run reliably in the background on
+  // React Native; only auto-refresh while the app is foregrounded.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') supabase.auth.startAutoRefresh();
+      else supabase.auth.stopAutoRefresh();
+    });
+    supabase.auth.startAutoRefresh();
+    return () => sub.remove();
+  }, []);
 
   useEffect(() => {
     let mounted = true;

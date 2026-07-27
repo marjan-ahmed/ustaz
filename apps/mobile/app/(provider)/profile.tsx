@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { ActivityIndicator, Alert, Image, Modal, ScrollView, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/useAuth';
@@ -7,17 +7,17 @@ import { setStoredRole } from '@/lib/role';
 import { supabase } from '@/lib/supabase';
 import { getProviderStats } from '@/lib/ustaz-api';
 import {
-  Badge, Button, Card, Chip, FadeInUp, GlowBackdrop, Numeric, PatternBackdrop, PressableScale, Screen, SectionHeader, Stagger, StatTile, Text, TextField,
+  Badge, BorderBeam, Button, Card, Chip, CircularGauge, FadeInUp, GlowBackdrop, IconTile, Numeric, PressableScale, Screen, SectionHeader, ShineText, Stagger, Text, TextField,
 } from '@/components/mobile-ui';
-import { color, gradient, radius, shadow, space } from '@/theme/tokens';
+import { color, gradient, radius, space, type as typeScale } from '@/theme/tokens';
 import { LinearGradient } from 'expo-linear-gradient';
 import ProviderLanyard from '@/components/ProviderLanyard';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
-import { useLanguage, type Locale } from '@/i18n';
+import { useLanguage } from '@/i18n';
 
 const SERVICE_TYPES = ['Electrician', 'Plumbing', 'Carpentry', 'AC Maintenance', 'Solar Technician'];
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
 interface ProviderProfile {
   firstName: string | null;
@@ -51,6 +51,7 @@ export default function ProviderProfile() {
   const [standing, setStanding] = useState<ProviderStanding | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [showIdModal, setShowIdModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAppealModal, setShowAppealModal] = useState(false);
@@ -77,7 +78,6 @@ export default function ProviderProfile() {
     const reviewsStr = String(stats?.total_ratings ?? 0);
     const jobsStr = String(stats?.completed_jobs ?? 0);
     const tierStr = standing?.tier ? standing.tier.charAt(0).toUpperCase() + standing.tier.slice(1) : 'Standard';
-    const verifiedStr = profile.phone_verified ? '✅ Verified' : 'Unverified';
 
     const html = `
 <!DOCTYPE html>
@@ -285,28 +285,34 @@ export default function ProviderProfile() {
   const name = profile ? `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() : '';
   const initials = name ? name.charAt(0).toUpperCase() : 'U';
   const phone = profile ? `${profile.phoneNumber ?? ''}`.trim() : '';
+  const serviceLabel = (profile?.service_types && profile.service_types.length > 0
+    ? profile.service_types.join(', ')
+    : profile?.service_type) || 'Service provider';
+  const tierLabel = standing?.tier ? standing.tier.charAt(0).toUpperCase() + standing.tier.slice(1) : 'Standard';
+  const tierTone: 'primary' | 'success' | 'error' =
+    standing?.tier === 'elite' ? 'primary' : standing?.tier === 'trusted' ? 'success' : standing?.tier === 'probation' ? 'error' : 'primary';
+  const verificationLabel =
+    profile?.verification_status === 'verified' ? 'Verified' :
+    profile?.verification_status === 'pending_review' ? 'Pending review' :
+    profile?.verification_status === 'rejected' ? 'Rejected' :
+    profile?.verification_status === 'expired' ? 'Expired' : 'Unverified';
+  const verificationIcon: IconName =
+    profile?.verification_status === 'verified' ? 'checkmark-circle' :
+    profile?.verification_status === 'pending_review' ? 'time' :
+    profile?.verification_status === 'rejected' ? 'close-circle' : 'help-circle';
+  const verificationColor =
+    profile?.verification_status === 'verified' ? color.success :
+    profile?.verification_status === 'pending_review' ? '#D97706' :
+    profile?.verification_status === 'rejected' ? color.error : color.inkMuted;
 
   return (
     <Screen bg={color.white} edges={['top']}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
-        {/* Header — overlaid on lanyard */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: space.lg, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
         <FadeInUp>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space.lg, paddingTop: space.sm, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }}>
-            <Text variant="h1">{t('profile.title')}</Text>
-            {!loading && profile && (
-              editing ? (
-                <View style={{ flexDirection: 'row', gap: space.sm }}>
-                  <Button label={t('profile.cancel')} variant="soft" full={false} onPress={cancelEditing} />
-                  <Button label={t('profile.save')} variant="primary" full={false} loading={saving} disabled={saving} onPress={saveProfile} />
-                </View>
-              ) : (
-                <Button label={t('profile.edit')} variant="primary" full={false} icon={<Ionicons name="pencil" size={14} color={color.white} />} onPress={startEditing} />
-              )
-            )}
-          </View>
+          <Text variant="h1" style={{ marginBottom: space.md }}>{t('profile.title')}</Text>
         </FadeInUp>
 
-        {error && (
+        {error && !editing && (
           <FadeInUp>
             <Card variant="flat" style={{ marginBottom: space.md, backgroundColor: color.errorBg }}>
               <Text variant="label" style={{ color: color.error }}>{error}</Text>
@@ -318,264 +324,163 @@ export default function ProviderProfile() {
           <View style={{ alignItems: 'center', paddingVertical: space['3xl'] }}><ActivityIndicator color={color.primary} /></View>
         ) : (
           <>
-            {/* Lanyard ID Card — full hero */}
-            <View style={{ marginBottom: space.md }}>
-              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, overflow: 'hidden' }}>
-                <PatternBackdrop variant="dots" tone="navy" opacity={0.05} glow={false} />
-              </View>
-              <View style={{ height: 52 }} />
-              <ProviderLanyard
-                name={name || 'Provider'}
-                initials={name ? name.charAt(0).toUpperCase() : 'U'}
-                avatarUrl={profile?.avatarUrl}
-                serviceType={
-                  (profile?.service_types && profile.service_types.length > 0
-                    ? profile.service_types.join(', ')
-                    : profile?.service_type) || 'Service provider'
-                }
-                rating={stats?.avg_rating}
-                ratingCount={stats?.total_ratings}
-                completedJobs={stats?.completed_jobs}
-                tier={standing?.tier}
-                isVerified={!!profile?.phone_verified}
-                providerId={user?.id}
-                phone={profile?.phoneNumber || user?.phone}
-                registrationDate={profile?.registrationDate}
-                cnic={profile?.cnic}
-                cardRef={cardRef}
-              />
-              {/* Download ID Card button */}
-              <PressableScale onPress={handleDownloadID}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: space.md, paddingVertical: 12, borderRadius: radius.md, backgroundColor: `${color.primary}12`, borderWidth: 1, borderColor: `${color.primary}30` }}>
-                <Ionicons name="download-outline" size={16} color={color.primary} />
-                <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>{t('profile.downloadId')}</Text>
-              </PressableScale>
-            </View>
-
-            {/* Stats Tiles */}
-            {stats && (
-              <FadeInUp delay={100}>
-                <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.md }}>
-                  <StatTile value={String(stats.avg_rating ? Number(stats.avg_rating).toFixed(1) : '-')} label="Rating" tone="primary" bg={`${color.primary}10`} />
-                  <StatTile value={String(stats.total_ratings ?? 0)} label="Reviews" tone="ink" bg={color.surfaceAlt} />
-                  <StatTile value={String(stats.completed_jobs ?? 0)} label="Jobs Done" tone="ink" bg={color.successBg} />
+            {/* Identity hero — compact, not the full lanyard */}
+            <FadeInUp delay={60}>
+              <LinearGradient colors={gradient.navy} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={{ borderRadius: radius['2xl'], padding: space.lg, marginBottom: space.md, overflow: 'hidden' }}>
+                <GlowBackdrop top={-60} right={-40} size={200} opacity={0.22} />
+                <GlowBackdrop color={color.primaryLight} bottom={-50} left={-30} size={160} opacity={0.1} />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {standing?.tier === 'elite' ? (
+                    <BorderBeam width={62} height={62} borderRadius={31} strokeWidth={3}>
+                      <AvatarGlyph avatarUrl={profile?.avatarUrl} initials={initials} size={56} />
+                    </BorderBeam>
+                  ) : (
+                    <View style={{ width: 62, height: 62, borderRadius: 31, borderWidth: 2, borderColor: color.primary, alignItems: 'center', justifyContent: 'center' }}>
+                      <AvatarGlyph avatarUrl={profile?.avatarUrl} initials={initials} size={56} />
+                    </View>
+                  )}
+                  <View style={{ marginLeft: space.md, flex: 1 }}>
+                    <ShineText style={{ fontFamily: typeScale.h3.family, fontSize: typeScale.h3.size, lineHeight: typeScale.h3.line, color: color.white }}>
+                      {name || 'Provider'}
+                    </ShineText>
+                    <Text variant="caption" tone="inverseSoft" numberOfLines={1} style={{ marginTop: 2 }}>{serviceLabel}</Text>
+                    <View style={{ flexDirection: 'row', gap: space.xs, marginTop: space.xs }}>
+                      {profile?.phone_verified && <Badge label={t('profile.verified')} tone="success" />}
+                      <Badge label={tierLabel.toUpperCase()} tone={tierTone} />
+                    </View>
+                  </View>
                 </View>
-              </FadeInUp>
-            )}
 
-            {/* Tier & Verification */}
-            <FadeInUp delay={140}>
-              <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.md }}>
-                <Card variant="elevated" padded={false} style={{ flex: 1, padding: space.lg }}>
-                  <Text variant="caption" tone="muted" style={{ textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: space.sm }}>Tier</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Numeric size={18}>{standing?.tier || 'Standard'}</Numeric>
-                    <Badge
-                      label={standing?.tier === 'elite' ? 'ELITE' : standing?.tier === 'trusted' ? 'TRUSTED' : standing?.tier === 'probation' ? 'PROBATION' : 'STANDARD'}
-                      tone={standing?.tier === 'elite' ? 'primary' : standing?.tier === 'trusted' ? 'success' : standing?.tier === 'probation' ? 'error' : 'primary'}
-                    />
+                <View style={{ flexDirection: 'row', marginTop: space.lg, paddingTop: space.md, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
+                  <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Numeric size={22} tone="inverse">{stats?.avg_rating ? Number(stats.avg_rating).toFixed(1) : '—'}</Numeric>
+                    <Text variant="caption" tone="inverseSoft" style={{ marginTop: 2 }}>Rating</Text>
                   </View>
-                  {standing?.overall_rating_avg != null && standing.overall_rating_avg > 0 && (
-                    <View style={{ marginTop: space.sm }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: space.xs }}>
-                        <Text variant="caption" tone="muted">Avg Rating</Text>
-                        <Text variant="caption" tone="muted">{Number(standing.overall_rating_avg).toFixed(1)}/5</Text>
-                      </View>
-                      <View style={{ height: 4, borderRadius: 2, backgroundColor: color.line, overflow: 'hidden' }}>
-                        <View style={{ height: 4, borderRadius: 2, backgroundColor: color.success, width: `${(standing.overall_rating_avg / 5) * 100}%` }} />
-                      </View>
-                    </View>
-                  )}
-                </Card>
+                  <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                  <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Numeric size={22} tone="inverse">{String(stats?.total_ratings ?? 0)}</Numeric>
+                    <Text variant="caption" tone="inverseSoft" style={{ marginTop: 2 }}>Reviews</Text>
+                  </View>
+                  <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                  <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Numeric size={22} tone="inverse">{String(stats?.completed_jobs ?? 0)}</Numeric>
+                    <Text variant="caption" tone="inverseSoft" style={{ marginTop: 2 }}>Jobs Done</Text>
+                  </View>
+                </View>
 
-                <Card variant="elevated" padded={false} style={{ flex: 1, padding: space.lg }}>
-                  <Text variant="caption" tone="muted" style={{ textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: space.sm }}>ID Verification</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text variant="body" style={{ fontWeight: '700', textTransform: 'capitalize' }}>
-                      {profile?.verification_status === 'verified' ? 'Verified' :
-                       profile?.verification_status === 'pending_review' ? 'Pending' :
-                       profile?.verification_status === 'rejected' ? 'Rejected' :
-                       profile?.verification_status === 'expired' ? 'Expired' : 'Unverified'}
-                    </Text>
-                    <Ionicons name={
-                      profile?.verification_status === 'verified' ? 'checkmark-circle' :
-                      profile?.verification_status === 'pending_review' ? 'time' :
-                      profile?.verification_status === 'rejected' ? 'close-circle' : 'help-circle'
-                    } size={18} color={
-                      profile?.verification_status === 'verified' ? color.success :
-                      profile?.verification_status === 'pending_review' ? '#D97706' :
-                      profile?.verification_status === 'rejected' ? color.error : color.inkMuted
-                    } />
-                  </View>
-                  {(!profile?.verification_status || profile?.verification_status === 'unverified') && (
-                    <View style={{ marginTop: space.sm }}>
-                      <Text variant="caption" tone="muted" style={{ marginBottom: space.xs }}>Submit CNIC for admin review</Text>
-                      <PressableScale onPress={handleSubmitVerification}
-                        style={{ paddingVertical: space.sm, borderRadius: radius.sm, backgroundColor: `${color.primary}14`, alignItems: 'center' }}>
-                        <Text variant="caption" style={{ fontWeight: '700', color: color.primary }}>Submit for verification</Text>
-                      </PressableScale>
-                    </View>
-                  )}
-                </Card>
-              </View>
+                <PressableScale onPress={() => setShowIdModal(true)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: space.md, paddingVertical: 10, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                  <Ionicons name="card-outline" size={16} color={color.white} />
+                  <Text variant="label" style={{ fontWeight: '700', color: color.white }}>View ID Card</Text>
+                </PressableScale>
+              </LinearGradient>
             </FadeInUp>
 
-            {/* Appeal button (probation only) */}
-            {standing?.tier === 'probation' && (
-              <FadeInUp delay={160}>
+            {/* Profile group */}
+            <FadeInUp delay={100}>
+              <SectionHeader title={t('profile.personal')} action={t('profile.edit')} onAction={startEditing} />
+              <Card variant="elevated" style={{ marginBottom: space.md }}>
+                <Row label={t('profile.fullName')} value={name || t('profile.notProvided')} />
+                <Row label={t('profile.email')} value={profile?.email || t('profile.notProvided')} />
+                <Row label={t('profile.cnic')} value={profile?.cnic || t('profile.notProvided')} />
+                <Row label={t('profile.phone')} value={phone || user?.phone || t('profile.notProvided')} />
+                <Row label={t('profile.registered')} value={profile?.registrationDate ? new Date(profile.registrationDate).toLocaleDateString() : 'Unknown'} last />
+              </Card>
+            </FadeInUp>
+
+            {/* Work group */}
+            <FadeInUp delay={140}>
+              <SectionHeader title={t('profile.service')} />
+              <Card variant="elevated" style={{ marginBottom: space.md }}>
+                <View style={{ paddingBottom: space.md, borderBottomWidth: 1, borderBottomColor: color.line }}>
+                  <Text variant="caption" tone="muted" style={{ marginBottom: space.sm }}>{t('profile.services')}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                    {(profile?.service_types && profile.service_types.length > 0
+                      ? profile.service_types
+                      : profile?.service_type ? [profile.service_type] : []
+                    ).map((svc) => (
+                      <Badge key={svc} label={svc} tone="primary" />
+                    ))}
+                  </View>
+                </View>
+
+                <View style={{ paddingVertical: space.md, borderBottomWidth: 1, borderBottomColor: color.line }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text variant="label">Tier</Text>
+                    <Badge label={tierLabel.toUpperCase()} tone={tierTone} />
+                  </View>
+                  {standing?.overall_rating_avg != null && standing.overall_rating_avg > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: space.md }}>
+                      <CircularGauge size={40} strokeWidth={4} progress={standing.overall_rating_avg / 5} color={color.success} trackColor={color.line}>
+                        <Text variant="caption" style={{ fontWeight: '700', fontSize: 11 }}>{standing.overall_rating_avg.toFixed(1)}</Text>
+                      </CircularGauge>
+                      <Text variant="caption" tone="muted">Overall rating out of 5</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={{ paddingTop: space.md }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text variant="label">{t('profile.status')} · ID Verification</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Ionicons name={verificationIcon} size={16} color={verificationColor} />
+                      <Text variant="label" style={{ fontWeight: '700', color: verificationColor }}>{verificationLabel}</Text>
+                    </View>
+                  </View>
+                  {(!profile?.verification_status || profile?.verification_status === 'unverified') && (
+                    <PressableScale onPress={handleSubmitVerification}
+                      style={{ marginTop: space.sm, paddingVertical: space.sm, borderRadius: radius.sm, backgroundColor: `${color.primary}14`, alignItems: 'center' }}>
+                      <Text variant="caption" style={{ fontWeight: '700', color: color.primary }}>Submit for verification</Text>
+                    </PressableScale>
+                  )}
+                </View>
+              </Card>
+
+              {standing?.tier === 'probation' && (
                 <PressableScale onPress={() => setShowAppealModal(true)}
                   style={{ marginBottom: space.md, paddingVertical: space.md, borderRadius: radius.md, backgroundColor: color.warningBg, borderWidth: 1, borderColor: '#FDE68A', alignItems: 'center' }}>
                   <Text variant="label" style={{ fontWeight: '700', color: '#D97706' }}>Submit an Appeal</Text>
                 </PressableScale>
-              </FadeInUp>
-            )}
+              )}
+            </FadeInUp>
 
-            {/* Appeal Modal */}
-            <Modal visible={showAppealModal} transparent animationType="fade">
-              <View style={{ flex: 1, backgroundColor: color.scrim, justifyContent: 'center', padding: space.xl }}>
-                <Card variant="elevated" style={{ borderRadius: radius['2xl'] }}>
-                  <Text variant="h2" style={{ marginBottom: space.md }}>Submit an Appeal</Text>
-                  <View style={{ marginBottom: space.lg }}>
-                    <TextField
-                      label="Reason" value={appealReason} onChangeText={setAppealReason}
-                      multiline placeholder="Explain why you believe this should be reviewed..."
-                      style={{ minHeight: 100, textAlignVertical: 'top', paddingTop: space.sm }}
-                    />
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: space.sm }}>
-                    <Button label="Cancel" variant="soft" full={false} style={{ flex: 1 }} onPress={() => { setShowAppealModal(false); setAppealReason(''); }} />
-                    <Button label={submittingAppeal ? 'Submitting...' : 'Submit'} variant="primary" full={false} style={{ flex: 1 }} disabled={!appealReason.trim() || submittingAppeal} loading={submittingAppeal} onPress={handleSubmitAppeal} />
-                  </View>
-                </Card>
-              </View>
-            </Modal>
-
-            {/* Personal Information */}
+            {/* Preferences group */}
             <FadeInUp delay={180}>
-              <SectionHeader title={t('profile.personal')} />
-              <Card variant="elevated" style={{ marginBottom: space.md }}>
-                {editing ? (
-                  <View style={{ gap: space.md }}>
-                    <TextField label="First Name" value={firstName} onChangeText={setFirstName} placeholder="First name" />
-                    <TextField label="Last Name" value={lastName} onChangeText={setLastName} placeholder="Last name" />
-                    <TextField label="Email" value={email} onChangeText={setEmail} placeholder="Email address" keyboardType="email-address" />
-                  </View>
-                ) : (
-                  <View style={{ gap: space.md }}>
-                    <ProfileRow label="Full Name" value={name || 'Not provided'} />
-                    <ProfileRow label="Email" value={profile?.email || 'Not provided'} />
-                    <ProfileRow label="CNIC" value={profile?.cnic || 'Not provided'} />
-                    <ProfileRow label="Registered" value={profile?.registrationDate ? new Date(profile.registrationDate).toLocaleDateString() : 'Unknown'} />
-                  </View>
-                )}
-              </Card>
-            </FadeInUp>
-
-            {/* Contact Information */}
-            <FadeInUp delay={220}>
-              <SectionHeader title={t('profile.contact')} />
-              <Card variant="elevated" style={{ marginBottom: space.md }}>
-                <ProfileRow label="Phone" value={phone || user?.phone || 'Not provided'} />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.sm }}>
-                  <Text variant="caption" tone="muted">Status</Text>
-                  <Badge label={profile?.phone_verified ? 'Verified' : 'Pending'} tone={profile?.phone_verified ? 'success' : 'warning'} />
-                </View>
-              </Card>
-            </FadeInUp>
-
-            {/* Service Information */}
-            <FadeInUp delay={260}>
-              <SectionHeader title={t('profile.service')} />
-              <Card variant="elevated" style={{ marginBottom: space.md }}>
-                {editing ? (
-                  <View>
-                    <Text variant="caption" tone="muted" style={{ marginBottom: space.sm }}>Service Types</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
-                      {SERVICE_TYPES.map((st) => {
-                        const isActive = (formServiceTypes || []).includes(st);
-                        return (
-                          <Chip key={st} label={st} active={isActive} onPress={() => toggleEditService(st)} />
-                        );
-                      })}
-                    </ScrollView>
-                  </View>
-                ) : (
-                  <View>
-                    <Text variant="caption" tone="muted" style={{ marginBottom: space.sm }}>Services</Text>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                      {(profile?.service_types && profile.service_types.length > 0
-                        ? profile.service_types
-                        : profile?.service_type ? [profile.service_type] : []
-                      ).map((svc) => (
-                        <Badge key={svc} label={svc} tone="primary" />
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </Card>
-            </FadeInUp>
-
-            {/* Language */}
-            <FadeInUp delay={280}>
               <SectionHeader title={t('profile.language')} />
-              <Card variant="elevated" padded={false} style={{ marginBottom: space.md }}>
-                <PressableScale
+              <Card variant="elevated" style={{ marginBottom: space.md }}>
+                <Row
+                  icon="language"
+                  label={locale === 'en' ? t('profile.english') : t('profile.urdu')}
+                  value={locale === 'en' ? 'اردو میں تبدیل کریں' : 'Switch to English'}
                   onPress={() => setLocale(locale === 'en' ? 'ur' : 'en')}
-                  style={{ flexDirection: 'row', alignItems: 'center', padding: space.lg }}
-                >
-                  <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: `${color.primary}14`, alignItems: 'center', justifyContent: 'center' }}>
-                    <Ionicons name="language" size={20} color={color.primary} />
-                  </View>
-                  <View style={{ marginLeft: space.md, flex: 1 }}>
-                    <Text variant="bodyLg" style={{ fontWeight: '700' }}>
-                      {locale === 'en' ? t('profile.english') : t('profile.urdu')}
-                    </Text>
-                    <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>
-                      {locale === 'en' ? 'اردو میں تبدیل کریں' : 'Switch to English'}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
-                    <View style={{ width: 36, height: 20, borderRadius: 10, backgroundColor: color.primary, alignItems: 'center', justifyContent: 'center' }}>
-                      <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color.white, marginLeft: locale === 'en' ? -8 : 8 }} />
-                    </View>
-                  </View>
-                </PressableScale>
+                  last
+                />
               </Card>
             </FadeInUp>
 
-            {/* Actions */}
-            <FadeInUp delay={300}>
-              <Stagger step={40}>
-                <PressableScale onPress={switchRole}>
-                  <Card variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: color.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
-                        <Ionicons name="home-outline" size={20} color={color.navy} />
-                      </View>
-                      <View style={{ marginLeft: space.md, flex: 1 }}>
-                        <Text variant="bodyLg" style={{ fontWeight: '700' }}>{t('profile.switchToCustomer')}</Text>
-                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{t('profile.switchToCustomerDesc')}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={18} color={color.line} />
-                    </View>
-                  </Card>
-                </PressableScale>
-
-                <PressableScale onPress={handleSignOut}>
-                  <Card variant="elevated" padded={false} style={{ marginBottom: space.sm, padding: space.lg }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: color.errorBg, alignItems: 'center', justifyContent: 'center' }}>
-                        <Ionicons name="log-out-outline" size={20} color={color.error} />
-                      </View>
-                      <View style={{ marginLeft: space.md, flex: 1 }}>
-                        <Text variant="bodyLg" style={{ fontWeight: '700', color: color.error }}>{t('profile.signOut')}</Text>
-                        <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{t('profile.signOutDesc')}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={18} color={color.line} />
-                    </View>
-                  </Card>
-                </PressableScale>
-              </Stagger>
+            {/* Account group */}
+            <FadeInUp delay={220}>
+              <SectionHeader title="Account" />
+              <Card variant="elevated" style={{ marginBottom: space.md }}>
+                <Stagger step={40}>
+                  <Row
+                    icon="home-outline"
+                    label={t('profile.switchToCustomer')}
+                    value={t('profile.switchToCustomerDesc')}
+                    onPress={switchRole}
+                    chevron
+                  />
+                  <Row
+                    icon="log-out-outline"
+                    label={t('profile.signOut')}
+                    value={t('profile.signOutDesc')}
+                    onPress={handleSignOut}
+                    tone="error"
+                    last
+                  />
+                </Stagger>
+              </Card>
             </FadeInUp>
           </>
         )}
@@ -585,15 +490,133 @@ export default function ProviderProfile() {
           <Text variant="caption" tone="muted">{t('profile.version')}</Text>
         </View>
       </ScrollView>
+
+      {/* Appeal Modal */}
+      <Modal visible={showAppealModal} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: color.scrim, justifyContent: 'center', padding: space.xl }}>
+          <Card variant="elevated" style={{ borderRadius: radius['2xl'] }}>
+            <Text variant="h2" style={{ marginBottom: space.md }}>Submit an Appeal</Text>
+            <View style={{ marginBottom: space.lg }}>
+              <TextField
+                label="Reason" value={appealReason} onChangeText={setAppealReason}
+                multiline placeholder="Explain why you believe this should be reviewed..."
+                style={{ minHeight: 100, textAlignVertical: 'top', paddingTop: space.sm }}
+              />
+            </View>
+            <View style={{ flexDirection: 'row', gap: space.sm }}>
+              <Button label="Cancel" variant="soft" full={false} style={{ flex: 1 }} onPress={() => { setShowAppealModal(false); setAppealReason(''); }} />
+              <Button label={submittingAppeal ? 'Submitting...' : 'Submit'} variant="primary" full={false} style={{ flex: 1 }} disabled={!appealReason.trim() || submittingAppeal} loading={submittingAppeal} onPress={handleSubmitAppeal} />
+            </View>
+          </Card>
+        </View>
+      </Modal>
+
+      {/* Edit Profile Modal — replaces whole-page inline editing */}
+      <Modal visible={editing} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: color.scrim, justifyContent: 'center', padding: space.xl }}>
+          <Card variant="elevated" style={{ borderRadius: radius['2xl'], maxHeight: '85%' }}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <Text variant="h2" style={{ marginBottom: space.md }}>{t('profile.edit')} {t('profile.personal')}</Text>
+              <View style={{ gap: space.md }}>
+                <TextField label={t('profile.firstName')} value={firstName} onChangeText={setFirstName} placeholder={t('profile.firstName')} />
+                <TextField label={t('profile.lastName')} value={lastName} onChangeText={setLastName} placeholder={t('profile.lastName')} />
+                <TextField label={t('profile.email')} value={email} onChangeText={setEmail} placeholder={t('profile.emailPlaceholder')} keyboardType="email-address" />
+                <View>
+                  <Text variant="caption" tone="muted" style={{ marginBottom: space.sm }}>{t('profile.services')}</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                    {SERVICE_TYPES.map((st) => (
+                      <Chip key={st} label={st} active={formServiceTypes.includes(st)} onPress={() => toggleEditService(st)} />
+                    ))}
+                  </View>
+                </View>
+                {error && <Text variant="label" style={{ color: color.error }}>{error}</Text>}
+              </View>
+              <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.lg }}>
+                <Button label={t('profile.cancel')} variant="soft" full={false} style={{ flex: 1 }} onPress={cancelEditing} />
+                <Button label={saving ? t('profile.saving') : t('profile.save')} variant="primary" full={false} style={{ flex: 1 }} loading={saving} disabled={saving} onPress={saveProfile} />
+              </View>
+            </ScrollView>
+          </Card>
+        </View>
+      </Modal>
+
+      {/* ID Card Modal — full lanyard, on demand instead of eating the main scroll */}
+      <Modal visible={showIdModal} transparent animationType="slide" onRequestClose={() => setShowIdModal(false)}>
+        <View style={{ flex: 1, backgroundColor: color.scrim, justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: color.white, borderTopLeftRadius: radius['2xl'], borderTopRightRadius: radius['2xl'], paddingTop: space.lg, paddingBottom: space.xl, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingHorizontal: space.lg, marginBottom: space.md }}>
+              <Text variant="h2">ID Card</Text>
+              <PressableScale onPress={() => setShowIdModal(false)} hitSlop={12}>
+                <Ionicons name="close" size={22} color={color.inkMuted} />
+              </PressableScale>
+            </View>
+            <ProviderLanyard
+              name={name || 'Provider'}
+              initials={initials}
+              avatarUrl={profile?.avatarUrl}
+              serviceType={serviceLabel}
+              rating={stats?.avg_rating}
+              ratingCount={stats?.total_ratings}
+              completedJobs={stats?.completed_jobs}
+              tier={standing?.tier}
+              isVerified={!!profile?.phone_verified}
+              providerId={user?.id}
+              phone={profile?.phoneNumber || user?.phone}
+              registrationDate={profile?.registrationDate}
+              cnic={profile?.cnic}
+              cardRef={cardRef}
+            />
+            <PressableScale onPress={handleDownloadID}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: space.lg, paddingVertical: 12, paddingHorizontal: space.lg, borderRadius: radius.md, backgroundColor: `${color.primary}12`, borderWidth: 1, borderColor: `${color.primary}30` }}>
+              <Ionicons name="download-outline" size={16} color={color.primary} />
+              <Text variant="label" style={{ fontWeight: '700', color: color.primary }}>{t('profile.downloadId')}</Text>
+            </PressableScale>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
 
-function ProfileRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Row({
+  icon, label, value, onPress, chevron, tone, last,
+}: {
+  icon?: IconName;
+  label: string;
+  value?: string;
+  onPress?: () => void;
+  chevron?: boolean;
+  tone?: 'error';
+  last?: boolean;
+}) {
+  const labelColor = tone === 'error' ? color.error : color.ink;
+  const content = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: space.md, borderBottomWidth: last ? 0 : 1, borderBottomColor: color.line }}>
+      {icon ? (
+        <IconTile bg={tone === 'error' ? color.errorBg : `${color.primary}14`} size={36}>
+          <Ionicons name={icon} size={17} color={tone === 'error' ? color.error : color.primary} />
+        </IconTile>
+      ) : null}
+      <View style={{ marginLeft: icon ? space.md : 0, flex: 1 }}>
+        <Text variant="label" style={{ color: labelColor, fontWeight: onPress ? '700' : '400' }} numberOfLines={1}>{label}</Text>
+      </View>
+      {value ? (
+        <Text variant="caption" tone="muted" numberOfLines={1} style={{ maxWidth: 170, textAlign: 'right', marginLeft: space.sm }}>{value}</Text>
+      ) : null}
+      {chevron ? <Ionicons name="chevron-forward" size={16} color={color.line} style={{ marginLeft: space.sm }} /> : null}
+    </View>
+  );
+  return onPress ? <PressableScale onPress={onPress}>{content}</PressableScale> : content;
+}
+
+function AvatarGlyph({ avatarUrl, initials, size }: { avatarUrl?: string | null; initials: string; size: number }) {
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Text variant="caption" tone="muted">{label}</Text>
-      <Text variant="label" style={{ fontWeight: '700', color: accent ? color.primary : color.ink, textAlign: 'right', flex: 1, marginLeft: space.md }} numberOfLines={1}>{value}</Text>
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: 'rgba(219,75,13,0.2)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      {avatarUrl ? (
+        <Image source={{ uri: avatarUrl }} style={{ width: size, height: size }} />
+      ) : (
+        <Text style={{ fontSize: size * 0.38, fontWeight: '700', color: color.white }}>{initials}</Text>
+      )}
     </View>
   );
 }

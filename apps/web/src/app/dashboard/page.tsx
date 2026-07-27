@@ -123,10 +123,29 @@ interface IServiceRequest {
   request_details: string | null;
   landmark: string | null;
   entrance_photo_url: string | null;
+  visiting_fee: number | null;
   status: 'pending_notification' | 'notified_multiple' | 'accepted' | 'rejected' | 'cancelled' | 'completed' | 'error' | 'no_ustaz_found';
   created_at: string;
   notified_providers?: string[]; // Array of provider IDs who were notified
   accepted_by_provider_id?: string | null; // The provider who accepted
+}
+
+// Client-side estimate only — mirrors the DB's calculate_visiting_fee() tiers.
+// The authoritative visiting_fee is computed server-side on accept.
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function estimateVisitingFee(distanceKm: number): number {
+  if (distanceKm <= 5) return 500;
+  if (distanceKm <= 10) return 1000;
+  return 1500;
 }
 
 interface Notification {
@@ -1828,6 +1847,8 @@ function ProviderDashboardInner() {
             {userIdFromUrl && (
               <ProviderRequestNotification
                 providerId={userIdFromUrl!}
+                providerLat={providerLocation?.latitude}
+                providerLng={providerLocation?.longitude}
                 onAccept={async (requestId) => { await handleAcceptRequest(requestId); }}
                 onReject={async (requestId) => { await handleRejectRequest(requestId); }}
                 onOpenChat={(userId, requestId) => {
@@ -2069,6 +2090,19 @@ function ProviderDashboardInner() {
                     <p className="text-sm text-gray-600 flex items-center mb-1">
                       <MapPin className="h-4 w-4 mr-2 text-amber-500" />
                       <span className="font-medium text-amber-700">Landmark:</span>&nbsp;{request.landmark}
+                    </p>
+                  )}
+
+                  {/* Visiting fee */}
+                  {request.visiting_fee != null ? (
+                    <p className="text-sm text-gray-700 flex items-center mb-1">
+                      <span className="font-medium text-[#db4b0d]">Visiting charge:</span>&nbsp;Rs. {request.visiting_fee}
+                    </p>
+                  ) : providerLocation && request.request_latitude && request.request_longitude && (
+                    <p className="text-sm text-gray-700 flex items-center mb-1">
+                      <span className="font-medium text-[#db4b0d]">Est. visiting charge:</span>&nbsp;Rs. {estimateVisitingFee(
+                        haversineKm(providerLocation.latitude, providerLocation.longitude, request.request_latitude, request.request_longitude)
+                      )}
                     </p>
                   )}
 
@@ -2324,10 +2358,6 @@ function ProviderDashboardInner() {
                               />
                               {editErrors.cnic && <p className="text-red-500 text-sm mt-1">{editErrors.cnic}</p>}
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Contact Information */}
                           </div>
                         </div>
 

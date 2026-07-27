@@ -33,6 +33,27 @@ interface ProviderRequestNotificationProps {
   onReject: (requestId: string) => void;
   onOpenChat?: (userId: string, requestId: string) => void; // Callback to open chat
   acceptTimeoutSeconds?: number; // Countdown timeout before auto-reject (default 45)
+  /** Provider's current location, used only to estimate the visiting fee before accept */
+  providerLat?: number | null;
+  providerLng?: number | null;
+}
+
+// Client-side estimate only — mirrors the DB's calculate_visiting_fee() tiers.
+// The authoritative visiting_fee is computed server-side on accept.
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function estimateVisitingFee(distanceKm: number): number {
+  if (distanceKm <= 5) return 500;
+  if (distanceKm <= 10) return 1000;
+  return 1500;
 }
 
 const ProviderRequestNotification = ({
@@ -40,7 +61,9 @@ const ProviderRequestNotification = ({
   onAccept,
   onReject,
   onOpenChat,
-  acceptTimeoutSeconds = 45
+  acceptTimeoutSeconds = 45,
+  providerLat,
+  providerLng,
 }: ProviderRequestNotificationProps) => {
   const [activeRequests, setActiveRequests] = useState<ServiceRequest[]>([]);
   const [users, setUsers] = useState<Record<string, UserMetadata>>({});
@@ -368,6 +391,13 @@ const ProviderRequestNotification = ({
               {request.request_details && (
                 <div className="text-sm text-gray-600">
                   <p>Address: {request.request_details}</p>
+                </div>
+              )}
+              {providerLat != null && providerLng != null && (
+                <div className="text-sm font-medium text-[#db4b0d]">
+                  Est. visiting charge: Rs. {estimateVisitingFee(
+                    haversineKm(providerLat, providerLng, request.request_latitude, request.request_longitude)
+                  )}
                 </div>
               )}
               <div className="flex items-center justify-between">

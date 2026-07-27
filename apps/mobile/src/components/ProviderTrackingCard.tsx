@@ -27,6 +27,7 @@ interface ProviderTrackingCardProps {
   userLat: number | null;
   userLng: number | null;
   serviceStartedAt?: string | null;
+  visitingFee?: number | null;
   onChat: () => void;
 }
 
@@ -56,7 +57,7 @@ function formatETA(distanceKm: number): string {
   return `${minutes} min`;
 }
 
-export default function ProviderTrackingCard({ status, provider, liveLocation, userLat, userLng, serviceStartedAt, onChat }: ProviderTrackingCardProps) {
+export default function ProviderTrackingCard({ status, provider, liveLocation, userLat, userLng, serviceStartedAt, visitingFee, onChat }: ProviderTrackingCardProps) {
   const { elapsedFormatted } = useServiceTimer(serviceStartedAt);
   const meta = STATUS_META[status] ?? STATUS_META.accepted;
   const providerName = `${provider.firstName ?? ''} ${provider.lastName ?? ''}`.trim() || 'Provider';
@@ -100,6 +101,14 @@ export default function ProviderTrackingCard({ status, provider, liveLocation, u
             </View>
           </View>
         </View>
+
+        {/* Visiting charge */}
+        {visitingFee != null && (
+          <View style={{ borderRadius: radius.md, backgroundColor: `${color.primary}14`, padding: space.md, marginBottom: space.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text variant="caption" style={{ color: color.primary, fontWeight: '700' }}>Visiting charge</Text>
+            <Text variant="h3" style={{ color: color.primary }}>Rs. {visitingFee}</Text>
+          </View>
+        )}
 
         {/* ETA / Distance / Timer tiles */}
         <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.xl }}>

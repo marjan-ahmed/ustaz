@@ -43,6 +43,7 @@ export type ServiceRequest = {
   status: ServiceRequestStatus;
   request_latitude?: number | null;
   request_longitude?: number | null;
+  visiting_fee?: number | null;
   accepted_by_provider_id?: string | null;
   created_at: string;
   updated_at?: string | null;

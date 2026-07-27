@@ -29,6 +29,8 @@ interface ProviderTrackingInfoProps {
   liveLocation: LiveLocation | null;
   /** Current service request status (drives the headline badge) */
   status?: string;
+  /** Distance-tiered visiting charge (PKR), locked in when the provider accepted */
+  visitingFee?: number | null;
   onRequestChat: () => void;
   onCallProvider: () => void;
 }
@@ -57,7 +59,7 @@ const keyFor = (lat: number, lng: number) =>
   `${lat.toFixed(4)},${lng.toFixed(4)}`; // ~11 m precision
 
 const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
-  userLat, userLng, provider, liveLocation, status, onRequestChat, onCallProvider,
+  userLat, userLng, provider, liveLocation, status, visitingFee, onRequestChat, onCallProvider,
 }) => {
   const [distance, setDistance] = useState<number | null>(null);
   const [eta, setEta] = useState<number | null>(null);
@@ -222,6 +224,14 @@ const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Visiting charge */}
+        {visitingFee != null && (
+          <div className="rounded-xl p-3.5 bg-orange-50 border border-orange-100 flex items-center justify-between">
+            <span className="text-[11px] uppercase tracking-wider font-bold text-[#db4b0d]">Visiting charge</span>
+            <span className="text-lg font-extrabold text-[#db4b0d]">Rs. {visitingFee}</span>
+          </div>
+        )}
 
         {/* Live stats grid */}
         {liveLocation && (

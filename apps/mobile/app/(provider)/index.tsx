@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { PROVIDER_MIN_WALLET_BALANCE } from '@ustaz/shared';
+import { PROVIDER_MIN_WALLET_BALANCE, estimateVisitingFee, haversineKm } from '@ustaz/shared';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
 import {
@@ -76,11 +76,20 @@ export default function ProviderHome() {
 
   useEffect(() => { if (user) load(); }, [user, load]);
 
+  const loadRef = useRef(load);
+  useEffect(() => { loadRef.current = load; }, [load]);
+
   useEffect(() => {
     if (!user) return;
+    const topic = `provider-realtime-${user.id}`;
+    // Fast Refresh / dev double-invoke can leave a still-subscribed channel
+    // registered under this topic; purge it before creating a fresh one, since
+    // supabase.channel() reuses an existing channel by topic if one is present.
+    const stale = supabase.getChannels().find((c) => c.topic === `realtime:${topic}`);
+    if (stale) supabase.removeChannel(stale);
     const channel = supabase
-      .channel(`provider-realtime-${user.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_user_id=eq.${user.id}` }, () => load())
+      .channel(topic)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `recipient_user_id=eq.${user.id}` }, () => loadRef.current())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'service_requests', filter: `accepted_by_provider_id=eq.${user.id}` }, async (payload) => {
         const updated = payload.new as any;
         if (updated?.status === 'cancelled') {
@@ -92,11 +101,11 @@ export default function ProviderHome() {
           setCancelledAlert({ serviceType: updated.service_type || 'Service', customerName });
           setTimeout(() => setCancelledAlert(null), 5000);
         }
-        if (['cancelled', 'completed', 'no_ustaz_found'].includes(updated?.status)) load();
+        if (['cancelled', 'completed', 'no_ustaz_found'].includes(updated?.status)) loadRef.current();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, load]);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -208,7 +217,7 @@ export default function ProviderHome() {
                     />
                   </View>
                 </View>
-                <IsoWalletScene size={90} />
+                <IsoWalletScene size={64} />
               </View>
               {!hasWalletMinimum && (
                 <View style={{ marginTop: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: 'rgba(239,68,68,0.18)', borderRadius: radius.md, padding: space.sm }}>
@@ -323,6 +332,16 @@ export default function ProviderHome() {
                             </Text>
                           </View>
                         )}
+                        {currentLocation && req.requestDetails?.request_latitude != null && req.requestDetails?.request_longitude != null && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                            <Ionicons name="cash-outline" size={13} color={color.primary} />
+                            <Text variant="caption" style={{ color: color.primary, fontWeight: '700' }}>
+                              Est. visiting charge: Rs. {estimateVisitingFee(
+                                haversineKm(currentLocation.latitude, currentLocation.longitude, req.requestDetails.request_latitude, req.requestDetails.request_longitude)
+                              )}
+                            </Text>
+                          </View>
+                        )}
                       </View>
                       <Badge label={t('dashboard.new')} tone="primary" />
                     </View>
@@ -381,6 +400,12 @@ export default function ProviderHome() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: space.sm }}>
                         <Ionicons name="location-outline" size={13} color={color.inkMuted} />
                         <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }} lang="en">{request.address}</Text>
+                      </View>
+                    )}
+                    {request.visiting_fee != null && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: space.sm }}>
+                        <Ionicons name="cash-outline" size={13} color={color.primary} />
+                        <Text variant="caption" style={{ color: color.primary, fontWeight: '700' }}>Visiting charge: Rs. {request.visiting_fee}</Text>
                       </View>
                     )}
                     {request.request_latitude && request.request_longitude && (

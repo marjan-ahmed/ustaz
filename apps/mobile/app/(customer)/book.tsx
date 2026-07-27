@@ -147,6 +147,7 @@ export default function BookScreen() {
   const [requestStatus, setRequestStatus] = useState<RequestStatus>('idle');
   const [currentRequestId, setCurrentRequestId] = useState<string | null>(null);
   const [acceptedProvider, setAcceptedProvider] = useState<any>(null);
+  const [visitingFee, setVisitingFee] = useState<number | null>(null);
   const [serviceStartedAt, setServiceStartedAt] = useState<string | null>(null);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [showRating, setShowRating] = useState(false);
@@ -386,6 +387,7 @@ export default function BookScreen() {
         if (newStatus === 'completed') {
           setShowRating(true);
         } else if (acceptedBy) {
+          setVisitingFee((payload.new as any).visiting_fee ?? null);
           fetchAcceptedProvider(currentRequestId, acceptedBy);
         }
       })
@@ -552,6 +554,7 @@ export default function BookScreen() {
       setCurrentRequestId(null);
       setRequestStatus('idle');
       setAcceptedProvider(null);
+      setVisitingFee(null);
       setServiceStartedAt(null);
       setSearchMessage('Request cancelled.');
       setShowCancelModal(false);
@@ -569,6 +572,7 @@ export default function BookScreen() {
       setCurrentRequestId(null);
       setRequestStatus('idle');
       setAcceptedProvider(null);
+      setVisitingFee(null);
       setServiceStartedAt(null);
       setSearchMessage('Request cancelled.');
     } catch (err: any) {
@@ -781,6 +785,7 @@ export default function BookScreen() {
                 <ProviderTrackingCard
                   status={requestStatus} provider={acceptedProvider}
                   liveLocation={providerLocation} userLat={userLat} userLng={userLng}
+                  visitingFee={visitingFee}
                   serviceStartedAt={serviceStartedAt}
                   onChat={() => router.push(`/(customer)/chat?peer=${acceptedProvider.id}`)}
                 />
