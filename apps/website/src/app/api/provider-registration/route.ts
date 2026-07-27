@@ -75,6 +75,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "You're already pre-registered!" });
     }
 
+    // Check CNIC duplicate — same as phone number check.
+    const { data: existingCnic } = await supabase
+      .from("provider_prelaunch_registrations")
+      .select("id")
+      .eq("cnic", cleanCnic)
+      .maybeSingle();
+
+    if (existingCnic) {
+      return NextResponse.json({ message: "You're already pre-registered!" });
+    }
+
     const { error } = await supabase.from("provider_prelaunch_registrations").insert({
       full_name: fullName.trim(),
       cnic: cleanCnic,
