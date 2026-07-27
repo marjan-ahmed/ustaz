@@ -7,7 +7,6 @@
         "packages/*"
     ],
     "scripts": {
-        "postinstall": "npx patch-package",
         "dev:web": "npm --workspace @ustaz/web run dev",
         "dev:website": "npm --workspace @ustaz/website run dev",
         "dev:mobile": "npm --workspace @ustaz/mobile run dev",
