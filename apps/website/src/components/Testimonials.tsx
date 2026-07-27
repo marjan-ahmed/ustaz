@@ -1,213 +1,136 @@
 "use client";
 
-import { useState } from "react";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence, type PanInfo } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { Star, Quote } from "lucide-react";
 
 const testimonials = [
-  {
-    name: "Ahmed Khan",
-    location: "DHA Karachi",
-    rating: 5,
-    text: "Ustaz made finding a reliable electrician so easy. The provider arrived on time and fixed our wiring issue quickly. Highly recommended!",
-    avatar: "AK",
-  },
-  {
-    name: "Fatima Ali",
-    location: "Gulshan-e-Iqbal",
-    rating: 5,
-    text: "I've used Ustaz multiple times for plumbing services. Every provider has been professional and the work quality is excellent.",
-    avatar: "FA",
-  },
-  {
-    name: "Hassan Malik",
-    location: "Clifton",
-    rating: 5,
-    text: "The AC repair service was fantastic. The technician diagnosed the problem quickly and had our AC running perfectly within an hour.",
-    avatar: "HM",
-  },
-  {
-    name: "Ayesha Siddiqui",
-    location: "North Nazimabad",
-    rating: 5,
-    text: "Finally, a trustworthy platform for home services. The solar installation team was knowledgeable and completed the work ahead of schedule.",
-    avatar: "AS",
-  },
-  {
-    name: "Muhammad Raza",
-    location: "Korangi",
-    rating: 5,
-    text: "Used the carpentry service for custom furniture. The craftsmanship was outstanding and the price was very reasonable.",
-    avatar: "MR",
-  },
-  {
-    name: "Sara Ahmed",
-    location: "PECHS",
-    rating: 5,
-    text: "The app is so easy to use! I booked a plumber in minutes and he arrived within 30 minutes. Will definitely use again.",
-    avatar: "SA",
-  },
-];
+  { key: "ahmed", rating: 5, avatar: "AK" },
+  { key: "fatima", rating: 5, avatar: "FA" },
+  { key: "hassan", rating: 5, avatar: "HM" },
+] as const;
 
 export default function Testimonials() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const t = useTranslations("testimonials");
+  const [index, setIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
 
-  const next = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  const goTo = (i: number) => {
+    setDirection(i > index ? 1 : -1);
+    setIndex(i);
   };
 
-  const prev = () => {
-    setCurrentIndex(
-      (prev) => (prev - 1 + testimonials.length) % testimonials.length
-    );
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDirection(1);
+      setIndex((prev) => (prev + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, []);
+
+  function handleDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.x < -60) goTo((index + 1) % testimonials.length);
+    else if (info.offset.x > 60) goTo((index - 1 + testimonials.length) % testimonials.length);
+  }
+
+  const variants = {
+    enter: (d: number) => ({ x: d > 0 ? 40 : -40, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (d: number) => ({ x: d > 0 ? -40 : 40, opacity: 0 }),
   };
+
+  const active = testimonials[index];
 
   return (
-    <section className="py-16 md:py-24 bg-white">
-      <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
+    <section className="py-16 md:py-24 bg-white overflow-hidden">
+      <div className="container mx-auto px-4 sm:px-6 max-w-3xl">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">
           <h2
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0f1729] mb-3"
             style={{ fontFamily: "Clash Grotesk, sans-serif" }}
           >
-            What Our Customers Say
+            {t("title")}
           </h2>
           <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-            Join thousands of satisfied customers across Karachi
+            {t("subtitle")}
           </p>
         </div>
 
-        {/* Testimonials Grid - Desktop */}
-        <div className="hidden md:grid grid-cols-3 gap-6">
-          {testimonials.slice(0, 3).map((testimonial, index) => (
-            <div
-              key={index}
-              className="bg-gray-50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300"
-            >
-              {/* Stars */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
+        {/* Spotlight card — draggable, auto-rotating */}
+        <div className="relative">
+          <Quote className="absolute -top-6 left-1/2 -translate-x-1/2 w-16 h-16 text-[#db4b0d]/10 pointer-events-none" />
 
-              {/* Text */}
-              <p className="text-gray-700 text-sm md:text-base mb-6 leading-relaxed">
-                &ldquo;{testimonial.text}&rdquo;
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#db4b0d] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {testimonial.avatar}
-                </div>
-                <div>
-                  <p className="font-semibold text-[#0f1729] text-sm">
-                    {testimonial.name}
-                  </p>
-                  <p className="text-gray-500 text-xs">
-                    {testimonial.location}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Testimonials Carousel - Mobile */}
-        <div className="md:hidden">
-          <div className="relative">
-            <div className="bg-gray-50 rounded-2xl p-6">
-              {/* Stars */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
-
-              {/* Text */}
-              <p className="text-gray-700 text-sm mb-6 leading-relaxed">
-                &ldquo;{testimonials[currentIndex].text}&rdquo;
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#db4b0d] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {testimonials[currentIndex].avatar}
-                </div>
-                <div>
-                  <p className="font-semibold text-[#0f1729] text-sm">
-                    {testimonials[currentIndex].name}
-                  </p>
-                  <p className="text-gray-500 text-xs">
-                    {testimonials[currentIndex].location}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex justify-center gap-4 mt-6">
-              <button
-                onClick={prev}
-                className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.15}
+            onDragEnd={handleDragEnd}
+            className="relative bg-gray-50 rounded-3xl p-8 sm:p-10 md:p-12 text-center cursor-grab active:cursor-grabbing select-none overflow-hidden"
+          >
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={index}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
-              </button>
+                <div className="flex justify-center gap-1 mb-5">
+                  {[...Array(active.rating)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+
+                <p className="text-gray-700 text-base sm:text-lg md:text-xl leading-relaxed mb-8 max-w-xl mx-auto">
+                  &ldquo;{t(`items.${active.key}.text`)}&rdquo;
+                </p>
+
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-11 h-11 bg-[#db4b0d] rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                    {active.avatar}
+                  </div>
+                  <div className="text-start">
+                    <p className="font-semibold text-[#0f1729] text-sm">
+                      {t(`items.${active.key}.name`)}
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                      {t(`items.${active.key}.location`)}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Selector pills */}
+          <div className="flex justify-center gap-2.5 mt-8">
+            {testimonials.map((item, i) => (
               <button
-                onClick={next}
-                className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                key={item.key}
+                onClick={() => goTo(i)}
+                className={`flex items-center gap-2 rounded-full ps-1.5 pe-4 py-1.5 border transition-all duration-300 ${
+                  i === index
+                    ? "bg-[#0f1729] border-[#0f1729]"
+                    : "bg-white border-gray-200 hover:border-gray-300"
+                }`}
               >
-                <ChevronRight className="w-5 h-5 text-gray-600" />
+                <span
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold transition-colors duration-300 ${
+                    i === index ? "bg-[#db4b0d] text-white" : "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {item.avatar}
+                </span>
+                <span className={`text-xs font-medium ${i === index ? "text-white" : "text-gray-500"}`}>
+                  {t(`items.${item.key}.name`).split(" ")[0]}
+                </span>
               </button>
-            </div>
+            ))}
           </div>
-        </div>
-
-        {/* More Reviews - Desktop */}
-        <div className="hidden md:grid grid-cols-3 gap-6 mt-6">
-          {testimonials.slice(3, 6).map((testimonial, index) => (
-            <div
-              key={index}
-              className="bg-gray-50 rounded-2xl p-6 hover:shadow-lg transition-all duration-300"
-            >
-              {/* Stars */}
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                  />
-                ))}
-              </div>
-
-              {/* Text */}
-              <p className="text-gray-700 text-sm md:text-base mb-6 leading-relaxed">
-                &ldquo;{testimonial.text}&rdquo;
-              </p>
-
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#db4b0d] rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {testimonial.avatar}
-                </div>
-                <div>
-                  <p className="font-semibold text-[#0f1729] text-sm">
-                    {testimonial.name}
-                  </p>
-                  <p className="text-gray-500 text-xs">
-                    {testimonial.location}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </section>

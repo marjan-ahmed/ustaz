@@ -2,8 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 function Footer() {
+  const t = useTranslations("footer");
+
   return (
     <footer id="footer" className="relative bg-[#0f1729] text-gray-300 py-16 overflow-hidden">
       {/* Grid Background Pattern */}
@@ -23,12 +26,12 @@ function Footer() {
           {/* Platform */}
           <div>
             <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">
-              Platform
+              {t("platform")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
                 <Link href="/" className="hover:text-white transition-colors">
-                  Home
+                  {t("home")}
                 </Link>
               </li>
               <li>
@@ -36,7 +39,7 @@ function Footer() {
                   href="/about"
                   className="hover:text-white transition-colors"
                 >
-                  About Us
+                  {t("aboutUs")}
                 </Link>
               </li>
               <li>
@@ -44,7 +47,7 @@ function Footer() {
                   href="#how-it-works"
                   className="hover:text-white transition-colors"
                 >
-                  How It Works
+                  {t("howItWorks")}
                 </Link>
               </li>
               <li>
@@ -53,7 +56,7 @@ function Footer() {
                   target="_blank"
                   className="hover:text-white transition-colors"
                 >
-                  Download App
+                  {t("downloadApp")}
                 </Link>
               </li>
             </ul>
@@ -62,7 +65,7 @@ function Footer() {
           {/* Services */}
           <div>
             <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">
-              Services
+              {t("services")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
@@ -70,7 +73,7 @@ function Footer() {
                   href="/services/electrician"
                   className="hover:text-white transition-colors"
                 >
-                  Electrical
+                  {t("electrical")}
                 </Link>
               </li>
               <li>
@@ -78,7 +81,7 @@ function Footer() {
                   href="/services/plumber"
                   className="hover:text-white transition-colors"
                 >
-                  Plumbing
+                  {t("plumbing")}
                 </Link>
               </li>
               <li>
@@ -86,7 +89,7 @@ function Footer() {
                   href="/services/carpenter"
                   className="hover:text-white transition-colors"
                 >
-                  Carpentry
+                  {t("carpentry")}
                 </Link>
               </li>
               <li>
@@ -94,7 +97,7 @@ function Footer() {
                   href="/services/ac-repair"
                   className="hover:text-white transition-colors"
                 >
-                  AC Repair
+                  {t("acRepair")}
                 </Link>
               </li>
               <li>
@@ -102,7 +105,7 @@ function Footer() {
                   href="/services/solar"
                   className="hover:text-white transition-colors"
                 >
-                  Solar
+                  {t("solar")}
                 </Link>
               </li>
             </ul>
@@ -111,7 +114,7 @@ function Footer() {
           {/* Company */}
           <div>
             <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">
-              Company
+              {t("company")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
@@ -119,7 +122,7 @@ function Footer() {
                   href="/about"
                   className="hover:text-white transition-colors"
                 >
-                  About
+                  {t("about")}
                 </Link>
               </li>
               <li>
@@ -127,17 +130,20 @@ function Footer() {
                   href="#footer"
                   className="hover:text-white transition-colors"
                 >
-                  Contact
+                  {t("contact")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/become-a-provider"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("becomeProvider")}
                 </Link>
               </li>
               <li>
                 <Link href="#" className="hover:text-white transition-colors">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="hover:text-white transition-colors">
-                  Blog
+                  {t("blog")}
                 </Link>
               </li>
             </ul>
@@ -146,7 +152,7 @@ function Footer() {
           {/* Legal */}
           <div>
             <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">
-              Legal
+              {t("legal")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
@@ -154,7 +160,7 @@ function Footer() {
                   href="/privacy-policy"
                   className="hover:text-white transition-colors"
                 >
-                  Privacy Policy
+                  {t("privacyPolicy")}
                 </Link>
               </li>
               <li>
@@ -162,7 +168,7 @@ function Footer() {
                   href="/terms"
                   className="hover:text-white transition-colors"
                 >
-                  Terms of Use
+                  {t("terms")}
                 </Link>
               </li>
               <li>
@@ -170,7 +176,7 @@ function Footer() {
                   href="/cookie-policy"
                   className="hover:text-white transition-colors"
                 >
-                  Cookie Policy
+                  {t("cookiePolicy")}
                 </Link>
               </li>
             </ul>
@@ -179,7 +185,7 @@ function Footer() {
           {/* Social Links */}
           <div>
             <h3 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">
-              Connect
+              {t("connect")}
             </h3>
             <ul className="space-y-3 text-sm">
               <li>
@@ -247,7 +253,7 @@ function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-[#0f1729] pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-500">
-            © {new Date().getFullYear()} Ustaz. All rights reserved.
+            © {new Date().getFullYear()} Ustaz. {t("rightsReserved")}
           </p>
 
           <div className="flex items-center gap-4 text-sm text-gray-500">
@@ -255,14 +261,14 @@ function Footer() {
               href="/privacy-policy"
               className="hover:text-white transition-colors"
             >
-              Privacy Policy
+              {t("privacyPolicy")}
             </Link>
             <span>·</span>
             <Link
               href="/terms"
               className="hover:text-white transition-colors"
             >
-              Terms
+              {t("termsShort")}
             </Link>
           </div>
         </div>

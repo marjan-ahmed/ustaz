@@ -94,7 +94,7 @@ export default function CookiePolicy() {
             id="cookie-article"
             className="prose prose-slate max-w-none prose-headings:scroll-mt-24 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-p:leading-7 prose-li:leading-7"
           >
-            <h2 className="text-2xl font-extrabold mt-6" id="what-are-cookies">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="what-are-cookies">
               1. What Are Cookies
             </h2>
             <p>
@@ -111,7 +111,7 @@ export default function CookiePolicy() {
               client-side storage technologies, except where otherwise specified in &sect; 6.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="why-we-use">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="why-we-use">
               2. Why We Use Cookies
             </h2>
             <p>We use cookies for a limited set of strictly purposeful reasons:</p>
@@ -145,7 +145,7 @@ export default function CookiePolicy() {
               sessions for any commercial purpose unrelated to the Platform&apos;s function.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="categories">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="categories">
               3. Categories of Cookies We Use
             </h2>
             <p>
@@ -173,7 +173,7 @@ export default function CookiePolicy() {
               the cookie-control toggle in your account settings.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="our-cookies">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="our-cookies">
               4. Cookies Set by Ustaz
             </h2>
             <p>The following first-party cookies and tokens are set by the Platform directly:</p>
@@ -208,7 +208,7 @@ export default function CookiePolicy() {
               </li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="third-party">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="third-party">
               5. Third-Party Cookies
             </h2>
             <p>
@@ -267,7 +267,7 @@ export default function CookiePolicy() {
               </li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="other-storage">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="other-storage">
               6. Other Browser Storage We Use
             </h2>
             <p>
@@ -303,7 +303,7 @@ export default function CookiePolicy() {
               you out and disable push notifications until you re-grant permission.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="no-ads">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="no-ads">
               7. No Advertising or Cross-Site Tracking
             </h2>
             <p>
@@ -316,7 +316,7 @@ export default function CookiePolicy() {
               Policy and require your explicit consent before any such tracker loads.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="managing">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="managing">
               8. Managing & Disabling Cookies
             </h2>
             <p>
@@ -360,7 +360,7 @@ export default function CookiePolicy() {
               not log you out.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="dnt">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="dnt">
               9. Do Not Track Signals
             </h2>
             <p>
@@ -370,7 +370,7 @@ export default function CookiePolicy() {
               practical effect on your privacy is the same regardless of your DNT setting.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="children">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="children">
               10. Children
             </h2>
             <p>
@@ -381,7 +381,7 @@ export default function CookiePolicy() {
               data promptly.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="retention">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="retention">
               11. Retention of Cookie Data
             </h2>
             <ul>
@@ -406,7 +406,7 @@ export default function CookiePolicy() {
               </li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="changes">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="changes">
               12. Changes to this Policy
             </h2>
             <p>
@@ -417,7 +417,7 @@ export default function CookiePolicy() {
               they take effect.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="contact">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="contact">
               13. Contact
             </h2>
             <p>

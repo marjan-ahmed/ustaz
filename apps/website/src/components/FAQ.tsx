@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   Accordion,
   AccordionContent,
@@ -8,39 +8,17 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+const FAQ_KEYS = [
+  "download",
+  "free",
+  "cities",
+  "provider",
+  "payment",
+  "support",
+] as const;
+
 export default function FAQ() {
-  const faqs = [
-    {
-      question: "How do I download the Ustaz app?",
-      answer:
-        "You can download the Ustaz app from the Google Play Store. Simply search for 'Ustaz' and click Install. The app is free to download and use.",
-    },
-    {
-      question: "Is the Ustaz app free to use?",
-      answer:
-        "Yes, the Ustaz app is completely free to download and use. You only pay for the services you book through the app. There are no hidden fees or subscriptions.",
-    },
-    {
-      question: "Which cities does Ustaz operate in?",
-      answer:
-        "Currently, Ustaz operates in Karachi with plans to expand to other cities across Pakistan including Lahore, Islamabad, and Peshawar soon.",
-    },
-    {
-      question: "How do I become a service provider?",
-      answer:
-        "Download the Ustaz app and tap on 'Become a Provider'. Fill out the registration form with your details and service category. Our team will verify your information and get you onboarded.",
-    },
-    {
-      question: "What payment options are available?",
-      answer:
-        "We accept payments via digital wallets like JazzCash and EasyPaisa, direct bank transfer, and hand-to-hand cash payment after service completion.",
-    },
-    {
-      question: "How can I contact customer support?",
-      answer:
-        "You can reach our customer support team 24/7 through the app, WhatsApp at +92 305 1126649, or email at support@ustaz.pk. We're always here to help!",
-    },
-  ];
+  const t = useTranslations("faq");
 
   return (
     <section id="faq" className="py-16 md:py-24 bg-white">
@@ -62,47 +40,36 @@ export default function FAQ() {
                 />
               </svg>
               <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                FAQs
+                {t("eyebrow")}
               </span>
             </div>
             <h2
               className="text-4xl md:text-5xl leading-none lg:text-6xl font-bold text-[#0f1729]"
               style={{ fontFamily: "Clash Grotesk, sans-serif" }}
             >
-              Frequently Asked
+              {t("titleLine1")}
               <br />
-              Questions
+              {t("titleLine2")}
             </h2>
             <p className="mt-6 text-gray-600 text-sm sm:text-md max-w-md">
-              Have questions? We&apos;ve got answers. If you can&apos;t find
-              what you&apos;re looking for, feel free to contact us.
+              {t("subtitle")}
             </p>
-
-            {/* Illustration */}
-            <div className="mt-8 relative w-full h-48">
-              <Image
-                src="/images/404-toolbox-removebg-preview.png"
-                alt="Ustaz toolbox"
-                fill
-                className="object-contain object-left"
-              />
-            </div>
           </div>
 
           {/* Right Column - Accordion */}
           <div>
             <Accordion type="single" collapsible className="w-full space-y-4">
-              {faqs.map((faq, index) => (
+              {FAQ_KEYS.map((key) => (
                 <AccordionItem
-                  key={index}
-                  value={`faq-${index + 1}`}
+                  key={key}
+                  value={key}
                   className="border border-gray-200 rounded-xl px-6 bg-white hover:shadow-md transition-shadow"
                 >
-                  <AccordionTrigger className="text-sm font-semibold text-[#0f1729] py-5 hover:text-[#db4b0d] transition-colors">
-                    {faq.question}
+                  <AccordionTrigger className="text-sm font-semibold text-[#0f1729] py-5 hover:text-[#db4b0d] transition-colors text-start">
+                    {t(`items.${key}.q`)}
                   </AccordionTrigger>
                   <AccordionContent className="text-gray-600 text-base pb-5">
-                    {faq.answer}
+                    {t(`items.${key}.a`)}
                   </AccordionContent>
                 </AccordionItem>
               ))}

@@ -1,59 +1,74 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { BsLightningChargeFill } from "react-icons/bs";
 import { ArrowUpRight } from "lucide-react";
 
 export default function Hero() {
+  const t = useTranslations("hero");
+
   return (
     <section className="relative w-full min-h-screen flex items-center justify-center pb-4 px-4 pt-15 md:pt-0 md:pb-16 md:px-8 bg-gray-50">
       <div className="max-w-7xl w-full grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Main Left Card - Find Ustaz */}
-        <div className="md:col-span-2 bg-[#FFF7ED] rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-12 hover:shadow-sm transition-all duration-300 group cursor-pointer relative overflow-hidden min-h-[500px] md:min-h-[600px] flex flex-col justify-between">
+          <div className="md:col-span-2 bg-[#FFF7ED] rounded-2xl md:rounded-3xl p-6 sm:p-8 md:p-12 hover:shadow-sm transition-all duration-300 group cursor-pointer relative overflow-hidden min-h-[520px] md:min-h-[600px] flex flex-col justify-between">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-2 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-red-600 font-medium w-fit mb-8 sm:mb-10 md:mb-12">
             <span className="w-1 h-1 sm:w-2 sm:h-2 bg-red-500 rounded-full animate-pulse"></span>
             <div className="flex items-center gap-1">
-              Need an instant service <BsLightningChargeFill />
+              {t("badge")} <BsLightningChargeFill />
             </div>
           </div>
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col justify-start md:justify-center z-10">
             <h1
-              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-[#0f1729] mb-6 leading-[0.95] md:-mt-20 lg:-mt-42"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold text-[#0f1729] mb-6 leading-[0.95] md:-mt-16 lg:-mt-36"
               style={{ fontFamily: "Clash Grotesk, sans-serif" }}
             >
-              Find{" "}
-              <span className="bg-[#0f1729] text-white px-3 py-1 rounded-lg inline-block">
-                trusted
-              </span>{" "}
-              professionals
-              <br />
-              <span className="text-[#db4b0d]">near you</span>
+              {t.rich("title", {
+                hl: (chunks) => (
+                  <span className="bg-[#0f1729] text-white px-3 py-1 rounded-lg inline-block">
+                    {chunks}
+                  </span>
+                ),
+                accent: (chunks) => <span className="text-[#db4b0d]">{chunks}</span>,
+                br: () => <br />,
+              })}
             </h1>
 
             <p className="text-sm sm:text-md md:text-lg leading-relaxed text-gray-700 mb-8 max-w-xl">
-              Connect with verified service providers for all your needs. From
-              repairs to installations, get instant quotes and book appointments.
+              {t("subtitle")}
             </p>
 
-            <a href="#waitlist">
-              <button className="bg-[#0f1729] text-white px-5 py-2 rounded-full font-semibold hover:bg-[#1a2440] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-100 w-fit group z-10">
-                Join the Waitlist
-                <ArrowUpRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </button>
-            </a>
+            <div className="flex flex-wrap items-center gap-3 z-10">
+              <a href="#waitlist">
+                <button className="bg-[#0f1729] text-white px-5 py-2 rounded-full font-semibold hover:bg-[#1a2440] transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-100 w-fit group">
+                  {t("ctaWaitlist")}
+                  <ArrowUpRight className="inline-block ms-2 w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </button>
+              </a>
+
+              {/* Provider-side entry point — the hero otherwise only speaks to customers. */}
+              <Link href="/become-a-provider">
+                <button className="bg-white text-[#db4b0d] border border-[#db4b0d]/25 px-5 py-2 rounded-full font-semibold hover:bg-[#db4b0d] hover:text-white hover:border-[#db4b0d] transition-all duration-300 shadow-sm hover:shadow-lg w-fit group">
+                  {t("ctaProvider")}
+                  <ArrowUpRight className="inline-block ms-2 w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </button>
+              </Link>
+            </div>
           </div>
 
           {/* Illustration */}
-          <div className="absolute bottom-[-50px] right-0 w-[280px] h-[280px] md:w-[350px] md:h-[350px] lg:w-[420px] lg:h-[420px] transition-all duration-300 pointer-events-none">
+          <div className="absolute bottom-0 right-0 w-[220px] h-[220px] sm:w-[260px] sm:h-[260px] md:w-[320px] md:h-[320px] lg:w-[380px] lg:h-[380px] transition-all duration-300 pointer-events-none">
             <Image
               src="/images/image-final-illustration.png"
               alt="Service marketplace illustration"
               width={420}
               height={420}
-              className="w-full h-full object-contain object-bottom"
+              className="w-full h-full object-contain object-bottom opacity-75"
             />
           </div>
         </div>
@@ -73,16 +88,14 @@ export default function Hero() {
                 className="text-2xl md:text-3xl font-bold text-white mb-2"
                 style={{ fontFamily: "Clash Grotesk, sans-serif" }}
               >
-                Get help
+                {t("helpTitle")}
                 <br />
                 <span className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg">
-                  on demand
+                  {t("helpTitleHighlight")}
                 </span>
               </h3>
 
-              <p className="text-white/80 text-sm mb-4">
-                Connect instantly with nearby pros
-              </p>
+              <p className="text-white/80 text-sm mb-4">{t("helpSubtitle")}</p>
             </div>
 
             {/* Chart/Graph visual */}
@@ -140,13 +153,13 @@ export default function Hero() {
                 className="text-2xl md:text-3xl font-bold text-white mb-3"
                 style={{ fontFamily: "Clash Grotesk, sans-serif" }}
               >
-                Coming Soon
+                {t("comingSoon")}
               </h3>
 
               <p className="text-white/70 text-sm mb-2">
-                Launching on{" "}
+                {t("launchingOn")}{" "}
                 <span className="bg-white/20 px-2 py-0.5 rounded">
-                  Google Play
+                  {t("googlePlay")}
                 </span>
               </p>
             </div>
@@ -169,10 +182,10 @@ export default function Hero() {
                   </svg>
                   <div>
                     <div className="text-[8px] text-white/70 leading-none">
-                      COMING SOON ON
+                      {t("comingSoonOn")}
                     </div>
                     <div className="text-sm font-semibold text-white leading-tight">
-                      Google Play
+                      {t("googlePlay")}
                     </div>
                   </div>
                 </div>

@@ -33,6 +33,19 @@
   pointer-events: auto;
 }
 
+/* Right-side cluster: language switcher sits immediately left of the toggle.
+   Flexbox auto-mirrors under dir="rtl", so no RTL override is needed. */
+.sm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.sm-header-actions > * {
+  pointer-events: auto;
+}
+
 @media (max-width: 768px) {
   .staggered-menu-header {
     padding: 1em 1.25em;

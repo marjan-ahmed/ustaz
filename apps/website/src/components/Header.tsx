@@ -4,9 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import StaggeredMenu from "@/components/StaggeredMenu";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Header() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -31,16 +34,24 @@ export default function Header() {
   }, [lastScrollY]);
 
   const navItems = [
-    { label: "Home", href: "/" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Waitlist", href: "#waitlist" },
-    { label: "FAQ", href: "#faq" },
-    { label: "Contact", href: "#footer" },
+    { label: t("home"), href: "/" },
+    { label: t("howItWorks"), href: "#how-it-works" },
+    { label: t("waitlist"), href: "#waitlist" },
+    { label: t("faq"), href: "#faq" },
+    { label: t("contact"), href: "#footer" },
   ];
 
-  const staggeredMenuItems = navItems.map((item) => ({
+  // Mobile menu gets the provider CTA as a full nav entry (the desktop header
+  // shows it as a button, which the StaggeredMenu panel has no slot for).
+  const mobileNavItems = [
+    ...navItems.slice(0, 2),
+    { label: t("becomeProvider"), href: "/become-a-provider" },
+    ...navItems.slice(2),
+  ];
+
+  const staggeredMenuItems = mobileNavItems.map((item) => ({
     label: item.label,
-    ariaLabel: `Go to ${item.label}`,
+    ariaLabel: item.label,
     link: item.href,
   }));
 
@@ -87,12 +98,19 @@ export default function Header() {
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link
+              href="/become-a-provider"
+              className="px-4 py-2 rounded-full border border-[#db4b0d]/25 text-[#db4b0d] font-semibold hover:bg-[#FFF7ED] transition-all duration-300 text-sm whitespace-nowrap"
+            >
+              {t("becomeProvider")}
+            </Link>
             <a
               href="#waitlist"
-              className="px-5 py-2 rounded-full bg-[#db4b0d] text-white font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg text-sm"
+              className="px-5 py-2 rounded-full bg-[#db4b0d] text-white font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg text-sm whitespace-nowrap"
             >
-              Join Waitlist
+              {t("joinWaitlist")}
             </a>
           </div>
         </nav>
@@ -114,6 +132,8 @@ export default function Header() {
           accentColor="#db4b0d"
           closeOnClickAway={true}
           isFixed={true}
+          headerLeading={<LanguageSwitcher />}
+          socialsLabel={t("socials")}
         />
       </div>
     </>

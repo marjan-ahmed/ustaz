@@ -1,19 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Check, ArrowRight, Loader2, User, Mail } from "lucide-react";
 
-const SOURCES = [
-  "WhatsApp",
-  "Instagram",
-  "X",
-  "Reddit",
-  "TikTok",
-  "Google Search",
-  "Friend / Family",
-];
+const SOURCE_KEYS = ["whatsapp","instagram","x","reddit","tiktok","google","friend"] as const;
 
 function FloatingInput({
   label,
@@ -63,6 +55,7 @@ function FloatingInput({
 }
 
 export default function WaitlistSection() {
+  const t = useTranslations("waitlist");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [source, setSource] = useState("");
@@ -92,20 +85,20 @@ export default function WaitlistSection() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMsg(data.error || "Something went wrong");
+        setErrorMsg(data.error || t("errorGeneric"));
         setStatus("error");
         return;
       }
 
       setStatus("success");
     } catch {
-      setErrorMsg("Network error. Please try again.");
+      setErrorMsg(t("errorNetwork"));
       setStatus("error");
     }
   };
 
   return (
-    <section id="waitlist" className="relative py-24 md:py-32">
+    <section id="waitlist" className="relative py-14">
       {/* Subtle gradient bg */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0f1729] via-[#111d35] to-[#0f1729]" />
 
@@ -126,10 +119,10 @@ export default function WaitlistSection() {
                 className="text-2xl font-bold text-white mb-2"
                 style={{ fontFamily: "Clash Grotesk, sans-serif" }}
               >
-                You&apos;re on the list
+                {t("successTitle")}
               </h3>
               <p className="text-white/40 text-sm">
-                We&apos;ll reach out when it&apos;s your turn.
+                {t("successBody")}
               </p>
             </motion.div>
           ) : (
@@ -141,37 +134,32 @@ export default function WaitlistSection() {
             >
               {/* Label */}
               <p className="text-[#db4b0d] text-xs font-semibold tracking-widest uppercase mb-4 text-center">
-                Early Access
+                {t("eyebrow")}
               </p>
 
-              {/* Illustration */}
-              <div className="flex justify-center mb-6">
-                <div className="relative w-48 h-48">
-                  <Image
-                    src="/images/join_the_watitlist-removebg-preview.png"
-                    alt="Join the waitlist"
-                    fill
-                    className="object-contain"
-                  />
+              {/* Icon */}
+              <div className="flex justify-center mb-5">
+                <div className="w-14 h-14 rounded-full bg-[#db4b0d]/10 border border-[#db4b0d]/20 flex items-center justify-center">
+                  <Mail className="w-6 h-6 text-[#db4b0d]" />
                 </div>
               </div>
 
               {/* Headline */}
               <h2
-                className="text-3xl sm:text-4xl md:text-5xl font-bold text-white text-center mb-4 leading-tight"
+                className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight"
                 style={{ fontFamily: "Clash Grotesk, sans-serif" }}
               >
-                Get early access
+                {t("title")}
               </h2>
 
-              <p className="text-white/40 text-center text-sm mb-10 max-w-sm mx-auto">
-                Join the waitlist. Be the first to try Ustaz when we launch.
+              <p className="text-white/40 text-center text-sm mb-7 max-w-sm mx-auto">
+                {t("subtitle")}
               </p>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-3">
                 <FloatingInput
-                  label="Your name"
+                  label={t("namePlaceholder")}
                   icon={User}
                   type="text"
                   value={name}
@@ -180,7 +168,7 @@ export default function WaitlistSection() {
                 />
 
                 <FloatingInput
-                  label="Email address"
+                  label={t("emailPlaceholder")}
                   icon={Mail}
                   type="email"
                   value={email}
@@ -190,9 +178,9 @@ export default function WaitlistSection() {
 
                 {/* Source chips */}
                 <div className="pt-1">
-                  <p className="text-white/30 text-xs mb-2">How did you hear about us?</p>
+                  <p className="text-white/30 text-xs mb-2">{t("sourceLabel")}</p>
                   <div className="flex flex-wrap gap-2">
-                    {SOURCES.map((s) => (
+                    {SOURCE_KEYS.map((s) => (
                       <button
                         key={s}
                         type="button"
@@ -203,7 +191,7 @@ export default function WaitlistSection() {
                             : "bg-white/[0.04] text-white/35 border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/50"
                         }`}
                       >
-                        {s}
+                        {t(`sources.${s}`)}
                       </button>
                     ))}
                   </div>
@@ -225,7 +213,7 @@ export default function WaitlistSection() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <>
-                        Join Waitlist
+                        {t("submit")}
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                       </>
                     )}
@@ -235,7 +223,7 @@ export default function WaitlistSection() {
 
               {/* Social proof */}
               <p className="text-white/20 text-xs text-center mt-6">
-                No spam. Unsubscribe anytime.
+                {t("noSpam")}
               </p>
             </motion.div>
           )}

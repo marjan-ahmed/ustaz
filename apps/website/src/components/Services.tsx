@@ -2,60 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Zap, Droplets, Hammer, Wind, Sun, X, Check, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { X, Check, Sparkles } from "lucide-react";
 
+// Same pastel tones as the mobile app's customer home "Quick find" grid.
 const services = [
-  {
-    title: "Electrical Work",
-    description:
-      "Expert electricians for wiring, installations, repairs, and maintenance. Licensed and insured professionals.",
-    image: "/images/electrician-removebg-preview.png",
-    icon: <Zap className="w-6 h-6" />,
-    color: "#F59E0B",
-  },
-  {
-    title: "Plumbing",
-    description:
-      "Professional plumbing services — leak repairs, pipe installation, drain cleaning, and emergency fixes.",
-    image: "/images/plumber-removebg-preview.png",
-    icon: <Droplets className="w-6 h-6" />,
-    color: "#3B82F6",
-  },
-  {
-    title: "Carpentry",
-    description:
-      "Custom woodwork, furniture repair, door/window installation, and home carpentry solutions.",
-    image: "/images/carpenter-removebg-preview.png",
-    icon: <Hammer className="w-6 h-6" />,
-    color: "#8B5CF6",
-  },
-  {
-    title: "AC Repair",
-    description:
-      "Complete AC installation, servicing, gas refilling, and repair by certified technicians.",
-    image: "/images/ac_repair-removebg-preview.png",
-    icon: <Wind className="w-6 h-6" />,
-    color: "#06B6D4",
-  },
-  {
-    title: "Solar Installation",
-    description:
-      "Professional solar panel installation, maintenance, and energy solutions for your home.",
-    image: "/images/solar-removebg-preview.png",
-    icon: <Sun className="w-6 h-6" />,
-    color: "#F97316",
-  },
+  { key: "electrical", image: "/images/electrician-removebg-preview.png", bg: "#FFEDD5" },
+  { key: "plumbing", image: "/images/plumber-removebg-preview.png", bg: "#DBEAFE" },
+  { key: "carpentry", image: "/images/carpenter-removebg-preview.png", bg: "#D9F99D" },
+  { key: "acRepair", image: "/images/ac_repair-removebg-preview.png", bg: "#CFFAFE" },
+  { key: "solar", image: "/images/solar-removebg-preview.png", bg: "#FEF3C7" },
 ];
 
-const features = [
-  "Professional and certified service providers",
-  "Quick response time and flexible scheduling",
-  "Quality workmanship with warranty coverage",
-  "Transparent pricing and instant quotes",
-];
+const FEATURE_KEYS = ["certified", "response", "warranty", "pricing"] as const;
 
 export default function Services() {
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const t = useTranslations("services");
   const [selectedService, setSelectedService] = useState<number | null>(null);
 
   useEffect(() => {
@@ -74,111 +36,52 @@ export default function Services() {
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center gap-2 bg-[#FFF7ED] border border-[#db4b0d]/15 rounded-full px-4 py-1.5 mb-5">
+            <Sparkles className="w-3.5 h-3.5 text-[#db4b0d]" />
+            <span className="text-[#db4b0d] text-xs font-semibold uppercase tracking-wider">
+              {t("eyebrow")}
+            </span>
+          </div>
           <h2
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0f1729] mb-3"
             style={{ fontFamily: "Clash Grotesk, sans-serif" }}
           >
-            Our Services
+            {t("title")}
           </h2>
           <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-            Professional services delivered by verified experts
+            {t("subtitle")}
           </p>
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-4 justify-items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {services.map((service, index) => (
             <div
               key={index}
-              className="group relative rounded-xl bg-white overflow-hidden transition-all duration-300 w-full h-[320px] sm:h-[380px] md:h-[420px] max-w-full sm:max-w-sm cursor-pointer"
-              onMouseEnter={() => setHoveredCard(index)}
-              onMouseLeave={() => setHoveredCard(null)}
               onClick={() => setSelectedService(index)}
-              style={{
-                boxShadow:
-                  hoveredCard === index
-                    ? "0 10px 30px rgba(0, 0, 0, 0.08)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.04)",
-              }}
+              className="group flex items-stretch h-32 sm:h-36 md:h-40 rounded-3xl bg-white border border-gray-100 overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-black/[0.04] hover:-translate-y-1"
             >
-              {/* Full Bleed Image Background */}
-              <div className="absolute inset-0">
+              {/* Illustration box — flush against the card edge */}
+              <div className="relative flex-shrink-0 w-[38%] sm:w-[36%]" style={{ backgroundColor: service.bg }}>
                 <Image
                   src={service.image}
-                  alt={service.title}
+                  alt={t(`items.${service.key}.title`)}
                   fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.4) 100%)",
-                  }}
+                  className="object-contain p-3 sm:p-4 transition-transform duration-500 group-hover:scale-105"
                 />
               </div>
 
-              {/* Brand Overlay on Hover */}
-              <div
-                className="absolute inset-0 bg-[#db4b0d] transition-opacity duration-500"
-                style={{ opacity: hoveredCard === index ? 0.2 : 0 }}
-              />
-
-              {/* Blur Background for Text */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-40 sm:h-48 md:h-56 bg-gradient-to-t from-black/40 via-black/10 to-transparent backdrop-blur-lg"
-                style={{
-                  maskImage:
-                    "linear-gradient(to top, black 30%, transparent 100%)",
-                  WebkitMaskImage:
-                    "linear-gradient(to top, black 30%, transparent 100%)",
-                }}
-              />
-
-              {/* Content Overlay at Bottom */}
-              <div
-                className="absolute bottom-[-30px] sm:bottom-[-20px] md:bottom-[-10px] left-0 right-0 px-4 sm:px-5 md:px-6 pb-2 sm:pb-3 transition-all duration-500 ease-out"
-                style={{
-                  transform:
-                    hoveredCard === index
-                      ? "translateY(-30px)"
-                      : "translateY(0)",
-                }}
-              >
-                <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: `${service.color}20` }}
-                  >
-                    <div style={{ color: service.color }}>{service.icon}</div>
-                  </div>
-                </div>
+              {/* Text */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center px-4 sm:px-6">
                 <h3
-                  className="text-xl md:text-2xl font-semibold text-white mb-1 sm:mb-2 leading-tight drop-shadow-lg"
+                  className="text-base sm:text-lg md:text-xl font-semibold text-[#0f1729] mb-1"
                   style={{ fontFamily: "Clash Grotesk, sans-serif" }}
                 >
-                  {service.title}
+                  {t(`items.${service.key}.title`)}
                 </h3>
-                <p className="text-xs sm:text-sm leading-relaxed drop-shadow-md line-clamp-1 text-white">
-                  {service.description}
+                <p className="text-gray-500 text-xs sm:text-sm leading-relaxed line-clamp-2 sm:line-clamp-3">
+                  {t(`items.${service.key}.description`)}
                 </p>
-
-                {/* Learn More Link */}
-                <div
-                  className="mt-3 transition-all duration-300"
-                  style={{
-                    opacity: hoveredCard === index ? 1 : 0,
-                    transform:
-                      hoveredCard === index
-                        ? "translateY(0)"
-                        : "translateY(10px)",
-                  }}
-                >
-                  <span className="inline-flex items-center gap-2 text-white text-sm font-medium">
-                    <span>Learn more</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                </div>
               </div>
             </div>
           ))}
@@ -192,18 +95,20 @@ export default function Services() {
           onClick={() => setSelectedService(null)}
         >
           <div
-            className="relative bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl transition-all duration-300 ease-out"
+            className="relative bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl transition-all duration-300 ease-out rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header with Image */}
-            <div className="relative h-64 w-full">
+            <div
+              className="relative h-56 md:h-64 w-full rounded-t-3xl"
+              style={{ backgroundColor: services[selectedService].bg }}
+            >
               <Image
                 src={services[selectedService].image}
-                alt={services[selectedService].title}
+                alt={t(`items.${services[selectedService].key}.title`)}
                 fill
-                className="object-cover"
+                className="object-contain p-6"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
               <button
                 onClick={() => setSelectedService(null)}
@@ -214,10 +119,10 @@ export default function Services() {
 
               <div className="absolute bottom-0 left-0 right-0 p-6">
                 <h2
-                  className="text-3xl md:text-4xl font-semibold text-white drop-shadow-lg"
+                  className="text-3xl md:text-4xl font-semibold text-[#0f1729]"
                   style={{ fontFamily: "Clash Grotesk, sans-serif" }}
                 >
-                  {services[selectedService].title}
+                  {t(`items.${services[selectedService].key}.title`)}
                 </h2>
               </div>
             </div>
@@ -225,20 +130,20 @@ export default function Services() {
             {/* Modal Content */}
             <div className="p-6 md:p-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                About This Service
+                {t("aboutTitle")}
               </h3>
               <p className="text-gray-700 leading-relaxed text-base mb-6">
-                {services[selectedService].description}
+                {t(`items.${services[selectedService].key}.description`)}
               </p>
 
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                What We Offer
+                {t("offerTitle")}
               </h3>
               <ul className="space-y-2 text-gray-700 mb-6">
-                {features.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2">
+                {FEATURE_KEYS.map((fk) => (
+                  <li key={fk} className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-[#db4b0d] mt-0.5 flex-shrink-0" />
-                    <span>{feature}</span>
+                    <span>{t(`features.${fk}`)}</span>
                   </li>
                 ))}
               </ul>
@@ -250,13 +155,13 @@ export default function Services() {
                   rel="noopener noreferrer"
                   className="flex-1 bg-[#db4b0d] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#c24309] transition-colors duration-200 shadow-md hover:shadow-lg text-center"
                 >
-                  Coming Soon on Play Store
+                  {t("playStoreCta")}
                 </a>
                 <button
                   onClick={() => setSelectedService(null)}
                   className="px-6 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
-                  Close
+                  {t("close")}
                 </button>
               </div>
             </div>

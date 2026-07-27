@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, useSpring, useTransform } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Users, Briefcase, Star, UserCheck } from "lucide-react";
 
 function AnimatedCounter({
@@ -59,6 +60,7 @@ const fallbackStats: StatsData = {
 };
 
 export default function TrustBar() {
+  const t = useTranslations("trustBar");
   const [stats, setStats] = useState<StatsData>(fallbackStats);
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function TrustBar() {
       icon: Users,
       value: stats.providers,
       suffix: "+",
-      label: "Verified Providers",
+      label: t("providers"),
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",
     },
@@ -81,7 +83,7 @@ export default function TrustBar() {
       icon: Briefcase,
       value: stats.jobs,
       suffix: "+",
-      label: "Jobs Completed",
+      label: t("jobs"),
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
     },
@@ -89,7 +91,7 @@ export default function TrustBar() {
       icon: Star,
       value: stats.rating,
       suffix: "",
-      label: "Average Rating",
+      label: t("rating"),
       decimals: 1,
       iconBg: "bg-yellow-100",
       iconColor: "text-yellow-600",
@@ -98,7 +100,7 @@ export default function TrustBar() {
       icon: UserCheck,
       value: stats.users,
       suffix: "+",
-      label: "Users",
+      label: t("users"),
       iconBg: "bg-purple-100",
       iconColor: "text-purple-600",
     },

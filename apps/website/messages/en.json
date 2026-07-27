@@ -1,0 +1,299 @@
+{
+  "nav": {
+    "home": "Home",
+    "howItWorks": "How It Works",
+    "waitlist": "Waitlist",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "becomeProvider": "Become an Ustaz",
+    "joinWaitlist": "Join Waitlist",
+    "language": "Language",
+    "socials": "Socials"
+  },
+  "hero": {
+    "badge": "Need an instant service",
+    "title": "Find <hl>trusted</hl> professionals<br></br><accent>near you</accent>",
+    "subtitle": "Connect with verified service providers for all your needs. From repairs to installations, get instant quotes and book appointments.",
+    "ctaWaitlist": "Join the Waitlist",
+    "ctaProvider": "Become an Ustaz",
+    "helpTitle": "Get help",
+    "helpTitleHighlight": "on demand",
+    "helpSubtitle": "Connect instantly with nearby pros",
+    "comingSoon": "Coming Soon",
+    "launchingOn": "Launching on",
+    "googlePlay": "Google Play",
+    "comingSoonOn": "COMING SOON ON"
+  },
+  "trustBar": {
+    "providers": "Verified Providers",
+    "jobs": "Jobs Completed",
+    "rating": "Average Rating",
+    "users": "Users"
+  },
+  "services": {
+    "eyebrow": "Our Services",
+    "title": "Built by every trade you need",
+    "subtitle": "Professional services delivered by verified experts",
+    "aboutTitle": "About This Service",
+    "offerTitle": "What We Offer",
+    "playStoreCta": "Coming Soon on Play Store",
+    "close": "Close",
+    "features": {
+      "certified": "Professional and certified service providers",
+      "response": "Quick response time and flexible scheduling",
+      "warranty": "Quality workmanship with warranty coverage",
+      "pricing": "Transparent pricing and instant quotes"
+    },
+    "items": {
+      "electrical": {
+        "title": "Electrical Work",
+        "description": "Expert electricians for wiring, installations, repairs, and maintenance. Licensed and insured professionals."
+      },
+      "plumbing": {
+        "title": "Plumbing",
+        "description": "Professional plumbing services — leak repairs, pipe installation, drain cleaning, and emergency fixes."
+      },
+      "carpentry": {
+        "title": "Carpentry",
+        "description": "Custom woodwork, furniture repair, door/window installation, and home carpentry solutions."
+      },
+      "acRepair": {
+        "title": "AC Repair",
+        "description": "Complete AC installation, servicing, gas refilling, and repair by certified technicians."
+      },
+      "solar": {
+        "title": "Solar Installation",
+        "description": "Professional solar panel installation, maintenance, and energy solutions for your home."
+      }
+    }
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "subtitle": "Get started in just 4 simple steps",
+    "cta": "Join the Waitlist",
+    "steps": {
+      "download": {
+        "title": "Download App",
+        "description": "Get the Ustaz app from Google Play Store. Quick and easy installation."
+      },
+      "choose": {
+        "title": "Choose Service",
+        "description": "Select from electrician, plumber, carpenter, AC repair, or solar services."
+      },
+      "matched": {
+        "title": "Get Matched",
+        "description": "We connect you with verified professionals near your location instantly."
+      },
+      "done": {
+        "title": "Job Done",
+        "description": "Service completed, rate your experience, and enjoy hassle-free home services."
+      }
+    }
+  },
+  "appScreens": {
+    "badge": "Coming Soon on Google Play",
+    "title": "Experience the App",
+    "subtitle": "Home services at your fingertips. Book, track, and chat — all in one place.",
+    "liveTracking": "Live Tracking",
+    "realtimeUpdates": "Real-time updates",
+    "screens": {
+      "home": {
+        "title": "Quick Find",
+        "description": "One cream-toned dashboard with a live trust strip and pastel quick-find cards for every service."
+      },
+      "find": {
+        "title": "Instant Booking",
+        "description": "Pick a service, drop a pin on the map, and hit Find — nearby verified providers are notified in seconds."
+      },
+      "track": {
+        "title": "Live Tracking",
+        "description": "Watch your provider's live location, ETA, and distance update in real time until they arrive."
+      },
+      "chat": {
+        "title": "In-App Chat",
+        "description": "Message your provider directly — before, during, and after the job — right from the same screen."
+      }
+    },
+    "callouts": {
+      "trustSignals": "Live trust signals",
+      "oneTap": "One-tap categories",
+      "dropPin": "Drop a pin, done",
+      "instantMatch": "Instant provider match",
+      "realtimeEta": "Real-time ETA",
+      "verifiedRated": "Verified & rated",
+      "directMessaging": "Direct messaging",
+      "alwaysInSync": "Always in sync"
+    }
+  },
+  "testimonials": {
+    "title": "What Our Customers Say",
+    "subtitle": "Join thousands of satisfied customers across Karachi",
+    "items": {
+      "ahmed": {
+        "name": "Ahmed Khan",
+        "location": "DHA Karachi",
+        "text": "Ustaz made finding a reliable electrician so easy. The provider arrived on time and fixed our wiring issue quickly. Highly recommended!"
+      },
+      "fatima": {
+        "name": "Fatima Ali",
+        "location": "Gulshan-e-Iqbal",
+        "text": "I've used Ustaz multiple times for plumbing services. Every provider has been professional and the work quality is excellent."
+      },
+      "hassan": {
+        "name": "Hassan Malik",
+        "location": "Clifton",
+        "text": "The AC repair service was fantastic. The technician diagnosed the problem quickly and had our AC running perfectly within an hour."
+      }
+    }
+  },
+  "waitlist": {
+    "eyebrow": "Early Access",
+    "title": "Get early access",
+    "subtitle": "Join the waitlist. Be the first to try Ustaz when we launch.",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "Email address",
+    "sourceLabel": "How did you hear about us?",
+    "submit": "Join Waitlist",
+    "noSpam": "No spam. Unsubscribe anytime.",
+    "successTitle": "You're on the list",
+    "successBody": "We'll reach out when it's your turn.",
+    "errorGeneric": "Something went wrong",
+    "errorNetwork": "Network error. Please try again.",
+    "sources": {
+      "whatsapp": "WhatsApp",
+      "instagram": "Instagram",
+      "x": "X",
+      "reddit": "Reddit",
+      "tiktok": "TikTok",
+      "google": "Google Search",
+      "friend": "Friend / Family"
+    }
+  },
+  "downloadCta": {
+    "title": "Get the Ustaz App",
+    "subtitle": "Connecting you with verified service providers in your area. Launching soon on Google Play.",
+    "joinWaitlist": "Join the Waitlist",
+    "needHelp": "Need help? Chat with us",
+    "chatWhatsapp": "Chat on WhatsApp"
+  },
+  "faq": {
+    "eyebrow": "FAQs",
+    "titleLine1": "Frequently Asked",
+    "titleLine2": "Questions",
+    "subtitle": "Have questions? We've got answers. If you can't find what you're looking for, feel free to contact us.",
+    "items": {
+      "download": {
+        "q": "How do I download the Ustaz app?",
+        "a": "You can download the Ustaz app from the Google Play Store. Simply search for 'Ustaz' and click Install. The app is free to download and use."
+      },
+      "free": {
+        "q": "Is the Ustaz app free to use?",
+        "a": "Yes, the Ustaz app is completely free to download and use. You only pay for the services you book through the app. There are no hidden fees or subscriptions."
+      },
+      "cities": {
+        "q": "Which cities does Ustaz operate in?",
+        "a": "Currently, Ustaz operates in Karachi with plans to expand to other cities across Pakistan including Lahore, Islamabad, and Peshawar soon."
+      },
+      "provider": {
+        "q": "How do I become a service provider?",
+        "a": "Download the Ustaz app and tap on 'Become a Provider'. Fill out the registration form with your details and service category. Our team will verify your information and get you onboarded."
+      },
+      "payment": {
+        "q": "What payment options are available?",
+        "a": "We accept payments via digital wallets like JazzCash and EasyPaisa, direct bank transfer, and hand-to-hand cash payment after service completion."
+      },
+      "support": {
+        "q": "How can I contact customer support?",
+        "a": "You can reach our customer support team 24/7 through the app, WhatsApp at +92 305 1126649, or email at support@ustaz.pk. We're always here to help!"
+      }
+    }
+  },
+  "footer": {
+    "platform": "Platform",
+    "services": "Services",
+    "company": "Company",
+    "legal": "Legal",
+    "connect": "Connect",
+    "home": "Home",
+    "aboutUs": "About Us",
+    "howItWorks": "How It Works",
+    "downloadApp": "Download App",
+    "electrical": "Electrical",
+    "plumbing": "Plumbing",
+    "carpentry": "Carpentry",
+    "acRepair": "AC Repair",
+    "solar": "Solar",
+    "about": "About",
+    "contact": "Contact",
+    "becomeProvider": "Become an Ustaz",
+    "blog": "Blog",
+    "privacyPolicy": "Privacy Policy",
+    "terms": "Terms of Use",
+    "termsShort": "Terms",
+    "cookiePolicy": "Cookie Policy",
+    "rightsReserved": "All rights reserved."
+  },
+  "providerForm": {
+    "eyebrow": "Become an Ustaz",
+    "titleLine1": "Get customers",
+    "titleLine2": "the day we launch",
+    "intro": "We're building Pakistan's most trusted home-services platform — and we're onboarding skilled professionals now, before launch. Register today and you'll be among the first to receive job requests.",
+    "formTitle": "Register as an Ustaz",
+    "formSubtitle": "Takes under a minute. No fees, no documents needed yet.",
+    "fullNameLabel": "Full name",
+    "fullNamePlaceholder": "As printed on your CNIC",
+    "phoneLabel": "Mobile number",
+    "phonePlaceholder": "3001234567",
+    "phoneHint": "You'll use this number to log in when the app launches.",
+    "cnicLabel": "CNIC number",
+    "cnicPlaceholder": "13 digits, no dashes",
+    "cnicHint": "Photos of your CNIC are only needed after launch.",
+    "servicesLabel": "What work do you do?",
+    "servicesHint": "Select all that apply.",
+    "submit": "Register & join the group",
+    "termsNotice": "By registering you agree to our",
+    "termsAnd": "and",
+    "errorName": "Please enter your full name",
+    "errorPhone": "Enter a valid mobile number",
+    "errorCnic": "CNIC must be 13 digits",
+    "errorServices": "Pick at least one service",
+    "errorNetwork": "Network error. Please try again.",
+    "successTitle": "You're on the list",
+    "successBody": "Two quick steps to finish — join our group, then send your intro so we know what you do.",
+    "step1": "Join the group",
+    "step1Cta": "Join the WhatsApp group",
+    "step2": "Send your intro",
+    "step2Cta": "Open with message ready",
+    "step2Hint": "Pick the Ustaz group — your message is already typed, just hit send.",
+    "copyMessage": "Or copy the message",
+    "copiedMessage": "Copied to clipboard",
+    "contactFallback": "We'll be in touch on",
+    "introMessage": "Assalam o Alaikum! I am {name} and I am an expert in {services}. I just registered on Ustaz as a service provider.",
+    "benefits": {
+      "schedule": {
+        "title": "Work on your own schedule",
+        "body": "Go online when you want. Accept the jobs that suit you, ignore the ones that don't."
+      },
+      "verified": {
+        "title": "Real customers, verified jobs",
+        "body": "Every request comes from a verified customer near you — no time-wasters, no cold calling."
+      },
+      "paid": {
+        "title": "Get paid per job, in cash",
+        "body": "The customer pays you directly when the work is done. We only take a small platform fee."
+      }
+    }
+  },
+  "notFound": {
+    "eyebrow": "404 Error",
+    "title": "This page took a wrong turn",
+    "body": "The page you're looking for doesn't exist or may have been moved. Let's get you back on track.",
+    "cta": "Back to Home"
+  },
+  "legal": {
+    "lastUpdated": "Last updated:",
+    "tableOfContents": "Table of contents",
+    "readTime": "min read",
+    "englishNotice": "This document is provided in English only. The English version is the legally binding version."
+  }
+}

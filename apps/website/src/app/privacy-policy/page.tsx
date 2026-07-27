@@ -98,7 +98,7 @@ export default function PrivacyPolicy() {
             id="privacy-article"
             className="prose prose-slate max-w-none prose-headings:scroll-mt-24 prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-12 prose-h2:mb-3 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-p:leading-7 prose-li:leading-7"
           >
-            <h2 className="text-2xl font-extrabold mt-6" id="scope">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="scope">
               1. Scope & Acceptance
             </h2>
             <p>
@@ -107,7 +107,7 @@ export default function PrivacyPolicy() {
               acknowledge that you have read and understood this Policy.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="controller">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="controller">
               2. Data Controller
             </h2>
             <p>
@@ -118,7 +118,7 @@ export default function PrivacyPolicy() {
               </a>.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="data-collected">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="data-collected">
               3. Personal Data We Collect
             </h2>
             <h3>From all users</h3>
@@ -146,7 +146,7 @@ export default function PrivacyPolicy() {
               <li><strong>Rating history</strong>, completed-jobs count, <strong>warranty strikes</strong>, online/offline status.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="how-collected">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="how-collected">
               4. How We Collect Data
             </h2>
             <ul>
@@ -155,7 +155,7 @@ export default function PrivacyPolicy() {
               <li><strong>From third parties</strong> — SMS provider (Twilio Verify) to validate your phone, mapping APIs (Google Maps) to geocode addresses, and (where applicable) background-check vendors.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="lawful-basis">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="lawful-basis">
               5. Lawful Basis & Purposes
             </h2>
             <p>We process personal data based on one or more of the following lawful bases:</p>
@@ -166,7 +166,7 @@ export default function PrivacyPolicy() {
               <li><strong>Legal obligation</strong>: tax records, regulatory compliance, response to lawful court orders.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="location">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="location">
               6. Location Data &mdash; Real-time Tracking
             </h2>
             <p>
@@ -201,7 +201,7 @@ export default function PrivacyPolicy() {
               </li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="cnic-kyc">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="cnic-kyc">
               7. CNIC & KYC Verification
             </h2>
             <p>
@@ -222,7 +222,7 @@ export default function PrivacyPolicy() {
               account. Providers cannot accept Service Requests until their identity is verified.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="payments">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="payments">
               8. Payment & Wallet Data
             </h2>
             <p>
@@ -240,7 +240,7 @@ export default function PrivacyPolicy() {
               gateway directly under their PCI-DSS-compliant infrastructure.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="chat-content">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="chat-content">
               9. Chat & Communication Content
             </h2>
             <p>
@@ -257,7 +257,7 @@ export default function PrivacyPolicy() {
               <li><strong>Access</strong>: Ustaz personnel may access chat content only for safety monitoring, dispute resolution, fraud investigation, or compliance with a lawful court order.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="cookies">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="cookies">
               10. Cookies & Local Storage
             </h2>
             <p>
@@ -271,7 +271,7 @@ export default function PrivacyPolicy() {
               <li><strong>Analytics (optional)</strong>: anonymised performance and error telemetry; you may opt out via your account settings.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="push">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="push">
               11. Push Notification Tokens (FCM)
             </h2>
             <p>
@@ -282,7 +282,7 @@ export default function PrivacyPolicy() {
               deletion. You can revoke push permission at any time via your browser settings.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="third-parties">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="third-parties">
               12. Third-Party Service Providers
             </h2>
             <p>The following third parties process limited data on our behalf:</p>
@@ -299,7 +299,7 @@ export default function PrivacyPolicy() {
               applicable law and only for the purposes we direct.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="sharing">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="sharing">
               13. How We Share Data
             </h2>
             <p>We <strong>do not sell</strong> your personal data. We share data only:</p>
@@ -311,7 +311,7 @@ export default function PrivacyPolicy() {
               <li>In connection with a merger, acquisition, or sale of all or part of Ustaz&apos;s business, with notice to affected users.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="retention">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="retention">
               14. Data Retention
             </h2>
             <ul>
@@ -325,7 +325,7 @@ export default function PrivacyPolicy() {
               <li><strong>OTP attempts log</strong>: <strong>24 hours</strong>, used solely for rate limiting.</li>
             </ul>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="security">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="security">
               15. Security Measures
             </h2>
             <ul>
@@ -342,7 +342,7 @@ export default function PrivacyPolicy() {
               guarantee absolute security of data transmitted over the internet.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="rights">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="rights">
               16. Your Rights
             </h2>
             <p>Subject to applicable law, you have the right to:</p>
@@ -362,7 +362,7 @@ export default function PrivacyPolicy() {
               with verification of your identity. We will respond within <strong>30 days</strong>.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="minors">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="minors">
               17. Minors
             </h2>
             <p>
@@ -374,7 +374,7 @@ export default function PrivacyPolicy() {
               and we will delete the data promptly.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="cross-border">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="cross-border">
               18. International Data Transfers
             </h2>
             <p>
@@ -384,7 +384,7 @@ export default function PrivacyPolicy() {
               equivalent to those required under Pakistani law.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="breach">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="breach">
               19. Data Breach Notification
             </h2>
             <p>
@@ -394,7 +394,7 @@ export default function PrivacyPolicy() {
               breach, in line with international good practice.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="changes">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="changes">
               20. Changes to this Policy
             </h2>
             <p>
@@ -404,7 +404,7 @@ export default function PrivacyPolicy() {
               revision.
             </p>
 
-            <h2 className="text-2xl font-extrabold mt-6" id="contact">
+            <h2 className="text-2xl font-extrabold mt-6 scroll-mt-24" id="contact">
               21. Contact Our Privacy Team
             </h2>
             <p>

@@ -1,58 +1,23 @@
 "use client";
 
-import { useRef } from "react";
 import Image from "next/image";
-import {
-  ArrowDown,
-  ArrowRight,
-} from "lucide-react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { ArrowRight } from "lucide-react";
+
+// Same pastel tones as the mobile app's customer home "Quick find" grid.
+const steps = [
+  { key: "download", bg: "#FFEDD5", image: "/images/live_map-removebg-preview.png" },
+  { key: "choose", bg: "#DBEAFE", image: "/images/service-selection-removebg-preview.png" },
+  { key: "matched", bg: "#D9F99D", image: "/images/completion-checklist-removebg-preview.png" },
+  { key: "done", bg: "#FEF3C7", image: "/images/app-download-removebg-preview.png" },
+] as const;
 
 export default function HowItWorks() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start 0.5", "end 0.8"],
-  });
-
-  const pathLength = useTransform(scrollYProgress, [0, 1], [0, 1]);
-
-  const steps = [
-    {
-      title: "Download App",
-      description:
-        "Get the Ustaz app from Google Play Store. Quick and easy installation.",
-      bgColor: "bg-orange-50",
-      image: "/images/live_map-removebg-preview.png",
-    },
-    {
-      title: "Choose Service",
-      description:
-        "Select from electrician, plumber, carpenter, AC repair, or solar services.",
-      bgColor: "bg-blue-50",
-      image: "/images/service-selection-removebg-preview.png",
-    },
-    {
-      title: "Get Matched",
-      description:
-        "We connect you with verified professionals near your location instantly.",
-      bgColor: "bg-green-50",
-      image: "/images/completion-checklist-removebg-preview.png",
-    },
-    {
-      title: "Job Done",
-      description:
-        "Service completed, rate your experience, and enjoy hassle-free home services.",
-      bgColor: "bg-purple-50",
-      image: "/images/app-download-removebg-preview.png",
-    },
-  ];
+  const t = useTranslations("howItWorks");
 
   return (
     <section
       id="how-it-works"
-      ref={sectionRef}
       className="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden"
     >
       <div className="container mx-auto px-4 sm:px-6 max-w-7xl">
@@ -62,155 +27,56 @@ export default function HowItWorks() {
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#0f1729] mb-4"
             style={{ fontFamily: "Clash Grotesk, sans-serif" }}
           >
-            How It Works
+            {t("title")}
           </h2>
           <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-            Get started in just 4 simple steps
+            {t("subtitle")}
           </p>
         </div>
 
-        {/* Steps Container */}
-        <div className="relative">
-          {/* Animated Ribbon Path - Desktop */}
-          <div className="hidden lg:block absolute top-24 left-0 right-0 h-full pointer-events-none">
-            <svg
-              className="w-full h-full"
-              viewBox="0 0 1200 300"
-              preserveAspectRatio="none"
+        {/* Steps Grid — mobile app "Quick find" card pattern, scaled up */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {steps.map((step, index) => (
+            <div
+              key={index}
+              className="group relative rounded-2xl overflow-hidden h-[260px] sm:h-[280px] p-6 flex flex-col shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1.5"
+              style={{ backgroundColor: step.bg }}
             >
-              <defs>
-                <linearGradient
-                  id="ribbonGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="0%"
-                >
-                  <stop offset="0%" stopColor="#db4b0d" stopOpacity="0.6" />
-                  <stop offset="25%" stopColor="#ff6b4a" stopOpacity="0.8" />
-                  <stop offset="50%" stopColor="#ff8c6a" stopOpacity="0.9" />
-                  <stop offset="75%" stopColor="#ff6b4a" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#db4b0d" stopOpacity="0.6" />
-                </linearGradient>
+              <div className="w-9 h-9 rounded-full bg-[#0f1729] text-white flex items-center justify-center font-bold text-sm shadow-lg z-10">
+                {index + 1}
+              </div>
 
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              {/* Background shadow path */}
-              <path
-                d="M 100 20 Q 300 -20, 400 20 T 700 20 T 1000 20 L 1100 20"
-                fill="none"
-                stroke="#e5e7eb"
-                strokeWidth="8"
-                strokeLinecap="round"
-              />
-
-              {/* Animated ribbon path */}
-              <motion.path
-                d="M 100 20 Q 300 -20, 400 20 T 700 20 T 1000 20 L 1100 20"
-                fill="none"
-                stroke="url(#ribbonGradient)"
-                strokeWidth="12"
-                strokeLinecap="round"
-                filter="url(#glow)"
-                style={{
-                  pathLength,
-                }}
-                initial={{ pathLength: 0 }}
-              />
-
-              {/* Shimmer overlay */}
-              <motion.path
-                d="M 100 20 Q 300 -20, 400 20 T 700 20 T 1000 20 L 1100 20"
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth="4"
-                opacity="0.5"
-                strokeLinecap="round"
-                style={{
-                  pathLength,
-                }}
-                initial={{ pathLength: 0 }}
-              />
-
-              {/* Moving dot */}
-              <motion.circle
-                cx={useTransform(scrollYProgress, [0, 1], [100, 1100])}
-                cy={20}
-                r="12"
-                fill="#fff"
-                stroke="#db4b0d"
-                strokeWidth="3"
-                filter="url(#glow)"
-              />
-            </svg>
-          </div>
-
-          {/* Steps Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6 relative z-10">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center text-center group"
-              >
-                {/* Icon Box */}
-                <div
-                  className={`relative ${step.bgColor} rounded-2xl p-8 w-full aspect-square max-w-[200px] flex items-center justify-center mb-6 shadow-sm hover:shadow-md transition-all duration-300 group-hover:-translate-y-2`}
-                >
-                  {/* Decorative elements */}
-                  <div className="absolute top-3 right-3 w-8 h-8 border-2 border-current opacity-20 rounded-full"></div>
-                  <div className="absolute bottom-3 left-3 w-6 h-6 border-2 border-current opacity-20 rounded-full"></div>
-
-                  {/* Illustration */}
-                  <div className="relative z-10 w-24 h-24">
-                    <Image
-                      src={step.image}
-                      alt={step.title}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-
-                  {/* Step Number Badge */}
-                  <div className="absolute -top-3 -left-3 w-10 h-10 bg-[#0f1729] text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
-                    {index + 1}
-                  </div>
-                </div>
-
-                {/* Step Content */}
+              <div className="mt-auto z-10">
                 <h3
-                  className="text-lg md:text-xl font-bold text-[#0f1729] mb-2"
+                  className="text-lg md:text-xl font-bold text-[#0f1729] mb-1.5"
                   style={{ fontFamily: "Clash Grotesk, sans-serif" }}
                 >
-                  {step.title}
+                  {t(`steps.${step.key}.title`)}
                 </h3>
-                <p className="text-sm text-gray-600 max-w-[200px]">
-                  {step.description}
+                <p className="text-sm text-gray-600 leading-relaxed pe-4">
+                  {t(`steps.${step.key}.description`)}
                 </p>
-
-                {/* Mobile Arrow */}
-                {index !== steps.length - 1 && (
-                  <div className="lg:hidden flex justify-center mt-6 mb-2">
-                    <ArrowDown className="w-6 h-6 text-gray-300" />
-                  </div>
-                )}
               </div>
-            ))}
-          </div>
+
+              {/* Illustration — large, bleeding off the bottom-right edge */}
+              <div className="absolute -bottom-4 -right-4 w-24 h-24 sm:w-28 sm:h-28 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-x-1 group-hover:-translate-y-1 pointer-events-none opacity-60">
+                <Image
+                  src={step.image}
+                  alt={t(`steps.${step.key}.title`)}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* CTA Section */}
         <div className="text-center mt-16">
           <a href="#waitlist">
             <button className="bg-[#db4b0d] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#c24309] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 inline-flex items-center gap-2">
-              Join the Waitlist
-              <ArrowRight className="w-5 h-5" />
+              {t("cta")}
+              <ArrowRight className="w-5 h-5 rtl:-scale-x-100" />
             </button>
           </a>
         </div>

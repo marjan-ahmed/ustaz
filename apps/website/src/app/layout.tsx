@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
+import { isRtl } from "@/i18n/request";
 import "./globals.css";
 
 const atkinson = localFont({
@@ -44,24 +47,32 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+  const dir = isRtl(locale) ? "rtl" : "ltr";
+
   return (
-    <html lang="en" className={atkinson.variable}>
+    <html lang={locale} dir={dir} className={atkinson.variable}>
       <head>
         <link
           href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,700,400,600,300,1,500&display=swap"
           rel="stylesheet"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Anton&family=Gulzar&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Gulzar&family=Lalezar&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="font-atkinson antialiased">{children}</body>
+      <body className="font-atkinson antialiased">
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
     </html>
   );
 }
