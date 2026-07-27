@@ -64,6 +64,21 @@ export async function POST(request: Request) {
       }, { status: 409 });
     }
 
+    // Already a real provider by CNIC? Same gate as phone number.
+    const { data: liveProviderByCnic } = await supabase
+      .from("ustaz_registrations")
+      .select("userId")
+      .eq("cnic", cleanCnic)
+      .maybeSingle();
+
+    if (liveProviderByCnic) {
+      return NextResponse.json({
+        error:
+          "This CNIC is already registered as an Ustaz provider. You can sign in with it once the app launches.",
+        alreadyProvider: true,
+      }, { status: 409 });
+    }
+
     // Check-then-insert dedupe; the unique index below is the real backstop.
     const { data: existing } = await supabase
       .from("provider_prelaunch_registrations")
