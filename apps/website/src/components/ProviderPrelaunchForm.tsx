@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -9,7 +9,6 @@ import {
   Loader2,
   User,
   Check,
-  Copy,
   CalendarClock,
   BadgeCheck,
   Wallet,
@@ -62,37 +61,6 @@ export default function ProviderPrelaunchForm() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [copied, setCopied] = useState(false);
-
-  // Intro message the provider posts in the group to introduce themselves.
-  // WhatsApp *group invite* links (chat.whatsapp.com) cannot carry prefilled
-  // text — only wa.me/<number>?text= can — so we copy it to the clipboard
-  // instead and prompt them to paste.
-  const serviceList =
-    services.length > 1
-      ? `${services.slice(0, -1).join(", ")} & ${services[services.length - 1]}`
-      : services[0] ?? "";
-  const introMessage = t("introMessage", { name: fullName.trim(), services: serviceList });
-
-  async function copyIntro() {
-    try {
-      await navigator.clipboard.writeText(introMessage);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  // Put the intro on the clipboard as soon as they're registered, as a fallback
-  // for anyone who'd rather paste it than use the prefilled link. No auto-redirect
-  // here — the success screen has a two-step flow the user needs to actually see.
-  useEffect(() => {
-    if (status !== "success") return;
-    copyIntro();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
 
   function toggleService(name: string) {
     setServices((prev) =>
@@ -175,75 +143,15 @@ export default function ProviderPrelaunchForm() {
                     </p>
 
                     {WHATSAPP_URL ? (
-                      <div className="mx-auto max-w-sm space-y-3 text-left">
-                        {/* Step 1 — the invite link itself cannot carry a message. */}
-                        <div className="rounded-2xl border border-gray-100 bg-white p-4">
-                          <div className="mb-2.5 flex items-center gap-2">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0f1729] text-[11px] font-bold text-white">
-                              1
-                            </span>
-                            <span className="text-[13px] font-bold text-[#0f1729]">
-                              {t("step1")}
-                            </span>
-                          </div>
-                          <a
-                            href={WHATSAPP_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#db4b0d] font-semibold text-white shadow-md transition-all duration-300 hover:bg-[#c24309] hover:shadow-lg"
-                          >
-                            <WhatsAppIcon />
-                            {t("step1Cta")}
-                          </a>
-                        </div>
-
-                        {/* Step 2 — wa.me/?text= opens WhatsApp's chat picker with the
-                            message already typed, so they pick the group and hit send. */}
-                        <div className="rounded-2xl border border-gray-100 bg-[#FAF7F3] p-4">
-                          <div className="mb-2.5 flex items-center gap-2">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0f1729] text-[11px] font-bold text-white">
-                              2
-                            </span>
-                            <span className="text-[13px] font-bold text-[#0f1729]">
-                              {t("step2")}
-                            </span>
-                          </div>
-
-                          <p className="mb-3 rounded-xl border border-gray-100 bg-white p-3 text-[13px] leading-relaxed text-[#0f1729]">
-                            {introMessage}
-                          </p>
-
-                          <a
-                            href={`https://wa.me/?text=${encodeURIComponent(introMessage)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full border border-[#db4b0d]/25 bg-white font-semibold text-[#db4b0d] transition-all duration-300 hover:bg-[#db4b0d] hover:text-white"
-                          >
-                            <WhatsAppIcon />
-                            {t("step2Cta")}
-                          </a>
-
-                          <p className="mt-2.5 text-center text-[11px] leading-relaxed text-gray-500">
-                            {t("step2Hint")}
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={copyIntro}
-                            className="mt-2 flex w-full items-center justify-center gap-1 rounded-full py-1.5 text-[11px] font-bold text-gray-500 transition-colors hover:text-[#db4b0d]"
-                          >
-                            {copied ? (
-                              <>
-                                <Check className="h-3 w-3" /> {t("copiedMessage")}
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3 w-3" /> {t("copyMessage")}
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
+                      <a
+                        href={WHATSAPP_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mx-auto flex min-h-[52px] max-w-sm items-center justify-center gap-2 rounded-full bg-[#db4b0d] font-semibold text-white shadow-md transition-all duration-300 hover:bg-[#c24309] hover:shadow-lg"
+                      >
+                        <WhatsAppIcon />
+                        {t("step1Cta")}
+                      </a>
                     ) : (
                       <p className="text-sm text-gray-500">
                         {t("contactFallback")} {`+92${digitsOnly(phone).replace(/^0+/, "")}`}
