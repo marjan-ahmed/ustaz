@@ -59,6 +59,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dir} className={atkinson.variable}>
       <head>
+        <meta name="google-site-verification" content="TsiePAP5LOUi2bOZo6Cnnm8Bjq5YLZe9vXU5SbZxmMQ" />
         <link
           href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,700,400,600,300,1,500&display=swap"
           rel="stylesheet"
