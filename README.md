@@ -6,6 +6,7 @@
 
 **Pakistan's verified marketplace for electricians, plumbers, carpenters, AC, solar & cleaning — with phone-verified pros, live GPS tracking, and a 3-day work guarantee.**
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/marjan-ahmed/ustaz)
 [![Live MVP](https://img.shields.io/badge/Live%20MVP-ustaz--bice.vercel.app-db4b0d?style=for-the-badge)](https://ustaz-bice.vercel.app)
 [![Stack](https://img.shields.io/badge/Next.js%2015-%20Supabase%20%2B%20PostGIS-111828?style=for-the-badge)](#-tech-stack)
 [![Stage](https://img.shields.io/badge/Stage-Pre--revenue%20pilot%20(Karachi)-f59e0b?style=for-the-badge)](#-traction)
