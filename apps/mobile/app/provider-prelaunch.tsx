@@ -22,6 +22,7 @@ import {
   TextField,
   TiltCard,
 } from '@/components/mobile-ui';
+import ResidencyInput from '@/components/ResidencyInput';
 import { color, radius, space } from '@/theme/tokens';
 
 const WHATSAPP_URL = process.env.EXPO_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL;
@@ -41,6 +42,7 @@ export default function ProviderPrelaunchScreen() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [cnic, setCnic] = useState('');
+  const [residency, setResidency] = useState('');
   const [services, setServices] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -59,6 +61,7 @@ export default function ProviderPrelaunchScreen() {
     if (!/^\d{7,}$/.test(digitsOnly(phone).replace(/^0+/, '')))
       next.phone = 'Enter a valid mobile number';
     if (!/^\d{13}$/.test(digitsOnly(cnic))) next.cnic = 'CNIC must be 13 digits';
+    if (!residency.trim()) next.residency = 'Please enter or select your area';
     if (services.length === 0) next.services = 'Pick at least one service';
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -79,6 +82,7 @@ export default function ProviderPrelaunchScreen() {
           fullName: fullName.trim(),
           phoneNumber: phone,
           cnic,
+          residency: residency.trim(),
           serviceTypes: services,
           source: 'mobile-provider-prelaunch',
         }),
@@ -230,6 +234,15 @@ export default function ProviderPrelaunchScreen() {
                       ) : (
                         <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>Photos of your CNIC are only needed after launch.</Text>
                       )}
+                    </View>
+
+                    {/* Residency */}
+                    <View>
+                      <ResidencyInput
+                        value={residency}
+                        onChange={(v) => { setResidency(v); setErrors((e) => ({ ...e, residency: '' })); }}
+                        error={!!errors.residency}
+                      />
                     </View>
 
                     {/* Services */}

@@ -16,7 +16,7 @@ const digits = (v: string) => v.replace(/\D/g, "");
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fullName, phoneNumber, cnic, serviceTypes, source } = body;
+    const { fullName, phoneNumber, cnic, residency, serviceTypes, source } = body;
 
     if (!fullName || typeof fullName !== "string" || fullName.trim().length < 2) {
       return NextResponse.json({ error: "Please enter your full name" }, { status: 400 });
@@ -107,6 +107,7 @@ export async function POST(request: Request) {
       phone_country_code: "+92",
       phone_number: localPhone,
       phone_e164: phoneE164,
+      residency: residency?.trim() || null,
       service_types: serviceTypes,
       source: source || "website-provider-form",
     });

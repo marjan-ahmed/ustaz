@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/useAuth';
 import {
   Button, Card, Chip, FadeInUp, GlowBackdrop, PressableScale, ProgressStepper, Screen, Text, TextField, TiltCard,
 } from '@/components/mobile-ui';
+import ResidencyInput from '@/components/ResidencyInput';
 import { color, radius, space } from '@/theme/tokens';
 
 const SERVICE_TYPES = [
@@ -27,6 +28,7 @@ interface FormData {
   fullName: string;
   cnic: string;
   phoneNumber: string;
+  residency: string;
   serviceTypes: string[];
   agreedToTerms: boolean;
 }
@@ -40,6 +42,7 @@ interface PhotoUris {
 const initial: FormData = {
   fullName: '', cnic: '',
   phoneNumber: '',
+  residency: '',
   serviceTypes: [], agreedToTerms: false,
 };
 
@@ -54,6 +57,7 @@ export default function ProviderRegisterScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -83,6 +87,32 @@ export default function ProviderRegisterScreen() {
         }
       }
     }
+  }, [user]);
+
+  // Prefill from a pre-launch registration submitted on the marketing website.
+  // The row was linked to this user by the claim_prelaunch_provider_registration()
+  // trigger at signup; RLS only exposes their own claimed row. A miss or failure
+  // is a silent no-op — the wizard just stays empty as normal.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('provider_prelaunch_registrations')
+        .select('full_name, cnic, residency, service_types')
+        .eq('claimed_user_id', user.id)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setForm(p => ({
+        ...p,
+        fullName: data.full_name || p.fullName,
+        cnic: data.cnic || p.cnic,
+        residency: data.residency || p.residency,
+        serviceTypes: data.service_types?.length ? data.service_types : p.serviceTypes,
+      }));
+      setPrefilled(true);
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   // --- Image picking ---
@@ -181,9 +211,10 @@ export default function ProviderRegisterScreen() {
   function validateCurrentStep(): boolean {
     const e: Record<string, string> = {};
     switch (step) {
-      case 1: // Name
+      case 1: // Name + Residency
         if (!form.fullName.trim()) e.fullName = 'Required';
         else if (form.fullName.trim().length < 3) e.fullName = 'Enter your complete name';
+        if (!form.residency.trim()) e.residency = 'Please enter or select your area';
         break;
       case 2: // Profile photo
         if (!photos.profile) e.profile = 'Please add a profile photo';
@@ -283,6 +314,7 @@ export default function ProviderRegisterScreen() {
         cnic: form.cnic.trim(),
         phoneCountryCode: '+92',
         phoneNumber: form.phoneNumber.trim(),
+        residency: form.residency.trim() || null,
         service_type: form.serviceTypes[0] || null,
         service_types: form.serviceTypes,
         avatarUrl: profileUrl,
@@ -377,11 +409,30 @@ export default function ProviderRegisterScreen() {
                     <Text variant="display" center>What's your name?</Text>
                     <Text variant="bodyLg" tone="muted" center style={{ marginTop: space.xs }}>Exactly as printed on your CNIC</Text>
                   </View>
+                  {prefilled && (
+                    <View style={{
+                      flexDirection: 'row', alignItems: 'flex-start', gap: space.sm,
+                      backgroundColor: `${color.primary}14`, borderRadius: radius.md, padding: space.md,
+                    }}>
+                      <Ionicons name="checkmark-circle" size={18} color={color.primary} style={{ marginTop: 1 }} />
+                      <Text variant="caption" style={{ flex: 1, color: color.primary }}>
+                        Welcome back! We've filled in the details from your pre-launch registration.
+                        Please review them, then add your photos to finish.
+                      </Text>
+                    </View>
+                  )}
                   <View>
                     <TextField label="Full Name *" value={form.fullName} onChangeText={v => set('fullName', v)} placeholder="e.g. Ahmed Ali Khan" error={!!errors.fullName} />
                     {errors.fullName
                       ? <Text variant="caption" style={{ color: color.error, marginTop: space.xs }}>{errors.fullName}</Text>
                       : <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>Must match the name on your CNIC exactly.</Text>}
+                  </View>
+                  <View>
+                    <ResidencyInput
+                      value={form.residency}
+                      onChange={(v) => set('residency', v)}
+                      error={!!errors.residency}
+                    />
                   </View>
                 </View>
               </FadeInUp>
@@ -566,6 +617,7 @@ export default function ProviderRegisterScreen() {
 
                   <Card variant="flat">
                     <SummaryRow icon="person" label="Name" value={form.fullName} />
+                    <SummaryRow icon="location" label="Area" value={form.residency || 'Not set'} />
                     <SummaryRow icon="card" label="CNIC" value={form.cnic} />
                     <SummaryRow icon="call" label="Phone" value={`+92 ${form.phoneNumber}`} />
                     <View style={{ height: 1, backgroundColor: color.line, marginVertical: space.xs }} />

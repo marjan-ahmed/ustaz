@@ -1,4 +1,5 @@
 import type { ServiceRequestStatus } from '../types';
+export { KARACHI_AREAS, normalizeResidency } from './areas';
 
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;

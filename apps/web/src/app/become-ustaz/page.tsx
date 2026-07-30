@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation"
 import { ImageCropEditor } from "../components/image-crop-editor"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
+import ResidencyInput from "../components/ResidencyInput"
 import { useTranslations } from "next-intl"
 import { useSupabaseUser } from "@/hooks/useSupabaseUser"
 import PhoneOtpAuth from "../components/PhoneOtpAuth"
@@ -36,6 +37,7 @@ interface IFormData {
   email: string
   cnic: string
   phoneNumber: string
+  residency: string
   service_type: string
   serviceTypes: string[]
   hasActiveMobile: boolean | null
@@ -72,6 +74,7 @@ function App() {
     email: "",
     cnic: "",
     phoneNumber: "",
+    residency: "",
     service_type: "",
     serviceTypes: [],
     hasActiveMobile: null,
@@ -86,6 +89,7 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [verificationError, setVerificationError] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
+  const [isPrefilled, setIsPrefilled] = useState<boolean>(false)
 
   // Bind provider profile to the authenticated user — never a random UUID.
   useEffect(() => {
@@ -93,6 +97,8 @@ function App() {
   }, [user?.id])
 
   // If signed in and a provider profile already exists, route straight to dashboard.
+  // Otherwise, prefill from any pre-launch registration they submitted on the
+  // marketing website (claimed to this user by phone at signup).
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user?.id) return
     ;(async () => {
@@ -101,7 +107,34 @@ function App() {
         .select("userId")
         .eq("userId", user.id)
         .maybeSingle()
-      if (data) router.replace("/dashboard")
+      if (data) {
+        router.replace("/dashboard")
+        return
+      }
+
+      // Pre-launch prefill is a convenience only — a miss or failure here must
+      // leave the normal empty wizard untouched.
+      try {
+        const res = await fetch("/api/provider/prelaunch-prefill")
+        if (!res.ok) return
+        const { prefill } = await res.json()
+        if (!prefill) return
+
+        const nameParts = (prefill.fullName ?? "").trim().split(/\s+/)
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prefill.fullName || prev.fullName,
+          firstName: nameParts[0] || prev.firstName,
+          lastName: nameParts.slice(1).join(" ") || prev.lastName,
+          cnic: prefill.cnic || prev.cnic,
+          residency: prefill.residency || prev.residency,
+          serviceTypes: prefill.serviceTypes?.length ? prefill.serviceTypes : prev.serviceTypes,
+          service_type: prefill.serviceTypes?.[0] || prev.service_type,
+        }))
+        setIsPrefilled(true)
+      } catch {
+        // no-op
+      }
     })()
   }, [isLoaded, isSignedIn, user?.id, router])
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
@@ -234,8 +267,12 @@ function App() {
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = t("errors.phoneRequired")
       isValid = false
-    } else if (!/^\d{7,}$/.test(formData.phoneNumber)) {
+    } else if (!/^\d{7,}$/.test(formData.phoneNumber.replace(/^0+/, ""))) {
       newErrors.phoneNumber = t("errors.phoneInvalid")
+      isValid = false
+    }
+    if (!formData.residency.trim()) {
+      newErrors.residency = "Please enter or select your area"
       isValid = false
     }
   } else if (currentStep === 2) {
@@ -407,7 +444,8 @@ function App() {
         email: data.email || null,
         cnic: data.cnic,
         phoneCountryCode: "+92",
-        phoneNumber: data.phoneNumber,
+        phoneNumber: data.phoneNumber.replace(/^0+/, ""),
+        residency: data.residency.trim() || null,
         service_type: data.service_type,
         service_types: data.serviceTypes.length > 0 ? data.serviceTypes : null,
         hasActiveMobile: data.hasActiveMobile,
@@ -511,7 +549,7 @@ function App() {
         <Header />
         <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 px-4 py-16">
           <PhoneOtpAuth
-            title="Become a Ustaz"
+            title="Become an Ustaz"
             subtitle="Verify your phone to start your provider registration."
             onSuccess={() => { /* re-render once useSupabaseUser flips to signed-in */ }}
           />
@@ -582,6 +620,18 @@ function App() {
                     </h2>
                     <p className="text-gray-600 text-lg">{t('personalInfoIntro')}</p>
                   </div>
+
+                  {/* Carried over from their pre-launch registration on the website. */}
+                  {isPrefilled && (
+                    <div className="flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+                      <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-500" />
+                      <p className="text-sm text-orange-900">
+                        Welcome back! We&apos;ve filled in the details from your pre-launch
+                        registration. Please review them, then add your photos to finish.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Full Name (as printed on CNIC) */}
                   <div className="group">
                     <Label htmlFor="fullName" className="flex items-center text-sm font-semibold text-gray-700 mb-2">
@@ -677,6 +727,22 @@ function App() {
                     </div>
                     {errors.phoneNumber && (
                       <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.phoneNumber}</p>
+                    )}
+                  </div>
+
+                  {/* Residency */}
+                  <div className="group">
+                    <Label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                      <MapPin className="w-4 h-4 mr-2 text-orange-500" />
+                      Where do you live? <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <ResidencyInput
+                      value={formData.residency}
+                      onChange={(val) => setFormData(prev => ({ ...prev, residency: val }))}
+                      error={!!errors.residency}
+                    />
+                    {errors.residency && (
+                      <p className="text-red-500 text-sm mt-1 animate-fade-in">{errors.residency}</p>
                     )}
                   </div>
 

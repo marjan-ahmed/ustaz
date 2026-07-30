@@ -14,6 +14,7 @@ import {
   Wallet,
   Sparkles,
 } from "lucide-react";
+import ResidencyInput from "./ResidencyInput";
 
 const WHATSAPP_URL = process.env.NEXT_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL;
 
@@ -57,6 +58,7 @@ export default function ProviderPrelaunchForm() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [cnic, setCnic] = useState("");
+  const [residency, setResidency] = useState("");
   const [services, setServices] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -75,6 +77,7 @@ export default function ProviderPrelaunchForm() {
     if (!/^\d{7,}$/.test(digitsOnly(phone).replace(/^0+/, "")))
       next.phone = t("errorPhone");
     if (!/^\d{13}$/.test(digitsOnly(cnic))) next.cnic = t("errorCnic");
+    if (!residency.trim()) next.residency = "Please enter or select your area";
     if (services.length === 0) next.services = t("errorServices");
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -96,6 +99,7 @@ export default function ProviderPrelaunchForm() {
           fullName: fullName.trim(),
           phoneNumber: phone,
           cnic,
+          residency: residency.trim(),
           serviceTypes: services,
           source: "website-provider-form",
         }),
@@ -280,6 +284,21 @@ export default function ProviderPrelaunchForm() {
                             t("cnicHint")
                           )}
                         </p>
+                      )}
+                    </div>
+
+                    {/* Residency */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Where do you live? *
+                      </label>
+                      <ResidencyInput
+                        value={residency}
+                        onChange={setResidency}
+                        error={!!errors.residency}
+                      />
+                      {errors.residency && (
+                        <p className="mt-1.5 text-xs text-red-500">{errors.residency}</p>
                       )}
                     </div>
 
