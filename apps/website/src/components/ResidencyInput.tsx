@@ -130,11 +130,7 @@ export default function ResidencyInput({
   }
 
   function handleFocus() {
-    if (!hasDetected && !value) {
-      detectLocation();
-    } else {
-      setShowDropdown(true);
-    }
+    setShowDropdown(true);
   }
 
   return (
