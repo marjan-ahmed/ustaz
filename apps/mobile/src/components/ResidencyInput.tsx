@@ -46,34 +46,31 @@ export default function ResidencyInput({ value, onChange, error }: ResidencyInpu
     const find = (type: string) =>
       components.find((c: any) => c.types.includes(type))?.long_name;
 
-    // Broader area first (sublocality_level_1 = "Malir", "Korangi", etc.)
-    const sublocality1 = find('sublocality_level_1');
-    if (sublocality1 && sublocality1.toLowerCase() !== 'karachi') return sublocality1;
+    const neighborhood = find("neighborhood");
+    const sublocality1 = find("sublocality_level_1");
+    const sublocality = find("sublocality");
+    const locality = find("locality");
 
-    const sublocality = find('sublocality');
-    if (sublocality && sublocality.toLowerCase() !== 'karachi') return sublocality;
+    const broadArea =
+      (sublocality1 && sublocality1.toLowerCase() !== "karachi" ? sublocality1 : null) ||
+      (sublocality && sublocality.toLowerCase() !== "karachi" ? sublocality : null) ||
+      (locality && locality.toLowerCase() !== "karachi" ? locality : null);
 
-    // Neighborhood level (specific housing society)
-    const neighborhood = find('neighborhood');
-    if (neighborhood) {
-      // Try to match the neighborhood to a known Karachi area
-      const match = KARACHI_AREAS.find(area =>
-        neighborhood.toLowerCase().includes(area.toLowerCase()) ||
-        area.toLowerCase().includes(neighborhood.toLowerCase())
-      );
-      if (match) return match;
-      // If no match, return the neighborhood as-is
-      return neighborhood;
+    if (neighborhood && broadArea) {
+      return `${neighborhood}, ${broadArea}`;
     }
+    if (neighborhood) {
+      const match = KARACHI_AREAS.find(
+        (area) =>
+          neighborhood.toLowerCase().includes(area.toLowerCase()) ||
+          area.toLowerCase().includes(neighborhood.toLowerCase())
+      );
+      return match || neighborhood;
+    }
+    if (broadArea) return broadArea;
 
-    // Fallback to locality (city), but only if it's not just "Karachi"
-    const locality = find('locality');
-    if (locality && locality.toLowerCase() !== 'karachi') return locality;
-
-    // Last resort: parse the formatted address
     const formatted: string = data.results[0].formatted_address || '';
     const parts = formatted.split(',').map((s: string) => s.trim()).filter(Boolean);
-    // Return the second-to-last part (usually the area before city/country)
     if (parts.length >= 2) return parts[parts.length - 2];
     if (parts.length === 1) return parts[0];
     return null;
@@ -145,7 +142,7 @@ export default function ResidencyInput({ value, onChange, error }: ResidencyInpu
           <TextField
             value={value}
             onChangeText={onChange}
-            placeholder={detecting ? 'Detecting your location...' : 'e.g. Malir Halt, Defence, Clifton...'}
+            placeholder={detecting ? 'Detecting your location...' : 'e.g. Alfalah Society, Malir Halt...'}
             error={error}
             editable={!detecting}
           />

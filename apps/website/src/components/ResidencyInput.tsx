@@ -64,27 +64,34 @@ export default function ResidencyInput({
     const find = (type: string) =>
       components.find((c: any) => c.types.includes(type))?.long_name;
 
-    const sublocality1 = find('sublocality_level_1');
-    if (sublocality1 && sublocality1.toLowerCase() !== 'karachi') return sublocality1;
+    const neighborhood = find("neighborhood");
+    const sublocality1 = find("sublocality_level_1");
+    const sublocality = find("sublocality");
+    const locality = find("locality");
 
-    const sublocality = find('sublocality');
-    if (sublocality && sublocality.toLowerCase() !== 'karachi') return sublocality;
+    const broadArea =
+      (sublocality1 && sublocality1.toLowerCase() !== "karachi" ? sublocality1 : null) ||
+      (sublocality && sublocality.toLowerCase() !== "karachi" ? sublocality : null) ||
+      (locality && locality.toLowerCase() !== "karachi" ? locality : null);
 
-    const neighborhood = find('neighborhood');
-    if (neighborhood) {
-      const match = KARACHI_AREAS.find(area =>
-        neighborhood.toLowerCase().includes(area.toLowerCase()) ||
-        area.toLowerCase().includes(neighborhood.toLowerCase())
-      );
-      if (match) return match;
-      return neighborhood;
+    if (neighborhood && broadArea) {
+      return `${neighborhood}, ${broadArea}`;
     }
+    if (neighborhood) {
+      const match = KARACHI_AREAS.find(
+        (area) =>
+          neighborhood.toLowerCase().includes(area.toLowerCase()) ||
+          area.toLowerCase().includes(neighborhood.toLowerCase())
+      );
+      return match || neighborhood;
+    }
+    if (broadArea) return broadArea;
 
-    const locality = find('locality');
-    if (locality && locality.toLowerCase() !== 'karachi') return locality;
-
-    const formatted: string = data.results[0].formatted_address || '';
-    const parts = formatted.split(',').map((s: string) => s.trim()).filter(Boolean);
+    const formatted: string = data.results[0].formatted_address || "";
+    const parts = formatted
+      .split(",")
+      .map((s: string) => s.trim())
+      .filter(Boolean);
     if (parts.length >= 2) return parts[parts.length - 2];
     if (parts.length === 1) return parts[0];
     return null;
@@ -93,7 +100,10 @@ export default function ResidencyInput({
   async function detectInBackground() {
     if (detectRan.current) return;
     detectRan.current = true;
-    if (!navigator.geolocation || !window.isSecureContext) return;
+    if (!navigator.geolocation || !window.isSecureContext) {
+      setShowDropdown(true);
+      return;
+    }
 
     setDetecting(true);
     try {
@@ -106,7 +116,10 @@ export default function ResidencyInput({
       );
       const { latitude, longitude } = pos.coords;
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!apiKey) return;
+      if (!apiKey) {
+        setShowDropdown(true);
+        return;
+      }
 
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
@@ -115,17 +128,17 @@ export default function ResidencyInput({
       const area = extractAreaFromGeocode(data);
       if (area) {
         onChange(area);
-        setShowDropdown(false);
+      } else {
+        setShowDropdown(true);
       }
     } catch {
-      // silently fail — dropdown stays open for manual selection
+      setShowDropdown(true);
     } finally {
       setDetecting(false);
     }
   }
 
   function handleFocus() {
-    setShowDropdown(true);
     detectInBackground();
   }
 
@@ -153,7 +166,11 @@ export default function ResidencyInput({
           }}
           onFocus={handleFocus}
           onBlur={onBlur}
-          placeholder={detecting ? "Auto-detecting area..." : "e.g. Malir Halt, Defence, Clifton..."}
+          placeholder={
+            detecting
+              ? "Detecting your location..."
+              : "e.g. Alfalah Society, Malir Halt..."
+          }
           className="w-full bg-transparent px-4 text-[15px] text-[#0f1729] outline-none placeholder:text-gray-400"
         />
         {value && !showDropdown && (
@@ -176,15 +193,9 @@ export default function ResidencyInput({
           ref={dropdownRef}
           className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
         >
-          {detecting && (
-            <div className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#db4b0d] bg-[#db4b0d]/5 border-b border-gray-100">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Detecting your area...
-            </div>
-          )}
           {filtered.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-500">
-              No areas found. Type to search or use a custom name.
+              No areas found. Type to search.
             </div>
           ) : (
             filtered.map((area) => (
@@ -197,7 +208,9 @@ export default function ResidencyInput({
                   setShowDropdown(false);
                 }}
                 className={`w-full px-4 py-2.5 text-left text-sm hover:bg-[#db4b0d]/5 transition-colors ${
-                  value === area ? "bg-[#db4b0d]/10 font-semibold text-[#db4b0d]" : "text-[#0f1729]"
+                  value === area
+                    ? "bg-[#db4b0d]/10 font-semibold text-[#db4b0d]"
+                    : "text-[#0f1729]"
                 }`}
               >
                 {area}

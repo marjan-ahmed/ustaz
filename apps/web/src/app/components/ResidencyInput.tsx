@@ -49,24 +49,28 @@ export default function ResidencyInput({
     const find = (type: string) =>
       components.find((c: any) => c.types.includes(type))?.long_name;
 
-    const sublocality1 = find('sublocality_level_1');
-    if (sublocality1 && sublocality1.toLowerCase() !== 'karachi') return sublocality1;
+    const neighborhood = find("neighborhood");
+    const sublocality1 = find("sublocality_level_1");
+    const sublocality = find("sublocality");
+    const locality = find("locality");
 
-    const sublocality = find('sublocality');
-    if (sublocality && sublocality.toLowerCase() !== 'karachi') return sublocality;
+    const broadArea =
+      (sublocality1 && sublocality1.toLowerCase() !== "karachi" ? sublocality1 : null) ||
+      (sublocality && sublocality.toLowerCase() !== "karachi" ? sublocality : null) ||
+      (locality && locality.toLowerCase() !== "karachi" ? locality : null);
 
-    const neighborhood = find('neighborhood');
-    if (neighborhood) {
-      const match = KARACHI_AREAS.find(area =>
-        neighborhood.toLowerCase().includes(area.toLowerCase()) ||
-        area.toLowerCase().includes(neighborhood.toLowerCase())
-      );
-      if (match) return match;
-      return neighborhood;
+    if (neighborhood && broadArea) {
+      return `${neighborhood}, ${broadArea}`;
     }
-
-    const locality = find('locality');
-    if (locality && locality.toLowerCase() !== 'karachi') return locality;
+    if (neighborhood) {
+      const match = KARACHI_AREAS.find(
+        (area) =>
+          neighborhood.toLowerCase().includes(area.toLowerCase()) ||
+          area.toLowerCase().includes(neighborhood.toLowerCase())
+      );
+      return match || neighborhood;
+    }
+    if (broadArea) return broadArea;
 
     const formatted: string = data.results[0].formatted_address || '';
     const parts = formatted.split(',').map((s: string) => s.trim()).filter(Boolean);
@@ -147,7 +151,7 @@ export default function ResidencyInput({
           }}
           onFocus={handleFocus}
           onBlur={onBlur}
-          placeholder={detecting ? "Detecting your location..." : "e.g. Malir Halt, Defence, Clifton..."}
+          placeholder={detecting ? "Detecting your location..." : "e.g. Alfalah Society, Malir Halt..."}
           className="w-full bg-transparent px-4 text-[15px] text-[#0f1729] outline-none placeholder:text-gray-400"
         />
         {value && !showDropdown && (
