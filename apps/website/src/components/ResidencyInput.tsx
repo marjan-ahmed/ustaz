@@ -101,7 +101,7 @@ export default function ResidencyInput({
         (resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
-            timeout: 10000,
+            timeout: 30000,
           })
       );
       const { latitude, longitude } = pos.coords;
