@@ -91,7 +91,7 @@ export default function ResidencyInput({
   }
 
   async function detectLocation() {
-    if (!navigator.geolocation) {
+    if (!navigator.geolocation || !window.isSecureContext) {
       setShowDropdown(true);
       return;
     }
