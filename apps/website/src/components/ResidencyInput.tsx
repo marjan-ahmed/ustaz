@@ -35,9 +35,9 @@ export default function ResidencyInput({
   const [detecting, setDetecting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [filter, setFilter] = useState("");
-  const [hasDetected, setHasDetected] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const detectRan = useRef(false);
 
   const filtered = KARACHI_AREAS.filter((area) =>
     area.toLowerCase().includes(filter.toLowerCase())
@@ -90,11 +90,11 @@ export default function ResidencyInput({
     return null;
   }
 
-  async function detectLocation() {
-    if (!navigator.geolocation || !window.isSecureContext) {
-      setShowDropdown(true);
-      return;
-    }
+  async function detectInBackground() {
+    if (detectRan.current) return;
+    detectRan.current = true;
+    if (!navigator.geolocation || !window.isSecureContext) return;
+
     setDetecting(true);
     try {
       const pos = await new Promise<GeolocationPosition>(
@@ -106,10 +106,8 @@ export default function ResidencyInput({
       );
       const { latitude, longitude } = pos.coords;
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!apiKey) {
-        setShowDropdown(true);
-        return;
-      }
+      if (!apiKey) return;
+
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
       );
@@ -117,20 +115,18 @@ export default function ResidencyInput({
       const area = extractAreaFromGeocode(data);
       if (area) {
         onChange(area);
-        setFilter("");
-      } else {
-        setShowDropdown(true);
+        setShowDropdown(false);
       }
     } catch {
-      setShowDropdown(true);
+      // silently fail — dropdown stays open for manual selection
     } finally {
       setDetecting(false);
-      setHasDetected(true);
     }
   }
 
   function handleFocus() {
     setShowDropdown(true);
+    detectInBackground();
   }
 
   return (
@@ -157,7 +153,7 @@ export default function ResidencyInput({
           }}
           onFocus={handleFocus}
           onBlur={onBlur}
-          placeholder={detecting ? "Detecting your location..." : "e.g. Malir Halt, Defence, Clifton..."}
+          placeholder={detecting ? "Auto-detecting area..." : "e.g. Malir Halt, Defence, Clifton..."}
           className="w-full bg-transparent px-4 text-[15px] text-[#0f1729] outline-none placeholder:text-gray-400"
         />
         {value && !showDropdown && (
@@ -166,7 +162,7 @@ export default function ResidencyInput({
             onClick={() => {
               onChange("");
               setFilter("");
-              setHasDetected(false);
+              detectRan.current = false;
             }}
             className="shrink-0 px-2 text-gray-400 hover:text-gray-600"
           >
@@ -180,6 +176,12 @@ export default function ResidencyInput({
           ref={dropdownRef}
           className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
         >
+          {detecting && (
+            <div className="flex items-center gap-2 px-4 py-2.5 text-sm text-[#db4b0d] bg-[#db4b0d]/5 border-b border-gray-100">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Detecting your area...
+            </div>
+          )}
           {filtered.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-500">
               No areas found. Type to search or use a custom name.
