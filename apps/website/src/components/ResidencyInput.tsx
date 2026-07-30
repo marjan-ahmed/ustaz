@@ -2,7 +2,22 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MapPin, Loader2, X } from "lucide-react";
-import { KARACHI_AREAS } from "@ustaz/shared/utils";
+
+const KARACHI_AREAS = [
+  "Defence Phase V", "Defence Phase VI", "Defence Phase VII", "Defence Phase VIII",
+  "Clifton", "Clifton Block 2", "Clifton Block 5", "Clifton Block 9",
+  "Gulshan-e-Iqbal", "Gulistan-e-Johar", "Gulshan-e-Hadeed",
+  "North Nazimabad", "North Karachi", "Nazimabad",
+  "PECHS", "PECHS Block 2", "PECHS Block 6",
+  "Malir", "Malir Halt", "Malir Cantt",
+  "Korangi", "Korangi Industrial Area",
+  "Saddar", "Burns Garden", "Bahadurabad", "Tariq Road",
+  "Scheme 33", "Gizri", "Orangi Town",
+  "SITE Area", "SITE Industrial Area", "Surjani Town",
+  "North Korangi", "Shah Faisal Colony", "Federal B Area",
+  "Buffer Zone", "Kiaa Chaari", "Landhi", "Steel Town",
+  "Ibrahim Hyderi", "Baldia Town", "Manghopir",
+];
 
 interface ResidencyInputProps {
   value: string;
