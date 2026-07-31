@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { MapPin, Loader2, X } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Loader2, X, LocateFixed } from "lucide-react";
 
 const KARACHI_AREAS = [
   "Defence Phase V", "Defence Phase VI", "Defence Phase VII", "Defence Phase VIII",
@@ -33,30 +33,7 @@ export default function ResidencyInput({
   onBlur,
 }: ResidencyInputProps) {
   const [detecting, setDetecting] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [filter, setFilter] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const detectRan = useRef(false);
-
-  const filtered = KARACHI_AREAS.filter((area) =>
-    area.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(e.target as Node)
-      ) {
-        setShowDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const [detectError, setDetectError] = useState<string | null>(null);
 
   function extractAreaFromGeocode(data: any): string | null {
     if (!data.results?.length) return null;
@@ -97,127 +74,114 @@ export default function ResidencyInput({
     return null;
   }
 
-  async function detectInBackground() {
-    if (detectRan.current) return;
-    detectRan.current = true;
+  async function handleLocate() {
+    setDetectError(null);
+
     if (!navigator.geolocation || !window.isSecureContext) {
-      setShowDropdown(true);
+      setDetectError(
+        "Location needs a secure (https) connection. Please type your area."
+      );
       return;
     }
 
     setDetecting(true);
     try {
-      const pos = await new Promise<GeolocationPosition>(
-        (resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 30000,
-          })
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          // Coarse WiFi/cell fix is enough for neighborhood granularity and
+          // succeeds on laptops with no GPS, where high accuracy fails fast.
+          enableHighAccuracy: false,
+          timeout: 30000,
+          maximumAge: 300000,
+        })
       );
-      const { latitude, longitude } = pos.coords;
+
       const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       if (!apiKey) {
-        setShowDropdown(true);
+        setDetectError("Location lookup is unavailable. Please type your area.");
         return;
       }
 
+      const { latitude, longitude } = pos.coords;
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`
       );
       const data = await res.json();
       const area = extractAreaFromGeocode(data);
+
       if (area) {
         onChange(area);
       } else {
-        setShowDropdown(true);
+        setDetectError("Couldn't identify your area. Please type it.");
       }
-    } catch {
-      setShowDropdown(true);
+    } catch (e: any) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[ResidencyInput] detection failed:", e);
+      }
+      setDetectError(
+        e?.code === 1
+          ? "Location permission denied. Enable it in your browser settings."
+          : "Couldn't detect your location. Please type your area."
+      );
     } finally {
       setDetecting(false);
     }
   }
 
-  function handleFocus() {
-    detectInBackground();
-  }
-
   return (
-    <div className="relative">
+    <div>
       <div
         className={`flex min-h-[48px] items-center overflow-hidden rounded-xl border bg-white transition-colors focus-within:border-[#db4b0d] focus-within:ring-2 focus-within:ring-[#db4b0d]/15 ${
           error ? "border-red-300" : "border-gray-200"
         }`}
       >
         <span className="flex h-full shrink-0 items-center border-r border-gray-200 bg-gray-50 px-3.5">
-          {detecting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#db4b0d]" />
-          ) : (
-            <MapPin className="h-4 w-4 text-gray-400" />
-          )}
+          <MapPin className="h-4 w-4 text-gray-400" />
         </span>
+
         <input
-          ref={inputRef}
           type="text"
-          value={showDropdown ? filter : value}
+          value={value}
           onChange={(e) => {
-            setFilter(e.target.value);
-            setShowDropdown(true);
+            setDetectError(null);
+            onChange(e.target.value);
           }}
-          onFocus={handleFocus}
           onBlur={onBlur}
-          placeholder={
-            detecting
-              ? "Detecting your location..."
-              : "e.g. Alfalah Society, Malir Halt..."
-          }
+          placeholder="e.g. Alfalah Society, Malir Halt..."
           className="w-full bg-transparent px-4 text-[15px] text-[#0f1729] outline-none placeholder:text-gray-400"
         />
-        {value && !showDropdown && (
+
+        {value && !detecting && (
           <button
             type="button"
             onClick={() => {
               onChange("");
-              setFilter("");
-              detectRan.current = false;
+              setDetectError(null);
             }}
-            className="shrink-0 px-2 text-gray-400 hover:text-gray-600"
+            aria-label="Clear area"
+            className="shrink-0 px-3.5 text-gray-400 hover:text-gray-600"
           >
             <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {showDropdown && (
-        <div
-          ref={dropdownRef}
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
-        >
-          {filtered.length === 0 ? (
-            <div className="px-4 py-3 text-sm text-gray-500">
-              No areas found. Type to search.
-            </div>
-          ) : (
-            filtered.map((area) => (
-              <button
-                key={area}
-                type="button"
-                onClick={() => {
-                  onChange(area);
-                  setFilter("");
-                  setShowDropdown(false);
-                }}
-                className={`w-full px-4 py-2.5 text-left text-sm hover:bg-[#db4b0d]/5 transition-colors ${
-                  value === area
-                    ? "bg-[#db4b0d]/10 font-semibold text-[#db4b0d]"
-                    : "text-[#0f1729]"
-                }`}
-              >
-                {area}
-              </button>
-            ))
-          )}
-        </div>
+      <button
+        type="button"
+        onClick={handleLocate}
+        disabled={detecting}
+        className="mt-2 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-[#db4b0d]/25 bg-[#FFF7ED] px-4 text-sm font-semibold text-[#db4b0d] transition-colors hover:border-[#db4b0d]/40 hover:bg-[#db4b0d]/10 active:bg-[#db4b0d]/15 disabled:cursor-not-allowed disabled:opacity-70"
+      >
+        {detecting ? (
+          <Loader2 className="h-[18px] w-[18px] animate-spin" />
+        ) : (
+          <LocateFixed className="h-[18px] w-[18px]" />
+        )}
+        {detecting ? "Locating you..." : "Use my current location"}
+      </button>
+
+      {detectError && (
+        <p className="mt-1.5 text-xs text-gray-500">{detectError}</p>
       )}
     </div>
   );

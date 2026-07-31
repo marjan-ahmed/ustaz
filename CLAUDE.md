@@ -35,11 +35,43 @@ All code work in this repo must follow these behavioral guidelines to avoid comm
 
 ## Project Overview
 
-This is an npm workspaces monorepo for "Ustaz", a Pakistani home-services marketplace. The production web app lives in `apps/web`; it lets users request services, find nearby providers, and track service requests in real time.
+npm workspaces monorepo for "Ustaz", a Pakistani home-services marketplace
+(Karachi pilot). Customers request a service, PostGIS matches nearby verified
+providers, and the job is tracked live to the door with a 3-day warranty.
+
+## Monorepo Layout
+
+| Workspace | Package | What it is |
+|---|---|---|
+| `apps/web` | `@ustaz/web` | Next.js 15 (App Router, Turbopack) — the production app. Customer + provider + admin. |
+| `apps/website` | `@ustaz/website` | Standalone marketing site, port 3002, deployed to Vercel separately. |
+| `apps/mobile` | `@ustaz/mobile` | Expo React Native. Has its own `CLAUDE.md` → `AGENTS.md` (read the versioned Expo docs first). |
+| `packages/shared` | `@ustaz/shared` | `theme/`, `types/`, `utils/` behind a root `index.ts` barrel. No `src/`. Also exports `PROVIDER_MIN_WALLET_BALANCE = 60`. |
+| `packages/assets` | — | Favicons, `site.webmanifest`, app icons. |
+
+Supabase is the backend for all three apps.
+
+**`packages/shared` is NOT resolvable from `apps/website` on Vercel.** That's why
+`KARACHI_AREAS` is deliberately duplicated between
+`packages/shared/utils/areas.ts` and an inline copy in
+`apps/website/src/components/ResidencyInput.tsx`. Editing one silently diverges
+from the other — change both.
+
+## Development Commands
+
+```bash
+npm run dev:web         # Next.js Turbopack dev server from apps/web on :3000
+npm run dev:website     # marketing site on :3002
+npm run dev:mobile      # Expo dev server (port 8082)
+
+npm run build:web       # sets NODE_OPTIONS=--max-old-space-size=4096 (needed; see Windows gotcha)
+npm run build:website
+npm run build:mobile    # expo export
+
+npm --workspace @ustaz/web run lint       # next lint, per workspace
+```
 
 ## Architecture
-
-Monorepo layout: `apps/web` is the Next.js 15 (App Router, Turbopack) frontend, `apps/mobile` is the Expo React Native app, `apps/website` is the standalone marketing landing page, and `packages/shared` holds cross-platform theme tokens, shared types, and utilities. Supabase remains the backend.
 
 - **Auth**: Supabase phone OTP via custom Edge Functions (`send-otp` + `verify-otp`).
   Sessions stored in **cookies** via `@supabase/ssr` (NOT localStorage —
@@ -51,10 +83,8 @@ Monorepo layout: `apps/web` is the Next.js 15 (App Router, Turbopack) frontend, 
 - **Push (closed-tab)**: FCM HTTP v1 via `send-fcm` Edge Function; tokens in
   `fcm_tokens` (RLS, self-only); `useFcmToken` hook on dashboard + process.
 - **Maps**: Google Maps via `@react-google-maps/api`.
-- **i18n**: next-intl (EN/UR/AR with RTL).
+- **i18n**: next-intl. Web: EN/UR/AR with RTL. Website: EN/UR only (`apps/website/messages/`).
 - **Twilio Verify**: SMS provider for OTP, called from Edge Functions only.
-- **Mobile target**: Expo React Native in `apps/mobile`; no Capacitor setup remains.
-  Mobile reuses the same Supabase JWT, RPCs, Realtime channels, and FCM token table with platform-appropriate secure storage.
 
 ### Key Components
 - **ServiceContext**: Manages service request state (address, service type, coordinates).
@@ -82,68 +112,6 @@ Monorepo layout: `apps/web` is the Next.js 15 (App Router, Turbopack) frontend, 
 5. **`/dashboard?userId=...` is dead.** Middleware strips the param;
    dashboard derives identity from session.
 
-## Development Commands
-
-```bash
-npm run dev:web       # Next.js Turbopack dev server from apps/web on :3000
-npm run build:web     # production web build
-npm run dev:mobile    # Expo dev server from apps/mobile
-npm run build:mobile  # Expo export/build script
-```
-
-## Marketing Website (apps/website)
-
-Standalone Next.js 15 landing page at `apps/website`. Runs on port 3002
-(`next dev --turbopack -p 3002`). Deployed on Vercel separately from the
-main app. NO booking functionality — funnels visitors to Play Store/App Store.
-
-### Website Design System
-
-Brand-matched design tokens:
-- **Primary orange**: `#DB4B0D` (buttons, links, accents)
-- **Primary light**: `#FF6B4A` (gradients, hover states)
-- **Primary dark hover**: `#C24309` (button hover)
-- **Dark navy**: `#0F1729` (footer, hero CTA, dark sections)
-- **Cream**: `#FFF7ED` (card backgrounds, hero surfaces)
-
-Typography:
-- **Headings**: Clash Grotesk (Fontshare CDN, applied via inline `style={{fontFamily: 'Clash Grotesk, sans-serif'}}`)
-- **Body EN**: Atkinson Hyperlegible (local TTF via `next/font/local`)
-- **Body UR**: Gulzar (Google Font), Body AR: IBM Plex Sans Arabic
-- **Display/Counter numbers**: Anton (local TTF)
-
-### Website Key Files
-
-- `apps/website/src/app/page.tsx` — Homepage composition (all sections)
-- `apps/website/src/components/Header.tsx` — Desktop header + StaggeredMenu
-- `apps/website/src/components/Hero.tsx` — Bento hero with cards
-- `apps/website/src/components/Services.tsx` — Bento grid services
-- `apps/website/src/components/HowItWorks.tsx` — Step-by-step flow
-- `apps/website/src/components/AppScreenshots.tsx` — 3D phone mockup
-- `apps/website/src/components/TrustBar.tsx` — Real-time stats (Anton numbers)
-- `apps/website/src/components/Testimonials.tsx` — Customer reviews
-- `apps/website/src/components/DownloadCTA.tsx` — "Coming Soon on Play Store"
-- `apps/website/src/components/FAQ.tsx` — Accordion FAQ
-- `apps/website/src/components/Footer.tsx` — 5-column footer
-- `apps/website/src/components/WaitlistSection.tsx` — Waitlist signup form
-- `apps/website/src/app/api/waitlist/route.ts` — Waitlist submission API
-- `apps/website/src/lib/supabase.ts` — Server-side Supabase client (service role)
-- `apps/website/.env.local` — SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
-
-### Website Gotchas
-
-- `requireCommit: true` in eas.json means the working tree must be clean
-  before EAS builds — the website Vercel deploy picks up from git push.
-- StaggeredMenu (React Bits) needs `isFixed={true}` for proper mobile layout.
-- Clash Grotesk is loaded via CDN `<link>`, NOT `next/font` — applied via
-  inline `style` prop on every heading. Do NOT use Tailwind `font-heading`.
-- SVG arrows replaced with lucide-react icons across all components.
-- DownloadCTA uses "Coming Soon" CTA — app not launched yet.
-- **Brand colors only** — ALL components must use ONLY the brand palette:
-  `#db4b0d` (orange), `#ff6b4a` (light), `#c24309` (dark), `#0f1729` (navy),
-  `#FFF7ED` (cream). NO other colors (no blue, green, purple, yellow, etc.).
-  Neutral grays (`gray-*`) are acceptable for text/borders only.
-
 ## Supabase
 
 Project ref: `solrsmnkxklsqklqhgxf`.
@@ -152,11 +120,18 @@ Prefer the **Supabase MCP** for schema/data changes — `mcp__supabase__apply_mi
 `mcp__supabase__execute_sql`, `mcp__supabase__deploy_edge_function`,
 `mcp__supabase__get_logs`. Don't print SQL for the user to paste.
 
+`supabase/migrations/` is the DDL history — always use `apply_migration`, not raw
+SQL. `supabase/functions/` mirrors deployed Edge Function source.
+
 ### Edge Functions (deployed; verify_jwt=false)
 - `send-otp` — Twilio Verify send + DB rate limit (`otp_attempts` table).
+  v8 returns friendly error messages for 400/401/429/502.
 - `verify-otp` — Twilio Verify check → upsert auth user with synthesized email
   `<digits>@phone.ustaz.local` → `admin.generateLink({ type:'magiclink' })` →
   client exchanges `token_hash` via `supabase.auth.verifyOtp` to set the cookie.
+- `verify-cnic` — OCR-checks the typed CNIC against the uploaded photo and sets
+  `ustaz_registrations.verification_status`. Gates going online (see Wallet).
+  Needs `OCR_SPACE_API_KEY`.
 - `send-fcm` — FCM HTTP v1 send. Server-to-server only; guarded by
   `x-internal-secret` header. Mints OAuth2 access token from service account,
   looks up `fcm_tokens` for the recipient `userIds`, sends, auto-prunes
@@ -165,6 +140,7 @@ Prefer the **Supabase MCP** for schema/data changes — `mcp__supabase__apply_mi
 
 ### Required Edge Function secrets
 - OTP: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `PHONE_PEPPER`
+- CNIC: `OCR_SPACE_API_KEY`
 - Push: `FCM_SERVICE_ACCOUNT_JSON` (rotated key only — never commit), `INTERNAL_API_SECRET`
 - Both must also be present in Next.js (`.env.local`) where applicable:
   `NEXT_PUBLIC_FIREBASE_*` (web config), `NEXT_PUBLIC_FIREBASE_VAPID_KEY`, `INTERNAL_API_SECRET`.
@@ -176,31 +152,6 @@ Supabase secret store.
 - **Twilio Verify Geo-Permissions**: PK (and most non-US countries) blocked by
   default. Enable per-country in the Verify Service settings.
 - **Trial accounts**: only SMS to phone numbers verified in the Twilio Console.
-
-### Waitlist Table
-
-`waitlist` table stores pre-launch customer signups from the marketing website:
-- `id` uuid PK, `name` text NOT NULL, `email` text UNIQUE, `source` text,
-  `created_at` timestamptz default now()
-- RLS: allow anonymous INSERT (public signup), authenticated SELECT only
-- Unique constraint on `(email)` to prevent duplicate signups
-- API route: `apps/website/src/app/api/waitlist/route.ts` (POST, rate-limited)
-- Component: `apps/website/src/components/WaitlistSection.tsx`
-
-## Key Directories
-
-- `apps/web/src/app/` — Next.js App Router pages and layouts.
-- `apps/web/src/app/components/` — Reusable UI components for the main application.
-- `apps/web/src/components/ui/` — Shadcn UI components.
-- `apps/web/src/app/context/` — React Context providers.
-- `apps/web/src/app/api/` — API routes.
-- `apps/web/src/hooks/` — Custom React hooks.
-- `apps/web/src/lib/` — Utility functions and validations.
-- `apps/web/src/actions/` — Server actions.
-- `client/supabaseClient.ts` — **lives outside `src/`**.
-- `apps/web/client/supabaseClient.ts` — **lives outside `apps/web/src/`**.
-- `supabase/functions/` — Edge Function source mirrors (deploy via MCP).
-- `supabase/migrations/` — DDL history. Always use `apply_migration`, not raw SQL.
 
 ## State Machine — service_requests.status
 
@@ -223,6 +174,84 @@ Adding a status? Update the RPC + the dashboard render conditions + the customer
 `RequestStatus` union + the `update-request-status` action list + `RatingModal`
 display conditions.
 
+## Dispatch / Matching
+
+`create_service_request_with_notifications` inserts the request then does
+**sequential radius expansion over `ARRAY[5000, 10000, 15000]` metres** — it tries
+the nearest tier first and widens only if that tier found zero providers. The
+tiers intentionally mirror the visiting-fee tiers. If every tier comes back empty
+the request goes `no_ustaz_found`.
+
+`find_providers_nearby` filters on `online_status` only — **NOT** `provider_status`.
+A `busy` provider is still notified of new requests. Matching also requires a
+`service_type` match + `location` within radius (PostGIS `ST_DWithin`); a provider
+with no `location`, or who is offline, is skipped. `provider_status` flips
+`available → busy` on accept and back on complete/cancel — a stuck `accepted`
+request keeps them `busy` forever.
+
+## Wallet / Escrow / Commission
+
+Prepaid wallet model — the provider tops up; the platform deducts its slice
+per job. Cash flows directly customer → provider; only the commission is digitized.
+
+Tables: `provider_wallets`, `wallet_transactions`, `topup_requests`.
+RPC: `get_wallet(p_provider_id)` returns `(wallet_id, balance, total_earned,
+total_commission_paid, recent_transactions, pending_topups)`. **All internal
+references use `pw.balance` etc. aliased to avoid the RETURNS TABLE column
+ambiguity** (PostgreSQL treats those as in-scope variables).
+
+### Visiting fee + commission (NOT a flat completion fee)
+
+The old flat-60-PKR-on-completion commission is **gone**. Current model:
+
+- `calculate_visiting_fee(p_distance_km)` — ≤5 km → **Rs. 500**, ≤10 km →
+  **Rs. 1000**, >10 km → **Rs. 1500** (NULL distance → 1500).
+- `accept_service_request` computes it from the real accepted distance and stores
+  it on `service_requests.visiting_fee`.
+- **12% of the visiting fee is deducted on `arrived`**, inside
+  `update_request_to_arrived` — not on completion. It's floored at the available
+  balance (`LEAST(ROUND(fee * 0.12), balance)`) and writes a `commission` row to
+  `wallet_transactions`. `complete_service` charges nothing.
+
+### Going online is gated by an RPC, not the route
+
+`POST /api/provider-status` contains no gating logic — it just calls
+`update_provider_online_status(p_user_id, p_online)`. That `SECURITY DEFINER` RPC
+requires **both**, and raises a user-facing EXCEPTION for each (the route surfaces
+the message verbatim):
+
+1. `ustaz_registrations.verification_status = 'verified'` (CNIC — see `verify-cnic`).
+2. `provider_wallets.balance >= 60` — hardcoded in the RPC, mirrored as
+   `PROVIDER_MIN_WALLET_BALANCE` in `packages/shared/index.ts`. Keep them in sync.
+
+It also lazily inserts a zero-balance `provider_wallets` row on first call.
+
+### Topups
+
+`src/app/components/WalletPanel.tsx` shows balance + a topup flow (amount +
+Raast/JazzCash ref + receipt upload). Receipts go to the `topup-receipts` storage
+bucket via `/api/topup/upload-receipt`. Admin approves via
+`/api/admin/topup-action`, which credits the balance + writes a ledger entry.
+
+## Provider Onboarding
+
+Two entry points that converge:
+
+1. **Pre-launch (marketing site)** — `/become-a-provider` →
+   `ProviderPrelaunchForm` → `POST /api/provider-registration` →
+   `provider_prelaunch_registrations`.
+2. **Real signup (web app)** — phone OTP → become-ustaz wizard → `ustaz_registrations`.
+
+The `claim_prelaunch_provider_registration()` trigger links the two on signup so
+the wizard can prefill. **It matches on digits-only
+`raw_user_meta_data->>'phone'`, NOT `auth.users.phone`** — that column is observed
+NULL in this project (the phone is set by `verify-otp`'s `admin.createUser` call
+in E.164 form). It strips non-digits on both sides and bails if fewer than 9
+digits, so junk metadata like `+92` can't mass-claim rows.
+
+`residency` (major neighborhood, e.g. `"Alfalah Society, Malir Halt"`) exists on
+**both** tables — add it to both when changing that field.
+
 ## Ratings (two-way after completion)
 
 - **There is NO `ratings` table.** Ratings are stored as columns ON
@@ -233,22 +262,20 @@ display conditions.
 - `rate_user(p_request_id, p_rater_id, p_rating, p_comment)` `SECURITY DEFINER`
   RPC — requires `status='completed'`, caller is a party, blocks double-rating
   via the `*_rated` booleans, updates both the tracking columns and the
-  aggregate. Returns `(success, message, both_rated)`.
+  aggregate. Returns `(success, message, both_rated)`. It is `rate_user`, **not**
+  `rate_service`.
 - `get_provider_stats(p_provider_id)` — avg rating, total ratings, completed jobs.
-  Rendered as a 3-tile stats card at the top of the dashboard **profile tab**
-  (Avg Rating / Reviews / Jobs Done).
-- The actual submit RPC the client calls is **`rate_user(p_request_id,
-  p_rater_id, p_rating, p_comment)`** (not `rate_service`). `RatingModal` props:
-  `requestId, raterId, ratedUserId, ratedUserName, onComplete, onClose`.
+  Rendered as a 3-tile stats card at the top of the dashboard **profile tab**.
+- `RatingModal` props: `requestId, raterId, ratedUserId, ratedUserName,
+  onComplete, onClose`.
 - **Rating push**: after a successful submit, `RatingModal` fires
   `POST /api/chat/notify` to the **rated provider** (`recipientId = ratedUserId`)
   with a `⭐ You received a N/5 star rating` preview — reuses the chat push
-  pipeline. The push *title* falls back to the chat sender-name logic (customer
+  pipeline. The push *title* falls back to the chat sender-name logic (the customer
   isn't in `ustaz_registrations`), only the body carries the rating text.
-- `RatingModal` is rendered on the customer's `/process` page when
+- `RatingModal` renders on the customer's `/process` page when
   `requestStatus === 'completed'`. The **× / close button is always available**
   (no lockout) — skip / dismiss does NOT mutate DB, purely client-side cleanup.
-  Title has NO star icon (kept clean).
 
 ## Warranty (3-day free re-fix)
 
@@ -261,45 +288,85 @@ free return visit; refusing penalizes the provider.
 - **`ustaz_registrations.warranty_strikes`** int column — incremented on refuse.
 - **`respond_to_warranty(p_claim_id, p_response)`** `SECURITY DEFINER` RPC —
   on `'refused'`: deducts **Rs. 200** from `provider_wallets` (floored at 0),
-  writes a `penalty` row to `wallet_transactions`, increments
-  `warranty_strikes`. RLS: customer insert is validated to a `completed` request
-  owned by them within 3 days; both parties read; provider updates.
+  writes a `penalty` row to `wallet_transactions`, increments `warranty_strikes`.
+  RLS: customer insert is validated to a `completed` request owned by them within
+  3 days; both parties read; provider updates.
 - **Routes**: `POST /api/warranty/claim` (customer files; server re-validates the
   3-day window; FCM to provider) and `POST /api/warranty/respond` (provider
   accept/refuse via the RPC; FCM back to customer).
 - **Customer UI** = the **`/history` page** ("My Jobs", linked in the header nav
-  + user dropdown). Lists past requests via the
-  **`get_customer_history()`** `SECURITY DEFINER` RPC (joins provider name +
-  warranty status + `customer_rated` in one call, `user_id = auth.uid()`). Each
-  completed job shows exact completion date/time, a live 3-day countdown, and a
-  `🛡️ Claim Warranty` button (or the existing claim's status). The old floating
-  warranty card on `/process` was REMOVED (intrusive, disappeared on dismiss).
+  + user dropdown). Lists past requests via the **`get_customer_history()`**
+  `SECURITY DEFINER` RPC (joins provider name + warranty status +
+  `customer_rated` in one call, `user_id = auth.uid()`). Each completed job shows
+  exact completion date/time, a live 3-day countdown, and a `🛡️ Claim Warranty`
+  button (or the existing claim's status). The old floating warranty card on
+  `/process` was REMOVED (intrusive, disappeared on dismiss).
 - **Provider UI** = a dedicated **Warranty tab** in the dashboard sidebar (amber
   count badge). Claims are fetched enriched (customer name via
   `get_user_display_name`, service type/address/completion time via the embedded
   `service_requests` FK join) with Accept ("I'll Return & Fix It") / Refuse
-  buttons. Provider is alerted by the FCM push from `/api/warranty/claim`.
+  buttons.
 
-## Wallet / Escrow / Commission
+## Chat (real-time + push)
 
-Prepaid wallet model — provider tops up; platform deducts commission per
-completed job. Cash flows directly customer → provider; only the commission
-slice is digitized.
+- **Tables**: `chat_messages (id, sender_id, recipient_id, message, created_at)`
+  — append-only. RLS: `chat_party_select` (only the two parties read);
+  `chat_send` requires `sender_id = auth.uid()` AND an existing
+  `service_requests` row linking sender and recipient where status is active OR
+  `completed` within the last **7 days** (follow-up window — matches Uber).
+  `UPDATE`/`DELETE` are revoked from `authenticated`/`anon` entirely so chat
+  is provably immutable.
+- **NO legacy `validate_chat_message_users` trigger** — dropped. It required
+  the recipient to exist in `profiles`, but customers never land in `profiles`
+  (we don't use that table). RLS already enforces the party-relationship check
+  via `service_requests`, so the trigger was redundant AND wrong (broke
+  provider → customer messages).
+- **NO legacy `Users can send/view/update` RLS policies** — dropped.
+  Permissive `using: true` policies OR'd with the strict ones and silently
+  defeated them.
+- **Realtime**: subscribe to `postgres_changes` INSERT on `chat_messages`
+  with NO filter; `postgres_changes` doesn't support `and(or(...))` / compound
+  filters and silently drops them. RLS gates which rows the client actually
+  receives. Always dedupe by `id` and reconcile optimistic rows by matching
+  `_pending` + content (see `ChatComponent.tsx` and the dashboard `chat` tab).
+- **Optimistic UI is required.** Both surfaces insert an `id: temp_…` message
+  immediately with `_pending: true`, then swap it for the real row when the
+  realtime echo lands, or roll it back on RLS / network failure (restoring the draft).
+- **Chat push** (`/api/chat/notify`): cookie-auth derives the sender from the
+  session, looks up the sender's display name, and fires `sendPush`
+  fire-and-forget. Called after every successful `chat_messages` INSERT on both
+  sides. Uses the same `send-fcm` pipeline.
+- **Unread chat badge** on the provider sidebar mirrors the requests badge:
+  a per-provider `unread-chat:{providerId}` channel increments `unreadChatCount`
+  on inbound INSERTs that aren't from us and aren't the currently-focused
+  conversation; the badge clears the instant the Chat tab opens.
+- **Bubble colours (WhatsApp model, both surfaces)**: own/sent = brand orange
+  `#db4b0d` white text; received = white bubble dark text. So each party sees
+  their own messages orange and the other's white. Timestamps/ticks switch to
+  `text-white/70` on the orange bubble.
+- **Provider's conversation list** is seeded from recent `service_requests`
+  (accepted, or completed/cancelled ≤7 days) so the provider can open a chat
+  even before any message exists — NOT only from existing `chat_messages`.
+  Customer display names come from **`get_user_display_name(p_user_id)`**
+  `SECURITY DEFINER` RPC (reads `auth.users.raw_user_meta_data`:
+  `full_name → name → firstName → phone → 'Customer'`), since customers are not
+  in `ustaz_registrations` or `profiles`.
 
-Tables: `provider_wallets`, `wallet_transactions`, `topup_requests`.
-RPC: `get_wallet(p_provider_id)` returns `(wallet_id, balance, total_earned,
-total_commission_paid, recent_transactions, pending_topups)`. **All
-internal references use `pw.balance` etc. aliased to avoid the RETURNS TABLE
-column ambiguity** (PostgreSQL treats those as in-scope variables).
+## Provider tracking card
 
-UI: `src/app/components/WalletPanel.tsx` shows balance + a topup flow
-(amount + Raast/JazzCash ref + receipt upload). Receipts go to the
-`topup-receipts` storage bucket via `/api/topup/upload-receipt`. Admin
-approves via `/api/admin/topup-action` which credits the balance + writes
-a ledger entry.
+`ProviderTrackingInfo` on the customer's `/process` page:
+- Status-aware coloured header strip — accepts a `status` prop and maps every
+  state in `service_requests.status` to a colour + label + sub-line + icon.
+  Pulse-animated "Live" dot when a fresh broadcast ping has arrived.
+- ETA + Distance tiles. **Distance < 1 km renders as meters** (`0.42 km` → `420 m`).
+- Reverse-geocodes the provider's lat/lng via Google Maps Geocoding API
+  (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`). Debounced 600 ms, module-level cache keyed
+  at ~11 m precision so we don't hammer the API. Falls back to raw coords.
 
-`provider-status` POST checks wallet ≥ `min_wallet_to_work` before letting
-the provider go online — so a 0-balance provider cannot accept jobs.
+The card stays mounted through **every** active status (`provider_enroute`,
+`arriving`, `arrived`, `in_progress`, `work_in_progress`). The `ACTIVE_STATUSES`
+constant in `process/page.tsx` is the single source of truth — update it, the
+visibility gate, and the map `searchPhase` together when adding states.
 
 ## Admin Portal
 
@@ -312,85 +379,55 @@ Separate session-isolated portal at `/admin/*`:
 Admin routes are gated separately from customer/provider session cookies and
 should never run under the public Supabase RLS context.
 
+## Marketing Website (apps/website)
+
+Standalone Next.js 15 landing page, port 3002, deployed on Vercel separately from
+the main app. **No booking flow** — it funnels visitors to the app, a waitlist, and
+provider pre-registration.
+
+API routes: `/api/waitlist`, `/api/provider-registration`, `/api/stats`.
+`src/lib/supabase.ts` is a server-side service-role client;
+`.env.local` holds `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL`.
+
+### Design system
+
+Brand tokens — **use ONLY these**:
+`#DB4B0D` primary orange · `#FF6B4A` light (gradients/hover) · `#C24309` dark hover ·
+`#0F1729` dark navy (footer, dark sections) · `#FFF7ED` cream (card/hero surfaces).
+NO other colors (no blue, green, purple, yellow). Neutral `gray-*` is acceptable
+for text/borders only. This applies to every component.
+
+Typography:
+- **Headings**: Clash Grotesk — loaded via Fontshare CDN `<link>`, **NOT**
+  `next/font`. Applied with an inline `style={{fontFamily: 'Clash Grotesk, sans-serif'}}`
+  on every heading. Do NOT use a Tailwind `font-heading` class.
+- **Body EN**: Atkinson Hyperlegible (local TTF via `next/font/local`).
+  **Body UR**: Gulzar. **Body AR**: IBM Plex Sans Arabic.
+- **Display/counter numbers**: Anton (local TTF).
+
+### Website gotchas
+
+- `waitlist` table: `id` uuid PK, `name` NOT NULL, `email` UNIQUE, `source`,
+  `created_at`. RLS allows anonymous INSERT (public signup), authenticated SELECT
+  only. The UNIQUE email prevents duplicate signups.
+- StaggeredMenu (React Bits) needs `isFixed={true}` for proper mobile layout.
+- SVG arrows were replaced with lucide-react icons across all components.
+- DownloadCTA is a "Coming Soon" CTA — the app has not launched.
+- `requireCommit: true` in `eas.json` means the working tree must be clean before
+  EAS builds; the website Vercel deploy picks up from git push.
+
 ## Legal pages
 
-Three standalone, server-rendered pages under `src/app/{terms,privacy-policy,cookie-policy}/page.tsx`.
-Each one shares the same structure: hero with `Last updated` + `ReadingTime`,
-numbered grid ToC, `<article>` body with `text-2xl font-extrabold mt-6`
-headings whose `id` matches the ToC entry. **Cookie Policy** lists the actual
-cookies we set (`sb-{ref}-auth-token`, `NEXT_LOCALE`, `firebase-messaging-sw.js`,
-etc.) and is explicit about NOT using advertising / cross-site trackers. Footer
-links to all three from the Legal column. When adding a new section, update the
-`sections` const + the heading `id` + the anchor link together — they MUST stay
-aligned for the ToC to navigate correctly.
-
-## Chat (real-time + push)
-
-- **Tables**: `chat_messages (id, sender_id, recipient_id, message, created_at)`
-  — append-only. RLS: `chat_party_select` (only the two parties read);
-  `chat_send` requires `sender_id = auth.uid()` AND an existing
-  `service_requests` row linking sender and recipient where status is active OR
-  `completed` within the last **7 days** (follow-up window — matches Uber).
-  `UPDATE`/`DELETE` are revoked from `authenticated`/`anon` entirely so chat
-  is provably immutable.
-- **NO legacy `validate_chat_message_users` trigger** — dropped. It required
-  the recipient to exist in `profiles`, but customers never land in
-  `profiles` (we don't use that table). RLS already enforces the
-  party-relationship check via `service_requests`, so the trigger was
-  redundant AND wrong (broke provider → customer messages).
-- **NO legacy `Users can send/view/update` RLS policies** — dropped.
-  Permissive `using: true` policies OR'd with the strict ones and silently
-  defeated them.
-- **Realtime**: subscribe to `postgres_changes` INSERT on `chat_messages`
-  with NO filter; `postgres_changes` doesn't support `and(or(...))` /
-  compound filters and silently drops them. RLS gates which rows the
-  client actually receives. Always dedupe by `id` and reconcile optimistic
-  rows by matching `_pending` + content (see `ChatComponent.tsx` and the
-  dashboard `chat` tab).
-- **Optimistic UI is required.** Both surfaces insert an `id: temp_…`
-  message immediately with `_pending: true`, then swap it for the real row
-  when the realtime echo lands, or roll it back on RLS / network failure
-  (restoring the draft).
-- **Chat push** (`/api/chat/notify`): cookie-auth derives the sender from
-  the session, looks up the sender's display name, and fires `sendPush`
-  fire-and-forget. Called after every successful `chat_messages` INSERT on
-  both customer and provider sides. Uses the same `send-fcm` Edge Function
-  pipeline.
-- **Unread chat badge** on the provider sidebar mirrors the requests badge:
-  a per-provider `unread-chat:{providerId}` channel increments
-  `unreadChatCount` on inbound INSERTs that aren't from us and aren't the
-  currently-focused conversation; the badge clears the instant the Chat
-  tab opens.
-- **Bubble colours (WhatsApp model, both surfaces)**: own/sent messages =
-  brand orange `#db4b0d` white text; received = white bubble dark text. So each
-  party sees their own messages orange and the other's white. Timestamps/ticks
-  switch to `text-white/70` on the orange bubble.
-- **Provider's conversation list** is seeded from recent `service_requests`
-  (accepted, or completed/cancelled ≤7 days) so the provider can open a chat
-  even before any message exists — NOT only from existing `chat_messages`.
-  Customer display names come from the **`get_user_display_name(p_user_id)`**
-  `SECURITY DEFINER` RPC (reads `auth.users.raw_user_meta_data`:
-  `full_name → name → firstName → phone → 'Customer'`), since customers are not
-  in `ustaz_registrations` or `profiles`.
-
-## Provider tracking card
-
-`ProviderTrackingInfo` on the customer's `/process` page:
-- Status-aware coloured header strip — accepts a `status` prop and maps
-  every state in `service_requests.status` to a colour + label + sub-line +
-  icon. Pulse-animated "Live" dot when a fresh broadcast ping has arrived.
-- ETA + Distance tiles. **Distance < 1 km renders as meters** (e.g.
-  `0.42 km` → `420 m`).
-- Reverse-geocodes the provider's lat/lng via Google Maps Geocoding API
-  (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`). Debounced 600 ms, module-level
-  cache keyed at ~11 m precision so we don't hammer the API. Falls back
-  to raw coords on failure.
-
-The card stays mounted through **every** active status (`provider_enroute`,
-`arriving`, `arrived`, `in_progress`, `work_in_progress`). The
-`ACTIVE_STATUSES` constant in `process/page.tsx` is the single source of
-truth — update it, the visibility gate, and the map `searchPhase` together
-when adding states.
+Three standalone, server-rendered pages under
+`apps/web/src/app/{terms,privacy-policy,cookie-policy}/page.tsx`. Each shares the
+same structure: hero with `Last updated` + `ReadingTime`, numbered grid ToC,
+`<article>` body with `text-2xl font-extrabold mt-6` headings whose `id` matches
+the ToC entry. **Cookie Policy** lists the actual cookies we set
+(`sb-{ref}-auth-token`, `NEXT_LOCALE`, `firebase-messaging-sw.js`, etc.) and is
+explicit about NOT using advertising / cross-site trackers. Footer links to all
+three from the Legal column. When adding a section, update the `sections` const +
+the heading `id` + the anchor link together — they MUST stay aligned.
 
 ## Testing Gotchas (don't skip)
 
@@ -405,88 +442,104 @@ when adding states.
   `ProviderRequestNotification` floating popup (driven by the `notifications`
   table realtime) AND the dashboard request tab (`serviceRequests`, driven by a
   no-filter `service_requests` realtime sub + `fetchServiceRequests`). The
-  no-filter `service_requests` sub can MISS the first INSERT, so the popup fires
-  but the tab stays empty. Mitigation: the dashboard also re-fetches
-  `serviceRequests` on every `notifications` INSERT for this provider, plus an
-  8 s reconcile poll. `fetchServiceRequests` filters to `ACTIVE_REQUEST_STATUSES`
-  only (`notified_multiple → work_in_progress`) so finished jobs don't linger.
-- **`find_providers_nearby` filters on `online_status` only** — NOT
-  `provider_status`. A `busy` provider is still notified of new requests. Matching
-  also requires `service_type` match + `location` within radius (PostGIS
-  `ST_DWithin`); if a provider has no `location` or is offline they're skipped and
-  the request goes `no_ustaz_found`. `provider_status` flips `available → busy`
-  on accept and back on complete/cancel — a stuck `accepted` request keeps them
-  `busy` forever.
+  no-filter sub can MISS the first INSERT, so the popup fires but the tab stays
+  empty. Mitigation: the dashboard re-fetches `serviceRequests` on every
+  `notifications` INSERT for this provider, plus an 8 s reconcile poll.
+  `fetchServiceRequests` filters to `ACTIVE_REQUEST_STATUSES` only
+  (`notified_multiple → work_in_progress`) so finished jobs don't linger.
 - **Provider geolocation**: `ProviderLocationTracker` needs browser location
   permission. On localhost it works; on a non-localhost HTTP origin it silently
-  fails (HTTPS required).
-- **Broadcast race**: customer must subscribe before provider's first ping or
-  that ping is dropped (broadcast has no replay). The 5 s `live_locations`
-  poll on the customer side is the safety net.
+  fails (HTTPS required). Client geolocation code should check
+  `window.isSecureContext` and degrade gracefully rather than hang.
+- **Broadcast race**: the customer must subscribe before the provider's first ping
+  or that ping is dropped (broadcast has no replay). The 5 s `live_locations` poll
+  on the customer side is the safety net.
 - **postgres_changes filter ops**: only `eq, neq, lt, lte, gt, gte, in`.
   Array `cs` (contains) is silently dropped — filter client-side instead.
-- **Windows `.next/cache` rename race**: `next-pwa` + Webpack on Windows can
-  throw `Cannot read properties of undefined (reading 'length')` after several
+- **Windows `.next/cache` rename race**: `next-pwa` + Webpack on Windows can throw
+  `Cannot read properties of undefined (reading 'length')` after several
   incremental builds. Fix: `rm -rf .next` before `npm run build`. Vercel is
   unaffected (fresh build per deploy).
-- **FCM service account is the keys-to-the-kingdom**: never paste it in chat,
-  IDE selections, or anywhere except the Supabase secret store. If exposed,
-  delete in Firebase IAM → generate new → update secret. Web config + VAPID
-  public key are not secrets and may live in `.env.local`.
+- **FCM service account is the keys-to-the-kingdom**: never paste it in chat, IDE
+  selections, or anywhere except the Supabase secret store. If exposed, delete in
+  Firebase IAM → generate new → update secret. Web config + VAPID public key are
+  not secrets and may live in `.env.local`.
 
 ## E2E Tests
 
-Playwright suite in `apps/web/e2e/` (`apps/web/playwright.config.ts`): `cancellation`,
-`rating`, `refresh-resilience`, `state-machine`. Helpers in
-`apps/web/e2e/helpers/{auth,db}.ts`. Run with `npx playwright test` against a running
-dev server. Useful for end-to-end smoke before deploy — covers the
-arrival → in_progress → completed → rating loop and refresh-state recovery.
+Playwright suite in `apps/web/e2e/` (`apps/web/playwright.config.ts`), with a
+written `e2e/TEST-PLAN.md`. Specs: `tier0`, `customer-booking`,
+`provider-acceptance`, `dispatch-integrity`, `state-machine`, `cancellation`,
+`rating`, `warranty-flow`, `chat-flow`, `wallet-topup`, `admin-portal`,
+`refresh-resilience`, `mobile-customer`, `mobile-provider`. Helpers in
+`e2e/helpers/{auth,db}.ts`.
+
+- **The suite MUST stay serial** — `workers: 1` and `fullyParallel: false`,
+  because the tests mutate shared database state. Don't "optimize" this.
+- `webServer` auto-starts `npm run dev` on :3000 (`reuseExistingServer` outside CI),
+  so you don't need a dev server already running.
+- Config loads `.env.local` via dotenv for helper credentials
+  (`SUPABASE_SERVICE_ROLE_KEY`).
+
+```bash
+cd apps/web
+npx playwright test                              # everything
+npx playwright test e2e/rating.spec.ts           # one file
+npx playwright test e2e/rating.spec.ts -g "name" # one test
+npx playwright test --headed --debug             # watch it run
+```
 
 ## Mobile (Expo)
 
-The native mobile app lives in `apps/mobile` and uses Expo React Native. Capacitor has been removed entirely. Mobile should import brand tokens/types/utilities from `packages/shared`, call the same Supabase Edge Functions and `SECURITY DEFINER` RPCs as web, and register push tokens into the existing `fcm_tokens` table. Web keeps cookie-backed Supabase sessions; mobile may use platform-appropriate secure storage for the same Supabase JWT. Do **not** invent mobile-specific RPCs or auth flows.
+`apps/mobile` has its own `CLAUDE.md` → `AGENTS.md`: **read the versioned Expo
+docs before writing any code.** Capacitor has been removed entirely.
 
-### Mobile Navigation (partially refactored)
+Mobile imports brand tokens/types/utilities from `packages/shared`, calls the same
+Edge Functions and `SECURITY DEFINER` RPCs as web, and registers push tokens into
+the existing `fcm_tokens` table. Web keeps cookie-backed Supabase sessions; mobile
+uses platform-appropriate secure storage for the same JWT. Do **not** invent
+mobile-specific RPCs or auth flows.
+
+### Navigation (partially refactored)
 
 **Customer tabs** (5): Home | Find | Jobs | Chat | Profile
 **Provider tabs** (5): Home | Requests | Wallet | Chat | Profile
 
-- `book.tsx` was split into `find.tsx` (service selection, address, map) + `process.tsx` (tracking, status, rating). Both are root-level Stack screens.
-- Provider `index.tsx` is pending split into `index.tsx` (dashboard) + `requests.tsx`.
-- `CustomTabBar.tsx` handles bottom tab bar with floating pill indicator. Pill position is computed from actual tab bar dimensions.
-- Swipe gesture between tabs is NOT yet implemented (planned).
-- Shared chat component extraction from `(customer)/chat.tsx` and `(provider)/chat.tsx` is NOT yet done.
+- `book.tsx` was split into `find.tsx` (service selection, address, map) +
+  `process.tsx` (tracking, status, rating). Both are root-level Stack screens.
+- Provider `index.tsx` is pending a split into `index.tsx` + `requests.tsx`.
+- `CustomTabBar.tsx` computes the floating pill position from actual tab bar
+  dimensions (`barContentWidth`, `tabCenter`, `targetX`).
+- Swipe gesture between tabs is NOT implemented (planned).
+- Shared chat component extraction from `(customer)/chat.tsx` and
+  `(provider)/chat.tsx` is NOT done.
 
-### Mobile Key Files
+### Key files
 
-- `app/process.tsx` — process/tracking screen, accepts optional params with DB fallback, realtime subscription
+- `app/process.tsx` — tracking screen; optional params with DB fallback, realtime sub
 - `app/(customer)/find.tsx` — service selection, Google Places, map, existing-request recovery
-- `app/auth.tsx` — phone OTP with segmented `OtpInput` (auto-submit, 60s countdown, paste support), Google OAuth, email sign-in
-- `src/components/OtpInput.tsx` — segmented 6-digit OTP input
-- `src/components/CustomTabBar.tsx` — bottom tab bar with floating pill
-- `src/components/MapComponents.native.tsx` — real react-native-maps with ErrorBoundary
-- `src/components/MapComponents.web.tsx` — stub for web
+- `app/auth.tsx` — phone OTP with segmented `OtpInput` (auto-submit, 60 s countdown, paste), Google OAuth, email sign-in
+- `src/components/MapComponents.native.tsx` / `.web.tsx` — real react-native-maps with ErrorBoundary / web stub
 - `src/hooks/useServiceTimer.ts` — timer hook with NaN guard
 - `src/lib/ustaz-api.ts` — `sendPhoneOtp()`, `verifyPhoneOtp()`, `setProviderOnlineStatus()`
 
-### Mobile Build Requirements
+### Build requirements & gotchas
 
-- `EAS_SKIP_AUTO_FINGERPRINT=1` env var required (avoids `expo-dev-launcher` ENOENT)
-- `.env.local` must be in `eas.json` preview profile `env` field (gitignored)
-- `android/` directory must be committed for EAS builds
-- `metro.config.cjs` uses `moduleSuffixes: [".web", ""]` for web platform split
-- `react-native-maps` does NOT have an Expo config plugin — API key goes in `AndroidManifest.xml` manually
-- `expo-notifications` must be lazy-imported (dynamic `import()`) guarded by `Constants.appOwnership === 'expo'` to prevent Expo Go crash in SDK 53+
-
-### Mobile Gotchas
-
-- **Node.js 22 on Windows** has ESM import bug with drive-letter paths (`E:\...`). Use Node 20 at `C:\node20\node-v20.19.0-win-x64`.
-- **Supabase email confirmation** must be disabled for development (Dashboard → Auth → Providers → Email → uncheck "Confirm email").
-- **Google user metadata** lives in `user.user_metadata` — fields: `full_name`, `name`, `email`, `avatar_url`, `picture`.
+- `EAS_SKIP_AUTO_FINGERPRINT=1` required (avoids `expo-dev-launcher` ENOENT).
+- `.env.local` must be listed in the `eas.json` preview profile `env` field (gitignored).
+- `android/` must be committed for EAS builds.
+- `metro.config.cjs` uses `moduleSuffixes: [".web", ""]` for the web platform split.
+- `react-native-maps` has no Expo config plugin — the API key goes in
+  `AndroidManifest.xml` manually.
+- `expo-notifications` must be lazy-imported (dynamic `import()`) guarded by
+  `Constants.appOwnership === 'expo'` to prevent an Expo Go crash on SDK 53+.
+- **Node.js 22 on Windows** has an ESM import bug with drive-letter paths (`E:\...`).
+  Use Node 20 at `C:\node20\node-v20.19.0-win-x64`.
+- **Supabase email confirmation** must be disabled for development
+  (Dashboard → Auth → Providers → Email → uncheck "Confirm email").
+- **Google user metadata** lives in `user.user_metadata`: `full_name`, `name`,
+  `email`, `avatar_url`, `picture`.
 - **KeyboardAvoidingView on Android** needs `behavior='height'` (not `undefined`).
-- **Bottom tab bar centering** — pill position computed from `barContentWidth`, `tabCenter`, `targetX` with corrected math.
-- **Twilio OTP** — Pakistan geo-permission must be enabled in Twilio Console → Verify Service → Geo Permissions. Trial accounts can only send to verified caller IDs.
-- **`send-otp` Edge Function v8** — returns friendly error messages for 400/401/429/502 status codes.
 
 ## Video Generation (ustaz-visuals)
 
