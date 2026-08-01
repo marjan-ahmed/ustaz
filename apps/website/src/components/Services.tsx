@@ -7,11 +7,11 @@ import { X, Check, Sparkles } from "lucide-react";
 
 // Same pastel tones as the mobile app's customer home "Quick find" grid.
 const services = [
-  { key: "electrical", image: "/images/electrician-removebg-preview.png", bg: "#FFEDD5" },
-  { key: "plumbing", image: "/images/plumber-removebg-preview.png", bg: "#DBEAFE" },
-  { key: "carpentry", image: "/images/carpenter-removebg-preview.png", bg: "#D9F99D" },
-  { key: "acRepair", image: "/images/ac_repair-removebg-preview.png", bg: "#CFFAFE" },
-  { key: "solar", image: "/images/solar-removebg-preview.png", bg: "#FEF3C7" },
+  { key: "electrical", image: "/images/electrician-illus-Photoroom.png", bg: "#FFEDD5" },
+  { key: "plumbing", image: "/images/plumber-illus-Photoroom.png", bg: "#DBEAFE" },
+  { key: "carpentry", image: "/images/carpenter-illus-Photoroom.png", bg: "#D9F99D" },
+  { key: "acRepair", image: "/images/ac-technician-illus-Photoroom.png", bg: "#CFFAFE" },
+  { key: "solar", image: "/images/solar-illus-Photoroom.png", bg: "#FEF3C7" },
   { key: "cctv", image: "/images/cctv-illus-Photoroom.png", bg: "#F3E8FF" },
   { key: "roomCooler", image: "/images/cooler-illus-Photoroom.png", bg: "#E0F2FE" },
   { key: "refrigerator", image: "/images/fridge-illus-Photoroom.png", bg: "#F0FDF4" },

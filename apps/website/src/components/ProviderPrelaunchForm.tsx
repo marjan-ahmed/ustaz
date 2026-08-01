@@ -20,11 +20,11 @@ const WHATSAPP_URL = process.env.NEXT_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL;
 
 // Must match the service_type values the real app writes to ustaz_registrations.
 const SERVICES = [
-  { name: "Electrician", bg: "#FFEDD5", image: "/images/electrician-removebg-preview.png" },
-  { name: "Plumbing", bg: "#DBEAFE", image: "/images/plumber-removebg-preview.png" },
-  { name: "Carpentry", bg: "#D9F99D", image: "/images/carpenter-removebg-preview.png" },
-  { name: "AC Maintenance", bg: "#CFFAFE", image: "/images/ac_repair-removebg-preview.png" },
-  { name: "Solar Technician", bg: "#FEF3C7", image: "/images/solar-removebg-preview.png" },
+  { name: "Electrician", bg: "#FFEDD5", image: "/images/electrician-illus-Photoroom.png" },
+  { name: "Plumbing", bg: "#DBEAFE", image: "/images/plumber-illus-Photoroom.png" },
+  { name: "Carpentry", bg: "#D9F99D", image: "/images/carpenter-illus-Photoroom.png" },
+  { name: "AC Maintenance", bg: "#CFFAFE", image: "/images/ac-technician-illus-Photoroom.png" },
+  { name: "Solar Technician", bg: "#FEF3C7", image: "/images/solar-illus-Photoroom.png" },
   { name: "CCTV Technician", bg: "#F3E8FF", image: "/images/cctv-illus-Photoroom.png" },
   { name: "Room Cooler", bg: "#E0F2FE", image: "/images/cooler-illus-Photoroom.png" },
   { name: "Refrigerator Technician", bg: "#F0FDF4", image: "/images/fridge-illus-Photoroom.png" },
