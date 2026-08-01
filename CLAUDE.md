@@ -35,9 +35,11 @@ All code work in this repo must follow these behavioral guidelines to avoid comm
 
 ## Project Overview
 
-npm workspaces monorepo for "Ustaz", a Pakistani home-services marketplace
-(Karachi pilot). Customers request a service, PostGIS matches nearby verified
-providers, and the job is tracked live to the door with a 3-day warranty.
+npm workspaces monorepo for **Ustaz**, a Pakistani home-services marketplace
+(Karachi pilot, pre-revenue). Customers request a service, PostGIS matches nearby
+verified providers, and the job is tracked live to the door with a 3-day warranty.
+
+Live MVP: `ustaz-bice.vercel.app`. See `README.md` for the pitch-level framing.
 
 ## Monorepo Layout
 
@@ -45,7 +47,7 @@ providers, and the job is tracked live to the door with a 3-day warranty.
 |---|---|---|
 | `apps/web` | `@ustaz/web` | Next.js 15 (App Router, Turbopack) — the production app. Customer + provider + admin. |
 | `apps/website` | `@ustaz/website` | Standalone marketing site, port 3002, deployed to Vercel separately. |
-| `apps/mobile` | `@ustaz/mobile` | Expo React Native. Has its own `CLAUDE.md` → `AGENTS.md` (read the versioned Expo docs first). |
+| `apps/mobile` | `@ustaz/mobile` | Expo SDK 54 React Native. Has its own `CLAUDE.md` → `AGENTS.md` (read the versioned Expo docs first). |
 | `packages/shared` | `@ustaz/shared` | `theme/`, `types/`, `utils/` behind a root `index.ts` barrel. No `src/`. Also exports `PROVIDER_MIN_WALLET_BALANCE = 60`. |
 | `packages/assets` | — | Favicons, `site.webmanifest`, app icons. |
 
@@ -69,13 +71,20 @@ npm run build:website
 npm run build:mobile    # expo export
 
 npm --workspace @ustaz/web run lint       # next lint, per workspace
+cd apps/web && npx tsc --noEmit           # typecheck
 ```
+
+`apps/web` currently has pre-existing `noImplicitAny` errors in
+`src/app/auth/callback/route.ts` and `src/lib/server.ts`. They are not yours —
+don't "fix" them as a side effect of unrelated work, and don't treat a clean
+typecheck as the bar unless you caused a new error.
 
 ## Architecture
 
 - **Auth**: Supabase phone OTP via custom Edge Functions (`send-otp` + `verify-otp`).
   Sessions stored in **cookies** via `@supabase/ssr` (NOT localStorage —
-  never revert this; server routes read auth from cookies).
+  never revert this; server routes read auth from cookies). Mobile additionally
+  supports Google Sign-In and email sign-in.
 - **DB**: Postgres + PostGIS for proximity matching. RLS is enforced on every
   sensitive table; all privileged operations go through `SECURITY DEFINER` RPCs.
 - **Realtime**: two channels — `location-update:{requestId}` (broadcast, hot path)
@@ -105,10 +114,8 @@ npm --workspace @ustaz/web run lint       # next lint, per workspace
 2. **Provider `userId` = `auth.uid()`.** Registration is gated by phone OTP;
    no random UUIDs. RLS on `ustaz_registrations` enforces this.
 3. **All state mutations go through RPCs.** Direct UPDATE on
-   `service_requests` from the client is blocked by RLS. Use
-   `accept_service_request_authed`, `update_request_to_arriving`, etc.
+   `service_requests` from the client is blocked by RLS.
 4. **`auth.uid()` is read server-side, never trusted from body.**
-   Routes that need a provider id pull it from the session.
 5. **`/dashboard?userId=...` is dead.** Middleware strips the param;
    dashboard derives identity from session.
 
@@ -123,35 +130,30 @@ Prefer the **Supabase MCP** for schema/data changes — `mcp__supabase__apply_mi
 `supabase/migrations/` is the DDL history — always use `apply_migration`, not raw
 SQL. `supabase/functions/` mirrors deployed Edge Function source.
 
-### Edge Functions (deployed; verify_jwt=false)
+### Deployed Edge Functions (all `verify_jwt=false`)
 - `send-otp` — Twilio Verify send + DB rate limit (`otp_attempts` table).
-  v8 returns friendly error messages for 400/401/429/502.
 - `verify-otp` — Twilio Verify check → upsert auth user with synthesized email
   `<digits>@phone.ustaz.local` → `admin.generateLink({ type:'magiclink' })` →
   client exchanges `token_hash` via `supabase.auth.verifyOtp` to set the cookie.
-- `verify-cnic` — OCR-checks the typed CNIC against the uploaded photo and sets
-  `ustaz_registrations.verification_status`. Gates going online (see Wallet).
-  Needs `OCR_SPACE_API_KEY`.
+- `verify-cnic` — sends the uploaded CNIC image to **OCR.space** and compares the
+  extracted number against the typed one; writes `cnic_verifications` and sets
+  `ustaz_registrations.verification_status`. Gates going online.
 - `send-fcm` — FCM HTTP v1 send. Server-to-server only; guarded by
-  `x-internal-secret` header. Mints OAuth2 access token from service account,
-  looks up `fcm_tokens` for the recipient `userIds`, sends, auto-prunes
-  `UNREGISTERED` / `NOT_FOUND` tokens. Called by Next.js routes via
-  `src/lib/sendPush.ts` after request creation and accept.
+  `x-internal-secret`. Auto-prunes `UNREGISTERED` / `NOT_FOUND` tokens.
+  Called by Next.js routes via `src/lib/sendPush.ts`.
 
 ### Required Edge Function secrets
 - OTP: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SID`, `PHONE_PEPPER`
 - CNIC: `OCR_SPACE_API_KEY`
 - Push: `FCM_SERVICE_ACCOUNT_JSON` (rotated key only — never commit), `INTERNAL_API_SECRET`
-- Both must also be present in Next.js (`.env.local`) where applicable:
-  `NEXT_PUBLIC_FIREBASE_*` (web config), `NEXT_PUBLIC_FIREBASE_VAPID_KEY`, `INTERNAL_API_SECRET`.
-Set Supabase-side via Dashboard → Edge Functions → Secrets (multiline values OK
-for the FCM JSON). Never paste the service account JSON anywhere except the
-Supabase secret store.
+
+Set via Dashboard → Edge Functions → Secrets. Never paste the FCM service account
+JSON anywhere except the Supabase secret store.
 
 ### Twilio gotchas
-- **Twilio Verify Geo-Permissions**: PK (and most non-US countries) blocked by
-  default. Enable per-country in the Verify Service settings.
-- **Trial accounts**: only SMS to phone numbers verified in the Twilio Console.
+- **Verify Geo-Permissions**: PK is blocked by default. Enable per-country in the
+  Verify Service settings.
+- **Trial accounts**: only SMS to numbers verified in the Twilio Console.
 
 ## State Machine — service_requests.status
 
@@ -162,11 +164,10 @@ Terminal: `cancelled`, `no_ustaz_found`, `rejected`.
 Each transition is a `SECURITY DEFINER` RPC: `accept_service_request_authed`,
 `update_request_to_arriving`, `update_request_to_arrived`,
 `update_request_to_in_progress` / `start_service`, `complete_service`,
-`cancel_service_request`. The route at `src/app/api/update-request-status/route.ts`
+`cancel_service_request`. `src/app/api/update-request-status/route.ts`
 dispatches to them based on `action` and a session-derived `user.id`.
 
-Timer columns populated by these RPCs: `provider_arrived_at` (on `arrived`),
-`service_started_at` (on `in_progress`), `service_completed_at` (on `completed`).
+Timer columns: `provider_arrived_at`, `service_started_at`, `service_completed_at`.
 `complete_service` also clears `live_locations` for the request and sets the
 provider back to `available`.
 
@@ -176,18 +177,29 @@ display conditions.
 
 ## Dispatch / Matching
 
-`create_service_request_with_notifications` inserts the request then does
-**sequential radius expansion over `ARRAY[5000, 10000, 15000]` metres** — it tries
-the nearest tier first and widens only if that tier found zero providers. The
-tiers intentionally mirror the visiting-fee tiers. If every tier comes back empty
-the request goes `no_ustaz_found`.
+`create_service_request_with_notifications(p_service_type, p_request_latitude,
+p_request_longitude, p_request_details, p_radius_meters, p_landmark,
+p_entrance_photo_url)` inserts the request then does **sequential radius
+expansion over `ARRAY[5000, 10000, 15000]` metres** — nearest tier first, widening
+only if that tier found zero providers. The tiers intentionally mirror the
+visiting-fee tiers. If every tier is empty the request goes `no_ustaz_found`.
 
 `find_providers_nearby` filters on `online_status` only — **NOT** `provider_status`.
-A `busy` provider is still notified of new requests. Matching also requires a
-`service_type` match + `location` within radius (PostGIS `ST_DWithin`); a provider
-with no `location`, or who is offline, is skipped. `provider_status` flips
-`available → busy` on accept and back on complete/cancel — a stuck `accepted`
-request keeps them `busy` forever.
+A `busy` provider is still notified. Matching also requires a `service_type` match
++ `location` within radius (`ST_DWithin`); a provider with no `location`, or who is
+offline, is skipped. `provider_status` flips `available → busy` on accept and back
+on complete/cancel — a stuck `accepted` request keeps them `busy` forever
+(`release_stuck_providers(p_stale_minutes)` exists to clear these, but see the
+scheduling gotcha below).
+
+**Overloaded matching RPCs — read before adding another.** These exist in multiple
+signatures and PostgREST resolves by argument names:
+`find_providers_nearby` (×2), `find_providers_nearby_ranked` (×2),
+`get_nearby_providers` (×2), `get_nearest_ustaz` (×2), plus
+`find_providers_nearby_unified`, `find_nearby_providers`, and
+`get_provider_reliability_score`. Adding another overload risks an ambiguous-function
+error at runtime. Prefer editing an existing signature over creating a new one, and
+check which one the caller actually uses.
 
 ## Wallet / Escrow / Commission
 
@@ -195,275 +207,279 @@ Prepaid wallet model — the provider tops up; the platform deducts its slice
 per job. Cash flows directly customer → provider; only the commission is digitized.
 
 Tables: `provider_wallets`, `wallet_transactions`, `topup_requests`.
-RPC: `get_wallet(p_provider_id)` returns `(wallet_id, balance, total_earned,
-total_commission_paid, recent_transactions, pending_topups)`. **All internal
-references use `pw.balance` etc. aliased to avoid the RETURNS TABLE column
-ambiguity** (PostgreSQL treats those as in-scope variables).
+RPC: `get_wallet(p_provider_id)`. **All internal references use `pw.balance` etc.
+aliased to avoid RETURNS TABLE column ambiguity** (PostgreSQL treats those as
+in-scope variables).
 
 ### Visiting fee + commission (NOT a flat completion fee)
-
-The old flat-60-PKR-on-completion commission is **gone**. Current model:
 
 - `calculate_visiting_fee(p_distance_km)` — ≤5 km → **Rs. 500**, ≤10 km →
   **Rs. 1000**, >10 km → **Rs. 1500** (NULL distance → 1500).
 - `accept_service_request` computes it from the real accepted distance and stores
   it on `service_requests.visiting_fee`.
 - **12% of the visiting fee is deducted on `arrived`**, inside
-  `update_request_to_arrived` — not on completion. It's floored at the available
+  `update_request_to_arrived` — *not* on completion. Floored at the available
   balance (`LEAST(ROUND(fee * 0.12), balance)`) and writes a `commission` row to
-  `wallet_transactions`. `complete_service` charges nothing.
+  `wallet_transactions`. **`complete_service` charges nothing.**
+
+These figures are published in the Terms of Use (`/terms` §9). Changing them means
+updating the RPC *and* the legal pages in both `apps/web` and `apps/website`.
 
 ### Going online is gated by an RPC, not the route
 
-`POST /api/provider-status` contains no gating logic — it just calls
+`POST /api/provider-status` contains no gating logic — it calls
 `update_provider_online_status(p_user_id, p_online)`. That `SECURITY DEFINER` RPC
-requires **both**, and raises a user-facing EXCEPTION for each (the route surfaces
+requires **both**, raising a user-facing EXCEPTION for each (the route surfaces
 the message verbatim):
 
-1. `ustaz_registrations.verification_status = 'verified'` (CNIC — see `verify-cnic`).
+1. `ustaz_registrations.verification_status = 'verified'`.
 2. `provider_wallets.balance >= 60` — hardcoded in the RPC, mirrored as
-   `PROVIDER_MIN_WALLET_BALANCE` in `packages/shared/index.ts`. Keep them in sync.
+   `PROVIDER_MIN_WALLET_BALANCE` in `packages/shared/index.ts`. Keep in sync.
 
 It also lazily inserts a zero-balance `provider_wallets` row on first call.
+Note this gates *going online only* — a provider already online whose balance
+drops is not forced offline.
 
 ### Topups
 
-`src/app/components/WalletPanel.tsx` shows balance + a topup flow (amount +
-Raast/JazzCash ref + receipt upload). Receipts go to the `topup-receipts` storage
-bucket via `/api/topup/upload-receipt`. Admin approves via
-`/api/admin/topup-action`, which credits the balance + writes a ledger entry.
+`WalletPanel.tsx` shows balance + a topup flow. The only methods offered are
+**JazzCash and Easypaisa** (amount + transaction reference + receipt upload).
+Receipts go to the `topup-receipts` bucket via `/api/topup/upload-receipt`.
+Admin approves via `/api/admin/topup-action` → `approve_topup_request`.
 
-## Provider Onboarding
+## Provider Onboarding & Verification
 
 Two entry points that converge:
 
-1. **Pre-launch (marketing site)** — `/become-a-provider` →
-   `ProviderPrelaunchForm` → `POST /api/provider-registration` →
-   `provider_prelaunch_registrations`.
+1. **Pre-launch (marketing site)** — `/become-a-provider` → `ProviderPrelaunchForm`
+   → `POST /api/provider-registration` → `provider_prelaunch_registrations`.
 2. **Real signup (web app)** — phone OTP → become-ustaz wizard → `ustaz_registrations`.
 
-The `claim_prelaunch_provider_registration()` trigger links the two on signup so
-the wizard can prefill. **It matches on digits-only
-`raw_user_meta_data->>'phone'`, NOT `auth.users.phone`** — that column is observed
-NULL in this project (the phone is set by `verify-otp`'s `admin.createUser` call
-in E.164 form). It strips non-digits on both sides and bails if fewer than 9
-digits, so junk metadata like `+92` can't mass-claim rows.
+`claim_prelaunch_provider_registration()` links the two on signup. **It matches on
+digits-only `raw_user_meta_data->>'phone'`, NOT `auth.users.phone`** — that column
+is observed NULL in this project. It strips non-digits on both sides and bails if
+fewer than 9 digits, so junk metadata like `+92` can't mass-claim rows.
 
-`residency` (major neighborhood, e.g. `"Alfalah Society, Malir Halt"`) exists on
-**both** tables — add it to both when changing that field.
+`residency` exists on **both** tables — add it to both when changing that field.
+
+### Two verification paths coexist
+- **Automated OCR** (`cnic_verifications`, live — has rows): `verify-cnic` Edge
+  Function → OCR.space → `decision`, `ocr_number`, `ocr_result`.
+- **Manual review** (`verification_submissions`, built but currently empty):
+  `submit_verification` → admin `/admin/verification` →
+  `approve_verification` / `reject_verification`.
+
+Both set `ustaz_registrations.verification_status`. `protect_verification_fields`
+is a trigger guarding those columns from client writes.
 
 ## Ratings (two-way after completion)
 
-- **There is NO `ratings` table.** Ratings are stored as columns ON
-  `service_requests`: `customer_rated` / `customer_rating_value` /
-  `customer_rating_comment` and `provider_rated` / `provider_rating_value`.
-  The target's aggregate lives on `ustaz_registrations` (`rating_sum`,
-  `rating_count`, `rating_avg`) for providers, `profiles` for customers.
-- `rate_user(p_request_id, p_rater_id, p_rating, p_comment)` `SECURITY DEFINER`
-  RPC — requires `status='completed'`, caller is a party, blocks double-rating
-  via the `*_rated` booleans, updates both the tracking columns and the
-  aggregate. Returns `(success, message, both_rated)`. It is `rate_user`, **not**
-  `rate_service`.
-- `get_provider_stats(p_provider_id)` — avg rating, total ratings, completed jobs.
-  Rendered as a 3-tile stats card at the top of the dashboard **profile tab**.
+- **There is NO `ratings` table.** Ratings live as columns ON `service_requests`:
+  `customer_rated` / `customer_rating_value` / `customer_rating_comment` and
+  `provider_rated` / `provider_rating_value`. Aggregates live on
+  `ustaz_registrations` (`rating_sum`, `rating_count`, `rating_avg`) for providers
+  and on `profiles` for customers.
+- `rate_user(p_request_id, p_rater_id, p_rating, p_comment)` is the one to call.
+  A legacy `rate_service(...)` with a different signature also still exists —
+  don't call it by mistake.
+- `get_provider_stats(p_provider_id)` — rendered as a 3-tile card on the dashboard
+  **profile tab**.
 - `RatingModal` props: `requestId, raterId, ratedUserId, ratedUserName,
-  onComplete, onClose`.
-- **Rating push**: after a successful submit, `RatingModal` fires
-  `POST /api/chat/notify` to the **rated provider** (`recipientId = ratedUserId`)
-  with a `⭐ You received a N/5 star rating` preview — reuses the chat push
-  pipeline. The push *title* falls back to the chat sender-name logic (the customer
-  isn't in `ustaz_registrations`), only the body carries the rating text.
-- `RatingModal` renders on the customer's `/process` page when
-  `requestStatus === 'completed'`. The **× / close button is always available**
-  (no lockout) — skip / dismiss does NOT mutate DB, purely client-side cleanup.
+  onComplete, onClose`. Renders on `/process` when `requestStatus === 'completed'`.
+  The **× close button is always available** — skip/dismiss does NOT mutate DB.
+- After submit it fires `POST /api/chat/notify` to the rated provider, reusing the
+  chat push pipeline (the push *title* falls back to chat sender-name logic).
 
 ## Warranty (3-day free re-fix)
 
-If a job breaks again within 3 days of completion, the customer can claim a
-free return visit; refusing penalizes the provider.
-
-- **Table `warranty_claims`**: `(request_id UNIQUE, customer_id, provider_id,
-  status, description, claimed_at, provider_responded_at, resolved_at)`.
+- **`warranty_claims`**: `(request_id UNIQUE, customer_id, provider_id, status,
+  description, claimed_at, provider_responded_at, resolved_at)`.
   `status`: `pending → accepted | refused | resolved`. One claim per request.
-- **`ustaz_registrations.warranty_strikes`** int column — incremented on refuse.
-- **`respond_to_warranty(p_claim_id, p_response)`** `SECURITY DEFINER` RPC —
-  on `'refused'`: deducts **Rs. 200** from `provider_wallets` (floored at 0),
-  writes a `penalty` row to `wallet_transactions`, increments `warranty_strikes`.
-  RLS: customer insert is validated to a `completed` request owned by them within
-  3 days; both parties read; provider updates.
-- **Routes**: `POST /api/warranty/claim` (customer files; server re-validates the
-  3-day window; FCM to provider) and `POST /api/warranty/respond` (provider
-  accept/refuse via the RPC; FCM back to customer).
-- **Customer UI** = the **`/history` page** ("My Jobs", linked in the header nav
-  + user dropdown). Lists past requests via the **`get_customer_history()`**
-  `SECURITY DEFINER` RPC (joins provider name + warranty status +
-  `customer_rated` in one call, `user_id = auth.uid()`). Each completed job shows
-  exact completion date/time, a live 3-day countdown, and a `🛡️ Claim Warranty`
-  button (or the existing claim's status). The old floating warranty card on
-  `/process` was REMOVED (intrusive, disappeared on dismiss).
-- **Provider UI** = a dedicated **Warranty tab** in the dashboard sidebar (amber
-  count badge). Claims are fetched enriched (customer name via
-  `get_user_display_name`, service type/address/completion time via the embedded
-  `service_requests` FK join) with Accept ("I'll Return & Fix It") / Refuse
-  buttons.
+- **`ustaz_registrations.warranty_strikes`** incremented on refuse.
+- **`respond_to_warranty(p_claim_id, p_response)`** — on `'refused'`: deducts
+  **Rs. 200** (floored at 0), writes a `penalty` row, increments strikes.
+- **Routes**: `POST /api/warranty/claim`, `POST /api/warranty/respond`.
+- **Customer UI** = the **`/history` page**, via `get_customer_history()`.
+  Shows completion time, a live 3-day countdown, and a claim button.
+- **Provider UI** = the **Warranty tab** in the dashboard sidebar (amber badge).
+
+## Safety Incidents, Standing & Appeals
+
+A whole subsystem beyond the core booking flow — easy to miss.
+
+- **`incidents`** — `(request_id, provider_id, customer_id, incident_type, status,
+  severity, evidence, provider_response, customer_response, resolution,
+  penalty_applied, penalty_amount, reviewed_by, reviewed_at)`.
+  RPCs: `create_incident`, `resolve_incident`, `detect_incidents`.
+  Routes: `/api/provider/report-incident`, `/api/admin/resolve-incident`.
+- **`incident_check_ins`** — `(incident_id, sent_at, responded_at, response_type,
+  gps_at_response)`. RPCs `send_check_in_prompt` / `respond_to_check_in`.
+  **This captures GPS outside an active Service Request** — the one exception to
+  "we only track during a job". The legal pages call this out explicitly; keep them
+  aligned if you change it.
+- **`appeals`** — `(incident_id, provider_id, appeal_type, reason, evidence, status,
+  admin_response, reviewed_by, reviewed_at)`. RPCs `submit_appeal` / `resolve_appeal`.
+  Routes: `/api/provider/submit-appeal`, `/api/admin/resolve-appeal`.
+- **`provider_performance`** (per category) — `completed_jobs, rating_avg,
+  recency_weighted_avg, incident_count, justified_complaint_count,
+  disputed_complaint_count`. Updated by `update_provider_performance`.
+- **`provider_standing`** (per provider) — `tier, tier_changed_at,
+  tier_change_reason, suspension_active, suspension_reason, suspension_until,
+  probation_jobs_remaining`. Recomputed by `recalculate_provider_tier`.
+
+These feed matching rank via `get_provider_reliability_score`. Because they can
+suspend an account automatically, the Terms (§17 automated decisions, §19 appeals)
+and Privacy Policy (§11) describe them — update the legal pages alongside any
+behaviour change.
 
 ## Chat (real-time + push)
 
-- **Tables**: `chat_messages (id, sender_id, recipient_id, message, created_at)`
-  — append-only. RLS: `chat_party_select` (only the two parties read);
-  `chat_send` requires `sender_id = auth.uid()` AND an existing
-  `service_requests` row linking sender and recipient where status is active OR
-  `completed` within the last **7 days** (follow-up window — matches Uber).
-  `UPDATE`/`DELETE` are revoked from `authenticated`/`anon` entirely so chat
-  is provably immutable.
-- **NO legacy `validate_chat_message_users` trigger** — dropped. It required
-  the recipient to exist in `profiles`, but customers never land in `profiles`
-  (we don't use that table). RLS already enforces the party-relationship check
-  via `service_requests`, so the trigger was redundant AND wrong (broke
-  provider → customer messages).
-- **NO legacy `Users can send/view/update` RLS policies** — dropped.
-  Permissive `using: true` policies OR'd with the strict ones and silently
-  defeated them.
-- **Realtime**: subscribe to `postgres_changes` INSERT on `chat_messages`
-  with NO filter; `postgres_changes` doesn't support `and(or(...))` / compound
-  filters and silently drops them. RLS gates which rows the client actually
-  receives. Always dedupe by `id` and reconcile optimistic rows by matching
-  `_pending` + content (see `ChatComponent.tsx` and the dashboard `chat` tab).
-- **Optimistic UI is required.** Both surfaces insert an `id: temp_…` message
-  immediately with `_pending: true`, then swap it for the real row when the
-  realtime echo lands, or roll it back on RLS / network failure (restoring the draft).
-- **Chat push** (`/api/chat/notify`): cookie-auth derives the sender from the
-  session, looks up the sender's display name, and fires `sendPush`
-  fire-and-forget. Called after every successful `chat_messages` INSERT on both
-  sides. Uses the same `send-fcm` pipeline.
-- **Unread chat badge** on the provider sidebar mirrors the requests badge:
-  a per-provider `unread-chat:{providerId}` channel increments `unreadChatCount`
-  on inbound INSERTs that aren't from us and aren't the currently-focused
-  conversation; the badge clears the instant the Chat tab opens.
-- **Bubble colours (WhatsApp model, both surfaces)**: own/sent = brand orange
-  `#db4b0d` white text; received = white bubble dark text. So each party sees
-  their own messages orange and the other's white. Timestamps/ticks switch to
-  `text-white/70` on the orange bubble.
-- **Provider's conversation list** is seeded from recent `service_requests`
-  (accepted, or completed/cancelled ≤7 days) so the provider can open a chat
-  even before any message exists — NOT only from existing `chat_messages`.
-  Customer display names come from **`get_user_display_name(p_user_id)`**
-  `SECURITY DEFINER` RPC (reads `auth.users.raw_user_meta_data`:
-  `full_name → name → firstName → phone → 'Customer'`), since customers are not
-  in `ustaz_registrations` or `profiles`.
+- **`chat_messages (id, sender_id, recipient_id, message, created_at)`** —
+  append-only. RLS: `chat_party_select`; `chat_send` requires
+  `sender_id = auth.uid()` AND a `service_requests` row linking sender and
+  recipient where status is active OR `completed` within the last **7 days**.
+  `UPDATE`/`DELETE` are revoked from `authenticated`/`anon` entirely.
+- **NO legacy `validate_chat_message_users` trigger** — dropped. It required the
+  recipient to exist in `profiles`, which broke provider → customer messages.
+- **NO legacy `Users can send/view/update` RLS policies** — dropped. Permissive
+  `using: true` policies OR'd with the strict ones and silently defeated them.
+- **Realtime**: subscribe to `postgres_changes` INSERT with NO filter;
+  compound `and(or(...))` filters are silently dropped. RLS gates what arrives.
+  Always dedupe by `id` and reconcile optimistic rows by matching `_pending`.
+- **Optimistic UI is required.** Insert `id: temp_…` with `_pending: true`, swap on
+  the realtime echo, roll back on failure (restoring the draft).
+- **Chat push** (`/api/chat/notify`): cookie-auth derives the sender, looks up the
+  display name, fires `sendPush` fire-and-forget.
+- **Unread badge**: per-provider `unread-chat:{providerId}` channel; clears when
+  the Chat tab opens.
+- **Bubble colours (both surfaces)**: own/sent = brand orange `#db4b0d` white text;
+  received = white bubble dark text.
+- **Provider's conversation list** is seeded from recent `service_requests`, NOT
+  only from existing `chat_messages`. Customer names come from
+  `get_user_display_name(p_user_id)` (reads `auth.users.raw_user_meta_data`).
+
+## Customer conveniences
+
+- **`saved_addresses`** — `(label, address, latitude, longitude, landmark,
+  entrance_photo_url, is_default)`. The entrance photo is shown to a matched provider.
+- **`address_service_history`** — `(address_id, request_id, provider_id,
+  service_type, issue_description, recurring_issue)`. Powers `get_address_history`
+  and `check_recurring_issue`.
+- **`favorites`** — `get_favorite_providers(p_customer_id)`.
+- **`email_verifications`** — `create_email_verification` / `consume_email_verification`,
+  routes under `/api/email/verify/*`.
 
 ## Provider tracking card
 
-`ProviderTrackingInfo` on the customer's `/process` page:
-- Status-aware coloured header strip — accepts a `status` prop and maps every
-  state in `service_requests.status` to a colour + label + sub-line + icon.
-  Pulse-animated "Live" dot when a fresh broadcast ping has arrived.
-- ETA + Distance tiles. **Distance < 1 km renders as meters** (`0.42 km` → `420 m`).
-- Reverse-geocodes the provider's lat/lng via Google Maps Geocoding API
-  (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`). Debounced 600 ms, module-level cache keyed
-  at ~11 m precision so we don't hammer the API. Falls back to raw coords.
+`ProviderTrackingInfo` on `/process`:
+- Status-aware coloured header strip mapping every `service_requests.status` to a
+  colour + label + sub-line + icon. Pulse "Live" dot on fresh broadcast ping.
+- ETA + Distance tiles. **Distance < 1 km renders as meters**.
+- Reverse-geocodes provider lat/lng via Google Geocoding. Debounced 600 ms,
+  module-level cache keyed at ~11 m precision. Falls back to raw coords.
 
-The card stays mounted through **every** active status (`provider_enroute`,
-`arriving`, `arrived`, `in_progress`, `work_in_progress`). The `ACTIVE_STATUSES`
+The card stays mounted through **every** active status. The `ACTIVE_STATUSES`
 constant in `process/page.tsx` is the single source of truth — update it, the
-visibility gate, and the map `searchPhase` together when adding states.
+visibility gate, and the map `searchPhase` together.
 
 ## Admin Portal
 
-Separate session-isolated portal at `/admin/*`:
-- `/admin/login` → POST `/api/admin/login` (env-based `ADMIN_EMAIL`/`ADMIN_PASSWORD`
-  in `.env.local`, server-only).
-- `/admin/dashboard` → review pending topups, approve/reject via
-  `/api/admin/topup-action`.
+Separate session-isolated portal, gated by env `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+(server-only) with `admin_login_attempts` + `check_admin_login_rate(p_ip)`.
+
+Pages: `/admin/login`, `/admin/dashboard` (topups), `/admin/providers`,
+`/admin/verification`, `/admin/incidents`, `/admin/appeals`, `/admin/observability`.
 
 Admin routes are gated separately from customer/provider session cookies and
 should never run under the public Supabase RLS context.
 
 ## Marketing Website (apps/website)
 
-Standalone Next.js 15 landing page, port 3002, deployed on Vercel separately from
-the main app. **No booking flow** — it funnels visitors to the app, a waitlist, and
-provider pre-registration.
+Standalone Next.js 15 landing page, port 3002, deployed on Vercel separately.
+**No booking flow** — it funnels to the app, a waitlist, and provider pre-registration.
 
 API routes: `/api/waitlist`, `/api/provider-registration`, `/api/stats`.
-`src/lib/supabase.ts` is a server-side service-role client;
-`.env.local` holds `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `NEXT_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL`.
+`src/lib/supabase.ts` is a server-side service-role client.
 
 ### Design system
 
 Brand tokens — **use ONLY these**:
-`#DB4B0D` primary orange · `#FF6B4A` light (gradients/hover) · `#C24309` dark hover ·
-`#0F1729` dark navy (footer, dark sections) · `#FFF7ED` cream (card/hero surfaces).
-NO other colors (no blue, green, purple, yellow). Neutral `gray-*` is acceptable
-for text/borders only. This applies to every component.
+`#DB4B0D` primary orange · `#FF6B4A` light · `#C24309` dark hover ·
+`#0F1729` dark navy · `#FFF7ED` cream.
+NO other colors (no blue, green, purple, yellow). Neutral `gray-*` for text/borders only.
 
 Typography:
-- **Headings**: Clash Grotesk — loaded via Fontshare CDN `<link>`, **NOT**
-  `next/font`. Applied with an inline `style={{fontFamily: 'Clash Grotesk, sans-serif'}}`
-  on every heading. Do NOT use a Tailwind `font-heading` class.
+- **Headings**: Clash Grotesk via Fontshare CDN `<link>`, **NOT** `next/font`.
+  Applied with inline `style={{fontFamily: 'Clash Grotesk, sans-serif'}}` on every
+  heading. Do NOT use a Tailwind `font-heading` class.
 - **Body EN**: Atkinson Hyperlegible (local TTF via `next/font/local`).
   **Body UR**: Gulzar. **Body AR**: IBM Plex Sans Arabic.
 - **Display/counter numbers**: Anton (local TTF).
 
 ### Website gotchas
-
-- `waitlist` table: `id` uuid PK, `name` NOT NULL, `email` UNIQUE, `source`,
-  `created_at`. RLS allows anonymous INSERT (public signup), authenticated SELECT
-  only. The UNIQUE email prevents duplicate signups.
-- StaggeredMenu (React Bits) needs `isFixed={true}` for proper mobile layout.
-- SVG arrows were replaced with lucide-react icons across all components.
+- `waitlist` table: `name` NOT NULL, `email` UNIQUE, RLS allows anonymous INSERT.
+- StaggeredMenu (React Bits) needs `isFixed={true}` for mobile layout.
 - DownloadCTA is a "Coming Soon" CTA — the app has not launched.
-- `requireCommit: true` in `eas.json` means the working tree must be clean before
-  EAS builds; the website Vercel deploy picks up from git push.
 
-## Legal pages
+## Legal pages — six files, keep them in sync
 
-Three standalone, server-rendered pages under
-`apps/web/src/app/{terms,privacy-policy,cookie-policy}/page.tsx`. Each shares the
-same structure: hero with `Last updated` + `ReadingTime`, numbered grid ToC,
-`<article>` body with `text-2xl font-extrabold mt-6` headings whose `id` matches
-the ToC entry. **Cookie Policy** lists the actual cookies we set
-(`sb-{ref}-auth-token`, `NEXT_LOCALE`, `firebase-messaging-sw.js`, etc.) and is
-explicit about NOT using advertising / cross-site trackers. Footer links to all
-three from the Legal column. When adding a section, update the `sections` const +
-the heading `id` + the anchor link together — they MUST stay aligned.
+`{terms,privacy-policy,cookie-policy}/page.tsx` exist in **both** `apps/web/src/app/`
+and `apps/website/src/app/`. They are separate copies with slightly different
+markup (the website versions use double quotes and inline `scroll-mt-24`).
+
+Each page has a `sections` const, headings whose `id` matches, and numbered labels.
+**When adding a section, update the `sections` array + the heading `id` + the
+heading number + every `§ n` cross-reference together** — they must stay aligned.
+Placeholder identity/contact values sit in `TODO(legal)`-marked consts at the top
+of each file.
+
+The legal text documents real system behaviour (fee tiers, commission timing,
+GPS capture, automated suspension, OCR.space as a CNIC subprocessor). Changing
+that behaviour means changing these pages.
+
+## Known dead code / drift
+
+- **`CookieConsent.tsx` is not mounted anywhere.** It renders analytics/marketing
+  toggles but nothing imports it, so no consent UI ships. Don't cite it as proof
+  consent is collected.
+- **No analytics or telemetry is installed** — no GA, no product analytics, no
+  error tracking. The legal pages state this explicitly.
+- **`public.users` has RLS disabled** and is exposed to the anon key. It is empty
+  (0 rows). Either drop it or enable RLS *with* policies — enabling RLS alone
+  blocks all access.
+- **`pg_cron` is NOT installed.** `purge_old_otp_attempts`, `release_stuck_providers`,
+  `check_verification_expiry`, and `detect_incidents` exist but nothing schedules
+  them. No data-retention deletion runs automatically; the only automatic cleanup
+  is `complete_service` clearing `live_locations` and FCM pruning invalid tokens.
+- `profiles` **is** in use (customer aggregates + Google profile data), despite
+  earlier notes to the contrary.
 
 ## Testing Gotchas (don't skip)
 
 - **Cookie collision / self-requests**: customer + provider in the same Chrome
-  profile share cookies → server routes see the wrong `auth.uid()`. Symptom in
-  data: `service_requests.user_id == accepted_by_provider_id` (a provider both
-  created and accepted a request). These self-requests corrupt test flows and
-  leave the provider stuck `busy`. Test with two profiles (one regular, one
-  Incognito) where the customer signs in with a phone number that is **NOT**
-  registered as a provider.
-- **Request tab vs popup (two surfaces)**: incoming requests appear in BOTH the
-  `ProviderRequestNotification` floating popup (driven by the `notifications`
-  table realtime) AND the dashboard request tab (`serviceRequests`, driven by a
-  no-filter `service_requests` realtime sub + `fetchServiceRequests`). The
-  no-filter sub can MISS the first INSERT, so the popup fires but the tab stays
-  empty. Mitigation: the dashboard re-fetches `serviceRequests` on every
-  `notifications` INSERT for this provider, plus an 8 s reconcile poll.
-  `fetchServiceRequests` filters to `ACTIVE_REQUEST_STATUSES` only
-  (`notified_multiple → work_in_progress`) so finished jobs don't linger.
-- **Provider geolocation**: `ProviderLocationTracker` needs browser location
-  permission. On localhost it works; on a non-localhost HTTP origin it silently
-  fails (HTTPS required). Client geolocation code should check
+  profile share cookies → server routes see the wrong `auth.uid()`. Symptom:
+  `service_requests.user_id == accepted_by_provider_id`. Test with two profiles
+  (one regular, one Incognito) where the customer's phone is **NOT** a registered
+  provider.
+- **Request tab vs popup**: incoming requests appear in BOTH the
+  `ProviderRequestNotification` popup (driven by `notifications` realtime) AND the
+  dashboard request tab (`serviceRequests`, no-filter `service_requests` sub).
+  The no-filter sub can MISS the first INSERT. Mitigation: re-fetch on every
+  `notifications` INSERT, plus an 8 s reconcile poll. `fetchServiceRequests`
+  filters to `ACTIVE_REQUEST_STATUSES` only.
+- **Provider geolocation**: needs browser location permission. Works on localhost;
+  silently fails on non-localhost HTTP (HTTPS required). Check
   `window.isSecureContext` and degrade gracefully rather than hang.
 - **Broadcast race**: the customer must subscribe before the provider's first ping
-  or that ping is dropped (broadcast has no replay). The 5 s `live_locations` poll
-  on the customer side is the safety net.
+  or it is dropped (broadcast has no replay). The 5 s `live_locations` poll is the
+  safety net.
 - **postgres_changes filter ops**: only `eq, neq, lt, lte, gt, gte, in`.
   Array `cs` (contains) is silently dropped — filter client-side instead.
 - **Windows `.next/cache` rename race**: `next-pwa` + Webpack on Windows can throw
   `Cannot read properties of undefined (reading 'length')` after several
-  incremental builds. Fix: `rm -rf .next` before `npm run build`. Vercel is
-  unaffected (fresh build per deploy).
+  incremental builds. Fix: `rm -rf .next` before `npm run build`. Vercel is unaffected.
 - **FCM service account is the keys-to-the-kingdom**: never paste it in chat, IDE
-  selections, or anywhere except the Supabase secret store. If exposed, delete in
-  Firebase IAM → generate new → update secret. Web config + VAPID public key are
-  not secrets and may live in `.env.local`.
+  selections, or anywhere except the Supabase secret store.
 
 ## E2E Tests
 
@@ -476,10 +492,8 @@ written `e2e/TEST-PLAN.md`. Specs: `tier0`, `customer-booking`,
 
 - **The suite MUST stay serial** — `workers: 1` and `fullyParallel: false`,
   because the tests mutate shared database state. Don't "optimize" this.
-- `webServer` auto-starts `npm run dev` on :3000 (`reuseExistingServer` outside CI),
-  so you don't need a dev server already running.
-- Config loads `.env.local` via dotenv for helper credentials
-  (`SUPABASE_SERVICE_ROLE_KEY`).
+- `webServer` auto-starts `npm run dev` on :3000 (`reuseExistingServer` outside CI).
+- Config loads `.env.local` via dotenv for `SUPABASE_SERVICE_ROLE_KEY`.
 
 ```bash
 cd apps/web
@@ -505,40 +519,63 @@ mobile-specific RPCs or auth flows.
 **Customer tabs** (5): Home | Find | Jobs | Chat | Profile
 **Provider tabs** (5): Home | Requests | Wallet | Chat | Profile
 
-- `book.tsx` was split into `find.tsx` (service selection, address, map) +
-  `process.tsx` (tracking, status, rating). Both are root-level Stack screens.
+- `book.tsx` was split into `find.tsx` + `process.tsx` (root-level Stack screens),
+  but a stale `app/(customer)/book.tsx` still exists and is still bundled by
+  expo-router's `require.context`.
 - Provider `index.tsx` is pending a split into `index.tsx` + `requests.tsx`.
-- `CustomTabBar.tsx` computes the floating pill position from actual tab bar
-  dimensions (`barContentWidth`, `tabCenter`, `targetX`).
 - Swipe gesture between tabs is NOT implemented (planned).
 - Shared chat component extraction from `(customer)/chat.tsx` and
   `(provider)/chat.tsx` is NOT done.
 
 ### Key files
-
 - `app/process.tsx` — tracking screen; optional params with DB fallback, realtime sub
-- `app/(customer)/find.tsx` — service selection, Google Places, map, existing-request recovery
-- `app/auth.tsx` — phone OTP with segmented `OtpInput` (auto-submit, 60 s countdown, paste), Google OAuth, email sign-in
-- `src/components/MapComponents.native.tsx` / `.web.tsx` — real react-native-maps with ErrorBoundary / web stub
+- `app/(customer)/find.tsx` — service selection, Google Places, map, request recovery
+- `app/auth.tsx` — phone OTP with segmented `OtpInput`, Google OAuth, email sign-in
+- `src/components/MapComponents.native.tsx` / `.web.tsx` — react-native-maps with
+  ErrorBoundary / web stub
 - `src/hooks/useServiceTimer.ts` — timer hook with NaN guard
 - `src/lib/ustaz-api.ts` — `sendPhoneOtp()`, `verifyPhoneOtp()`, `setProviderOnlineStatus()`
 
-### Build requirements & gotchas
+### EAS builds — run from `apps/mobile`, never the repo root
 
-- `EAS_SKIP_AUTO_FINGERPRINT=1` required (avoids `expo-dev-launcher` ENOENT).
-- `.env.local` must be listed in the `eas.json` preview profile `env` field (gitignored).
-- `android/` must be committed for EAS builds.
+```bash
+cd apps/mobile
+eas build --platform android --profile preview --non-interactive
+```
+
+The repo root has a stub `eas.json` + `app.json`, and the root `package.json` has
+no `expo` dependency — building from there fails at prebuild with
+`sh: 1: expo: not found`. The two configs also point at **different EAS projects**:
+root → `marjan-ahmed/ustaz` (`a1792892…`), `apps/mobile` → `ustaz-bice/ustaz`
+(`048c3fb3…`, package `com.ustaz.mobile`, keystore `cWPBZXsgSC`).
+
+### Build requirements & gotchas
+- **`.easignore` at the git root is the only one read**, and when it exists EAS
+  **ignores `.gitignore` entirely** (only `.git` and `node_modules` are excluded by
+  default). Everything gitignored must be repeated in `.easignore` or it ships in
+  the archive. `apps/mobile/.easignore` is never read by the archiver.
+- **`buffer` must stay an explicit dependency of `@ustaz/mobile`.**
+  `react-native-svg@15.12.1` imports it without declaring it; locally it only
+  resolved via `firebase-tools → archiver → readable-stream`, which EAS never
+  installs. Don't "clean up" that dependency, and don't re-add a `buffer` entry to
+  `metro.config.cjs` `extraNodeModules` — an override there wins over normal
+  resolution and points at a path that doesn't exist on EAS.
+- `EAS_SKIP_AUTO_FINGERPRINT=1` in `eas.json` `env` applies to the *remote* build
+  only. To skip the slow local fingerprint step, set it in your shell before `eas`.
+- Every `EXPO_PUBLIC_*` var the source reads must be in the build profile's `env`
+  block — `.env.local` is gitignored and no longer ships in the archive.
+- `android/` must be committed. Once it exists, `app.json` native config
+  (`android.package`, Maps keys) is **ignored** — edit `android/app/build.gradle`
+  and `AndroidManifest.xml` directly.
+- `react-native-maps` has no Expo config plugin — `com.google.android.geo.API_KEY`
+  goes in `AndroidManifest.xml` manually.
 - `metro.config.cjs` uses `moduleSuffixes: [".web", ""]` for the web platform split.
-- `react-native-maps` has no Expo config plugin — the API key goes in
-  `AndroidManifest.xml` manually.
 - `expo-notifications` must be lazy-imported (dynamic `import()`) guarded by
   `Constants.appOwnership === 'expo'` to prevent an Expo Go crash on SDK 53+.
 - **Node.js 22 on Windows** has an ESM import bug with drive-letter paths (`E:\...`).
   Use Node 20 at `C:\node20\node-v20.19.0-win-x64`.
 - **Supabase email confirmation** must be disabled for development
   (Dashboard → Auth → Providers → Email → uncheck "Confirm email").
-- **Google user metadata** lives in `user.user_metadata`: `full_name`, `name`,
-  `email`, `avatar_url`, `picture`.
 - **KeyboardAvoidingView on Android** needs `behavior='height'` (not `undefined`).
 
 ## Video Generation (ustaz-visuals)

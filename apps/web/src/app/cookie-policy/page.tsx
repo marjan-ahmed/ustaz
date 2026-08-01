@@ -10,7 +10,7 @@ export const metadata = {
     'How Ustaz uses cookies and similar storage technologies on its platform, and how you can control them.',
 };
 
-const LAST_UPDATED = '24 July 2026';
+const LAST_UPDATED = '1 August 2026';
 
 const sections = [
   ['what-are-cookies', '1. What Are Cookies'],
@@ -166,11 +166,17 @@ export default function CookiePolicy() {
               so the Platform feels personal across visits. Disabling these will not break the
               Platform but may reset preferences on every visit.
             </p>
-            <h3>3.3 Performance</h3>
+            <h3>3.3 Performance and analytics &mdash; none in use</h3>
             <p>
-              Anonymised diagnostic signals (error rates, navigation timings) that help us spot
-              regressions. They contain no personal identifiers. You may opt out of these via
-              the cookie-control toggle in your account settings.
+              <strong>We do not currently set any performance, analytics, or diagnostic cookies.</strong>{' '}
+              No analytics SDK, product-telemetry service, or error-tracking script is loaded by the
+              Platform, so there is nothing in this category to opt out of. We have described the
+              category here only so that this Policy stays complete if that changes.
+            </p>
+            <p>
+              If we introduce analytics in future, we will update this Policy, list the specific
+              cookies involved in &sect;&nbsp;4, and provide a working opt-out control{' '}
+              <strong>before</strong> any such cookie is set.
             </p>
 
             <h2 className="text-2xl font-extrabold mt-6" id="our-cookies">

@@ -9,7 +9,14 @@ export const metadata = {
     'Terms of Use for the Ustaz platform connecting customers with trust-professionals in Pakistan.',
 };
 
-const LAST_UPDATED = '24 July 2026';
+const LAST_UPDATED = '1 August 2026';
+
+// TODO(legal): placeholders — replace before public launch.
+// Ustaz is not yet an incorporated company and these mailboxes are not live.
+const OPERATOR = 'Ustaz';
+const CONTACT_EMAIL = 'support@ustaz.app';
+const LEGAL_EMAIL = 'legal@ustaz.app';
+const CONTACT_WHATSAPP = '+92 305 1126649';
 
 const sections = [
   ['acceptance', '1. Acceptance & Modification'],
@@ -28,14 +35,17 @@ const sections = [
   ['communications', '14. Communications (Chat, Calls, Push)'],
   ['prohibited', '15. Prohibited Conduct'],
   ['suspension', '16. Suspension, Strikes & Termination'],
-  ['warranties', '17. Disclaimer of Warranties'],
-  ['liability', '18. Limitation of Liability'],
-  ['indemnity', '19. Indemnification'],
-  ['dispute', '20. Dispute Resolution'],
-  ['law', '21. Governing Law'],
-  ['sharia', '22. Sharia Compliance'],
-  ['misc', '23. Miscellaneous'],
-  ['contact', '24. Contact'],
+  ['standing', '17. Provider Standing, Tiers & Automated Decisions'],
+  ['incidents', '18. Safety Incidents & Check-ins'],
+  ['appeals', '19. Appeals'],
+  ['warranties', '20. Disclaimer of Warranties'],
+  ['liability', '21. Limitation of Liability'],
+  ['indemnity', '22. Indemnification'],
+  ['dispute', '23. Dispute Resolution'],
+  ['law', '24. Governing Law'],
+  ['sharia', '25. Sharia Compliance'],
+  ['misc', '26. Miscellaneous'],
+  ['contact', '27. Contact'],
 ] as const;
 
 export default function TermsOfUse() {
@@ -148,7 +158,7 @@ export default function TermsOfUse() {
               account. You are responsible for maintaining the confidentiality of your account and
               for all activity on your account. You must promptly notify us of any unauthorized use
               by contacting{' '}
-              <a href="mailto:support@ustaz.app" className="text-[#db4b0d] underline">support@ustaz.app</a>.
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#db4b0d] underline">{CONTACT_EMAIL}</a>.
             </p>
 
             <h2 className='text-2xl font-extrabold mt-6' id="provider-onboarding">6. Ustaz Provider Onboarding &amp; Representations</h2>
@@ -163,10 +173,17 @@ export default function TermsOfUse() {
               <li>You will not solicit Customers off-platform to avoid platform commission.</li>
             </ol>
             <p>
-              <strong>CNIC verification is mandatory.</strong> Providers must submit their CNIC number,
-              front and back photos, and a selfie during registration. Accounts are not activated until
-              identity verification is approved by Ustaz administrators. Providers with unverified or
-              rejected identities cannot accept Service Requests.
+              <strong>CNIC verification is mandatory.</strong> During registration you must enter your
+              CNIC number and upload a photograph of your CNIC. The typed number is checked against the
+              uploaded image by an <strong>automated optical character recognition (OCR) service</strong>,
+              and the outcome is recorded against your account. Ustaz may additionally require you to
+              submit CNIC front and back images and a selfie for <strong>manual review</strong> by
+              authorised personnel.
+            </p>
+            <p>
+              Until your identity is marked <strong>verified</strong>, you cannot switch yourself online
+              and will not receive Service Requests. An automated verification outcome you believe to be
+              wrong can be challenged under &sect;&nbsp;19.
             </p>
 
             <h2 className='text-2xl font-extrabold mt-6' id="verification-disclaimer">7. Verification &amp; Trust Badges Disclaimer</h2>
@@ -185,15 +202,21 @@ export default function TermsOfUse() {
 
             <h2 className='text-2xl font-extrabold mt-6' id="state-machine">8. Service Requests &amp; Status Workflow</h2>
             <p>A Service Request progresses through the following states:</p>
-            <p className="font-mono text-sm bg-gray-50 px-3 py-2 rounded border border-gray-200">
-              notified → accepted → provider_enroute → arriving → arrived → in_progress → completed
+            <p className="font-mono text-sm bg-gray-50 px-3 py-2 rounded border border-gray-200 overflow-x-auto">
+              notified_multiple → accepted → provider_enroute → arriving → arrived → in_progress → work_in_progress → completed
             </p>
             <p>Terminal (non-progressing) states: <code>cancelled</code>, <code>rejected</code>, <code>no_ustaz_found</code>.</p>
+            <p>
+              When you create a Service Request we search for available Providers in{' '}
+              <strong>expanding rings — 5 km, then 10 km, then 15 km</strong> — stopping at the first
+              ring that contains at least one matching Provider. If no Provider is found in any ring,
+              the request ends in <code>no_ustaz_found</code> and you are not charged anything.
+            </p>
             <h3>Cancellation</h3>
             <ul>
               <li><strong>Before acceptance</strong>: free.</li>
-              <li><strong>After acceptance, before the Provider arrives</strong>: free for the Customer; the Provider may charge a travel fee at Ustaz&apos;s sole discretion for distances over 5 km.</li>
-              <li><strong>After the Provider has arrived (status <code>arrived</code> or later)</strong>: the Customer is responsible for the <strong>visit fee</strong> as agreed during the request.</li>
+              <li><strong>After acceptance, before the Provider arrives</strong>: free for the Customer.</li>
+              <li><strong>After the Provider has arrived (status <code>arrived</code> or later)</strong>: the Customer is responsible for the <strong>visiting fee</strong> for the applicable distance tier set out in &sect;&nbsp;9.</li>
             </ul>
 
             <h2 className='text-2xl font-extrabold mt-6' id="pricing-fees">9. Pricing, Fees &amp; Commission</h2>
@@ -203,11 +226,45 @@ export default function TermsOfUse() {
               purchased on the Customer&apos;s behalf (with receipt). Ustaz is <strong>not</strong>{' '}
               the merchant of record for any materials.
             </p>
+            <h3>Visiting fee (paid by the Customer to the Provider)</h3>
             <p>
-              <strong>Platform commission.</strong> Ustaz charges a per-job platform fee to the
-              Provider, deducted from the Provider&apos;s Wallet upon successful job completion.
-              The current commission structure is disclosed in the Provider Dashboard and may
-              change with prior notice.
+              Every accepted Service Request carries a <strong>visiting fee</strong>, calculated
+              automatically from the road distance between the Provider and your service address at
+              the moment of acceptance:
+            </p>
+            <table className="w-full text-sm my-4 border border-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-3 py-2 border-b border-gray-200">Distance</th>
+                  <th className="text-left px-3 py-2 border-b border-gray-200">Visiting fee</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td className="px-3 py-2 border-b border-gray-100">Up to 5 km</td><td className="px-3 py-2 border-b border-gray-100"><strong>PKR 500</strong></td></tr>
+                <tr><td className="px-3 py-2 border-b border-gray-100">Over 5 km and up to 10 km</td><td className="px-3 py-2 border-b border-gray-100"><strong>PKR 1,000</strong></td></tr>
+                <tr><td className="px-3 py-2">Over 10 km</td><td className="px-3 py-2"><strong>PKR 1,500</strong></td></tr>
+              </tbody>
+            </table>
+            <p>
+              The visiting fee covers the Provider&apos;s call-out and diagnosis. It is paid in cash
+              by the Customer directly to the Provider and is <strong>separate from</strong> the cost
+              of the repair work itself and of any parts or materials, which you and the Provider
+              agree between yourselves. Where the distance cannot be determined, the highest tier
+              (PKR 1,500) applies.
+            </p>
+            <h3>Platform commission (paid by the Provider to Ustaz)</h3>
+            <p>
+              Ustaz charges the Provider a commission of <strong>12% of the visiting fee</strong> —
+              that is, PKR 60, 120, or 180 depending on the tier above. This amount is deducted from
+              the Provider&apos;s Wallet <strong>at the moment the Provider marks the job{' '}
+              <code>arrived</code></strong>, not on completion. If the Provider&apos;s Wallet holds
+              less than the commission due, only the available balance is taken and the shortfall is
+              not carried forward. Completion itself carries no further charge.
+            </p>
+            <p>
+              Customers pay Ustaz nothing. The commission is charged solely to the Provider and is
+              the only money Ustaz takes from any job. This structure may change with prior notice
+              under &sect;&nbsp;1.
             </p>
             <p>
               <strong>Taxes.</strong> Providers are responsible for the declaration and payment of
@@ -218,12 +275,33 @@ export default function TermsOfUse() {
 
             <h2 className='text-2xl font-extrabold mt-6' id="wallet-settlement">10. Provider Wallet, Top-ups &amp; Settlement</h2>
             <ul>
-              <li>A minimum Wallet balance is required for a Provider to receive new Service Requests.</li>
-              <li>Top-ups may be made via JazzCash, EasyPaisa, bank transfer (Raast / IBAN), or designated cash agents.</li>
-              <li>Top-ups are reviewed by Ustaz operations and credited to the Wallet typically within <strong>24 hours</strong> of receipt verification.</li>
+              <li>
+                <strong>Minimum balance to go online.</strong> A Provider must hold at least{' '}
+                <strong>PKR 60</strong> in their Wallet to switch themselves online and start
+                receiving Service Requests. Attempting to go online below this threshold is refused
+                with an on-screen message stating the current balance. Identity verification must
+                also be complete (see &sect;&nbsp;6).
+              </li>
+              <li>
+                Going online is blocked <em>at the moment you try to switch on</em>. A Provider who
+                is already online and whose balance later falls below PKR 60 — or to zero — is{' '}
+                <strong>not</strong> forced offline mid-session, but will be unable to go back online
+                after switching off until the Wallet is topped up.
+              </li>
+              <li>Top-ups may be made via <strong>JazzCash</strong> or <strong>Easypaisa</strong>, by submitting the transaction amount, the payment reference, and a photograph of the payment receipt.</li>
+              <li>Top-ups are reviewed manually by Ustaz operations and credited to the Wallet typically within <strong>24 hours</strong> of receipt verification. A top-up may be rejected where the receipt is unreadable, the reference cannot be matched, or the amount does not correspond.</li>
               <li>Wallet balances are non-refundable except where a Provider closes their account in good standing with no outstanding fees, in which case the remaining balance is paid out via the Provider&apos;s registered method within 30 days.</li>
-              <li><strong>Deductions.</strong> The Wallet may be debited for (a) per-job platform commission on completion, and (b) a <strong>warranty-refusal penalty of PKR 200</strong> where a Provider declines a valid warranty claim (see &sect; 12). All deductions are recorded in the Provider&apos;s in-app transaction ledger.</li>
-              <li>A Provider whose Wallet balance reaches <strong>zero</strong> is automatically taken offline and will not receive new Service Requests until the Wallet is topped up.</li>
+              <li>
+                <strong>Deductions.</strong> The Wallet may be debited for (a) the{' '}
+                <strong>12% platform commission, charged when the Provider marks a job{' '}
+                <code>arrived</code></strong> (see &sect;&nbsp;9); (b) a{' '}
+                <strong>warranty-refusal penalty of PKR 200</strong> where a Provider declines a valid
+                warranty claim (see &sect;&nbsp;12); and (c) any <strong>incident penalty</strong>{' '}
+                applied following a substantiated safety or conduct incident (see &sect;&nbsp;18).
+                Every deduction is recorded in the Provider&apos;s in-app transaction ledger with the
+                balance before and after.
+              </li>
+              <li>Deductions are floored at the available balance — a Wallet is never driven negative, and an unpaid shortfall is not carried forward as a debt.</li>
             </ul>
 
             <h2 className='text-2xl font-extrabold mt-6' id="ratings">11. Ratings &amp; Reviews</h2>
@@ -254,7 +332,7 @@ export default function TermsOfUse() {
             <ul>
               <li>A Provider who <strong>accepts</strong> a valid claim must return within a reasonable time and remedy the recurring issue free of labour charge.</li>
               <li>A Provider who <strong>refuses</strong> a valid claim incurs a <strong>PKR 200 penalty</strong>, deducted from their Wallet (floored at zero), and a <strong>warranty strike</strong> recorded against their account. Accumulated strikes may lead to reduced visibility, suspension, or removal under &sect; 16.</li>
-              <li>Ustaz is a facilitator of the warranty process, not the performer of the re-fix. The warranty is an obligation <strong>between the Customer and the Provider</strong>; Ustaz does not itself guarantee the quality or outcome of any re-fix work (see &sect; 17).</li>
+              <li>Ustaz is a facilitator of the warranty process, not the performer of the re-fix. The warranty is an obligation <strong>between the Customer and the Provider</strong>; Ustaz does not itself guarantee the quality or outcome of any re-fix work (see &sect; 20).</li>
             </ul>
             <p className="text-sm bg-amber-50 border border-amber-200 px-4 py-3 rounded">
               <strong>Note:</strong> the warranty window is fixed at 3 days from completion and cannot be
@@ -270,8 +348,17 @@ export default function TermsOfUse() {
             <p>
               <strong>Provider.</strong> Your real-time GPS location is broadcast{' '}
               <strong>only</strong> while you have an active accepted Service Request and{' '}
-              <strong>only</strong> to the matched Customer. Location data outside of an active
-              request is not collected by Ustaz.
+              <strong>only</strong> to the matched Customer. Continuous tracking stops the moment the
+              request reaches <code>completed</code> or <code>cancelled</code>, and the live-location
+              record for that request is deleted.
+            </p>
+            <p>
+              <strong>One exception.</strong> If a safety incident has been opened, Ustaz may send you
+              a <strong>check-in prompt</strong>, and your GPS position at the moment you respond is
+              recorded against that check-in (see &sect;&nbsp;18). This can occur outside an active
+              Service Request. It is a single position captured when you answer the prompt — not
+              continuous tracking — and it exists so that a Provider or Customer in difficulty can be
+              located.
             </p>
 
             <h2 className='text-2xl font-extrabold mt-6' id="communications">14. Communications (Chat, Calls, Push)</h2>
@@ -329,7 +416,81 @@ export default function TermsOfUse() {
               independent of any monetary penalty already applied.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="warranties">17. Disclaimer of Warranties</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="standing">17. Provider Standing, Tiers &amp; Automated Decisions</h2>
+            <p>
+              Ustaz maintains a <strong>standing record</strong> for every Provider, and a{' '}
+              <strong>performance record</strong> for each service category a Provider works in.
+              These records drive how often you are matched with Customers and whether restrictions
+              apply to your account.
+            </p>
+            <h3>What is measured</h3>
+            <ul>
+              <li><strong>Standing</strong>: your current tier, the date and stated reason for the most recent tier change, whether a suspension is active (and until when), your total completed jobs, your overall average rating, and any remaining <strong>probation jobs</strong>.</li>
+              <li><strong>Performance, per category</strong>: completed jobs, average rating, a <strong>recency-weighted average</strong> that gives more weight to recent jobs than to older ones, your incident count, and the number of complaints against you that were assessed as <strong>justified</strong> versus <strong>disputed</strong>.</li>
+            </ul>
+            <h3>Automated processing</h3>
+            <p>
+              Some consequences follow automatically from these records — including changes to your
+              tier, placement on probation, reduced matching visibility, and in some cases an
+              automatic suspension. You have the right to:
+            </p>
+            <ul>
+              <li>Be told the <strong>reason</strong> recorded for any tier change or suspension;</li>
+              <li>Request <strong>human review</strong> of an automated outcome through the appeals process in &sect;&nbsp;19;</li>
+              <li>Have a complaint you successfully dispute recorded as <strong>disputed</strong> rather than justified, so it does not count against you in the same way.</li>
+            </ul>
+            <p>
+              Ratings and complaints from a Customer who is found to have acted abusively or in bad
+              faith may be disregarded at Ustaz&apos;s discretion.
+            </p>
+
+            <h2 className='text-2xl font-extrabold mt-6' id="incidents">18. Safety Incidents &amp; Check-ins</h2>
+            <p>
+              Either party may report a <strong>safety or conduct incident</strong> arising from a
+              Service Request. Incidents are recorded with a type, a severity, and any evidence
+              submitted, and are reviewed by authorised Ustaz personnel.
+            </p>
+            <h3>How an incident is handled</h3>
+            <ul>
+              <li>The report is logged against the Service Request and the parties involved.</li>
+              <li><strong>Both sides are given the opportunity to respond.</strong> The Provider&apos;s response and the Customer&apos;s response are recorded separately, and a written resolution is entered when the review concludes.</li>
+              <li>Where an incident is substantiated, Ustaz may apply an <strong>incident penalty</strong> debited from the Provider&apos;s Wallet, record the incident against the Provider&apos;s performance, adjust standing under &sect;&nbsp;17, or suspend the account under &sect;&nbsp;16.</li>
+              <li>The outcome of an incident may be appealed under &sect;&nbsp;19.</li>
+            </ul>
+            <h3>Safety check-ins</h3>
+            <p>
+              Where an incident is open, Ustaz may send a <strong>check-in prompt</strong> asking you
+              to confirm you are safe. Your response — and your <strong>GPS position at the moment you
+              respond</strong> — is recorded against that check-in. Check-ins may be sent outside an
+              active Service Request. Responding is voluntary, but a check-in that goes unanswered may
+              itself be escalated as a safety concern.
+            </p>
+            <p className="text-sm bg-red-50 border border-red-200 px-4 py-3 rounded">
+              <strong>Emergencies:</strong> Ustaz is not an emergency service and does not monitor
+              incidents around the clock. If you are in immediate danger, contact the police (
+              <strong>15</strong>) or Rescue (<strong>1122</strong>) first, then report the incident
+              through the Platform.
+            </p>
+
+            <h2 className='text-2xl font-extrabold mt-6' id="appeals">19. Appeals</h2>
+            <p>
+              If you believe a penalty, strike, tier change, suspension, or incident outcome was
+              applied in error, you may <strong>submit an appeal</strong> from your account. This is
+              your route to human review of any automated decision described in &sect;&nbsp;17.
+            </p>
+            <ul>
+              <li>An appeal records the <strong>type</strong> of decision being appealed, your written <strong>reason</strong>, the related incident where applicable, and any <strong>evidence</strong> you attach.</li>
+              <li>Appeals are reviewed by authorised Ustaz personnel — not by the automated system that produced the original outcome.</li>
+              <li>You receive a written <strong>response</strong> recording the decision and who reviewed it.</li>
+              <li>A successful appeal reverses the associated penalty or restriction. Where a monetary penalty was debited from your Wallet, it is credited back and recorded in your transaction ledger.</li>
+              <li>Submitting an appeal does not pause a suspension while it is under review, unless Ustaz decides otherwise.</li>
+            </ul>
+            <p>
+              Appeals are separate from the general dispute process in &sect;&nbsp;23, which governs
+              disputes between you and Ustaz that the appeal process does not resolve.
+            </p>
+
+            <h2 className='text-2xl font-extrabold mt-6' id="warranties">20. Disclaimer of Warranties</h2>
             <p className="uppercase text-sm bg-gray-50 border border-gray-200 px-4 py-3 rounded">
               The Platform is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo; without
               warranties of any kind, either express or implied. Ustaz expressly disclaims all
@@ -339,7 +500,7 @@ export default function TermsOfUse() {
               of any Provider&apos;s services.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="liability">18. Limitation of Liability</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="liability">21. Limitation of Liability</h2>
             <p>
               To the maximum extent permitted by Pakistani law, Ustaz&apos;s total aggregate
               liability to any user shall not exceed the higher of (a){' '}
@@ -350,7 +511,7 @@ export default function TermsOfUse() {
               personal injury sustained during a service.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="indemnity">19. Indemnification</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="indemnity">22. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless Ustaz, its directors, employees,
               and contractors from and against any claims, liabilities, damages, losses, and
@@ -360,11 +521,11 @@ export default function TermsOfUse() {
               privacy right.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="dispute">20. Dispute Resolution</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="dispute">23. Dispute Resolution</h2>
             <p>
               <strong>Step 1 — Internal resolution.</strong> Any dispute shall first be raised in
               writing to Ustaz support at{' '}
-              <a href="mailto:support@ustaz.app" className="text-[#db4b0d] underline">support@ustaz.app</a>{' '}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#db4b0d] underline">{CONTACT_EMAIL}</a>{' '}
               with all relevant details. Ustaz will respond within <strong>14 business days</strong>{' '}
               and attempt good-faith resolution.
             </p>
@@ -377,13 +538,13 @@ export default function TermsOfUse() {
               the exclusive jurisdiction of the courts of Karachi, Sindh, Pakistan.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="law">21. Governing Law</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="law">24. Governing Law</h2>
             <p>
               These Terms are governed by and construed in accordance with the laws of the Islamic
               Republic of Pakistan, without regard to conflict-of-law principles.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="sharia">22. Sharia Compliance</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="sharia">25. Sharia Compliance</h2>
             <p>
               Ustaz fees and transactions are structured to align with Islamic commercial
               principles. Service fees paid by Customers to Providers represent bay&apos;i (direct
@@ -392,7 +553,7 @@ export default function TermsOfUse() {
               gharar (excessive uncertainty), or financing of haram goods or services.
             </p>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="misc">23. Miscellaneous</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="misc">26. Miscellaneous</h2>
             <ul>
               <li><strong>Entire agreement.</strong> These Terms, together with our Privacy Policy, constitute the entire agreement between you and Ustaz.</li>
               <li><strong>Severability.</strong> If any provision is held unenforceable, the remaining provisions shall remain in full force.</li>
@@ -401,13 +562,21 @@ export default function TermsOfUse() {
               <li><strong>Force majeure.</strong> Ustaz is not liable for any failure or delay caused by events beyond its reasonable control.</li>
             </ul>
 
-            <h2 className='text-2xl font-extrabold mt-6' id="contact">24. Contact</h2>
+            <h2 className='text-2xl font-extrabold mt-6' id="contact">27. Contact</h2>
             <p>
-              For questions regarding these Terms, please contact us at{' '}
-              <a href="mailto:legal@ustaz.app" className="text-[#db4b0d] underline">legal@ustaz.app</a>{' '}
-              or visit our{' '}
-              <Link href="/contact" className="text-[#db4b0d] underline">contact page</Link>.
+              The Platform is operated by <strong>{OPERATOR}</strong>, based in Karachi, Sindh,
+              Pakistan. Ustaz is currently operated as a sole proprietorship and is{' '}
+              <strong>not yet incorporated as a private limited company</strong>. Where these Terms
+              refer to &ldquo;Ustaz&rdquo;, they refer to that operator. If and when the business is
+              incorporated, these Terms will be updated and the change notified under &sect;&nbsp;1.
             </p>
+            <p>For questions regarding these Terms:</p>
+            <ul>
+              <li>Email: <a href={`mailto:${LEGAL_EMAIL}`} className="text-[#db4b0d] underline">{LEGAL_EMAIL}</a></li>
+              <li>Support: <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#db4b0d] underline">{CONTACT_EMAIL}</a></li>
+              <li>WhatsApp: <a href={`https://wa.me/${CONTACT_WHATSAPP.replace(/[^0-9]/g, '')}`} className="text-[#db4b0d] underline">{CONTACT_WHATSAPP}</a></li>
+              <li>In-app: <Link href="/contact" className="text-[#db4b0d] underline">Contact page</Link></li>
+            </ul>
 
             <hr className="my-12" />
             <p className="text-sm text-gray-500">
