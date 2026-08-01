@@ -30,11 +30,11 @@ const SERVICE_ILLUSTRATIONS: Record<string, any> = {
   Carpentry: require('../../assets/images/carpenter-illus-Photoroom.png'),
   'AC Maintenance': require('../../assets/images/ac-technician-illus-Photoroom.png'),
   'Solar Technician': require('../../assets/images/solar-illus-Photoroom.png'),
-  'CCTV Technician': require('../../assets/images/solar-illus-Photoroom.png'),
-  'Room Cooler': require('../../assets/images/ac-technician-illus-Photoroom.png'),
-  'Refrigerator Technician': require('../../assets/images/ac-technician-illus-Photoroom.png'),
-  'Home Appliances': require('../../assets/images/ac-technician-illus-Photoroom.png'),
-  'Automatic Washing Machine Repair': require('../../assets/images/ac-technician-illus-Photoroom.png'),
+  'CCTV Technician': require('../../assets/images/cctv-illus-Photoroom.png'),
+  'Room Cooler': require('../../assets/images/cooler-illus-Photoroom.png'),
+  'Refrigerator Technician': require('../../assets/images/fridge-illus-Photoroom.png'),
+  'Home Appliances': require('../../assets/images/appliance-illus-Photoroom.png'),
+  'Automatic Washing Machine Repair': require('../../assets/images/washingmachine-illus-Photoroom.png'),
 };
 
 const SERVICE_BG: Record<string, string> = {

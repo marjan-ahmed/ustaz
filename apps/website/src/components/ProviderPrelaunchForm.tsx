@@ -25,11 +25,11 @@ const SERVICES = [
   { name: "Carpentry", bg: "#D9F99D", image: "/images/carpenter-removebg-preview.png" },
   { name: "AC Maintenance", bg: "#CFFAFE", image: "/images/ac_repair-removebg-preview.png" },
   { name: "Solar Technician", bg: "#FEF3C7", image: "/images/solar-removebg-preview.png" },
-  { name: "CCTV Technician", bg: "#F3E8FF", image: "/images/cctv-removebg-preview.png" },
-  { name: "Room Cooler", bg: "#E0F2FE", image: "/images/cooler-removebg-preview.png" },
-  { name: "Refrigerator Technician", bg: "#F0FDF4", image: "/images/fridge-removebg-preview.png" },
-  { name: "Home Appliances", bg: "#FFF1F2", image: "/images/appliance-removebg-preview.png" },
-  { name: "Automatic Washing Machine Repair", bg: "#EFF6FF", image: "/images/appliance-removebg-preview.png" },
+  { name: "CCTV Technician", bg: "#F3E8FF", image: "/images/cctv-illus-Photoroom.png" },
+  { name: "Room Cooler", bg: "#E0F2FE", image: "/images/cooler-illus-Photoroom.png" },
+  { name: "Refrigerator Technician", bg: "#F0FDF4", image: "/images/fridge-illus-Photoroom.png" },
+  { name: "Home Appliances", bg: "#FFF1F2", image: "/images/appliance-illus-Photoroom.png" },
+  { name: "Automatic Washing Machine Repair", bg: "#EFF6FF", image: "/images/washingmachine-illus-Photoroom.png" },
 ];
 
 const BENEFIT_KEYS = [
