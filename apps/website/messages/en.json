@@ -64,6 +64,26 @@
       "solar": {
         "title": "Solar Installation",
         "description": "Professional solar panel installation, maintenance, and energy solutions for your home."
+      },
+      "cctv": {
+        "title": "CCTV Installation",
+        "description": "Professional CCTV camera installation, DVR setup, wiring, and maintenance for homes and businesses."
+      },
+      "roomCooler": {
+        "title": "Room Cooler",
+        "description": "Expert desert cooler repair, pad replacement, motor servicing, and complete cooling system maintenance."
+      },
+      "refrigerator": {
+        "title": "Refrigerator Repair",
+        "description": "Reliable fridge and freezer repair services — gas refilling, compressor fix, thermostat replacement, and more."
+      },
+      "homeAppliances": {
+        "title": "Home Appliances",
+        "description": "Expert repair and maintenance for washing machines, mixers, blenders, irons, and all household appliances."
+      },
+      "washingMachine": {
+        "title": "Washing Machine Repair",
+        "description": "Professional automatic washing machine repair — spin cycle issues, drain blockages, water inlet problems, and motor repair."
       }
     }
   },
@@ -223,6 +243,11 @@
     "carpentry": "Carpentry",
     "acRepair": "AC Repair",
     "solar": "Solar",
+    "cctv": "CCTV",
+    "roomCooler": "Room Cooler",
+    "refrigerator": "Refrigerator",
+    "homeAppliances": "Home Appliances",
+    "washingMachine": "Washing Machine",
     "about": "About",
     "contact": "Contact",
     "becomeProvider": "Become an Ustaz",

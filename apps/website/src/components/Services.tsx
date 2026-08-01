@@ -12,6 +12,11 @@ const services = [
   { key: "carpentry", image: "/images/carpenter-removebg-preview.png", bg: "#D9F99D" },
   { key: "acRepair", image: "/images/ac_repair-removebg-preview.png", bg: "#CFFAFE" },
   { key: "solar", image: "/images/solar-removebg-preview.png", bg: "#FEF3C7" },
+  { key: "cctv", image: "/images/cctv-removebg-preview.png", bg: "#F3E8FF" },
+  { key: "roomCooler", image: "/images/cooler-removebg-preview.png", bg: "#E0F2FE" },
+  { key: "refrigerator", image: "/images/fridge-removebg-preview.png", bg: "#F0FDF4" },
+  { key: "homeAppliances", image: "/images/appliance-removebg-preview.png", bg: "#FFF1F2" },
+  { key: "washingMachine", image: "/images/appliance-removebg-preview.png", bg: "#EFF6FF" },
 ];
 
 const FEATURE_KEYS = ["certified", "response", "warranty", "pricing"] as const;

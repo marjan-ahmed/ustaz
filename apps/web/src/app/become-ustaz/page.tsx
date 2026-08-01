@@ -90,6 +90,7 @@ function App() {
   const [verificationError, setVerificationError] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [isPrefilled, setIsPrefilled] = useState<boolean>(false)
+  const [prelaunchDisplayId, setPrelaunchDisplayId] = useState<string | null>(null)
 
   // Bind provider profile to the authenticated user — never a random UUID.
   useEffect(() => {
@@ -131,6 +132,9 @@ function App() {
           serviceTypes: prefill.serviceTypes?.length ? prefill.serviceTypes : prev.serviceTypes,
           service_type: prefill.serviceTypes?.[0] || prev.service_type,
         }))
+        if (prefill.providerDisplayId) {
+          setPrelaunchDisplayId(prefill.providerDisplayId)
+        }
         setIsPrefilled(true)
       } catch {
         // no-op
@@ -156,7 +160,7 @@ function App() {
 
   // Removed useEffect that called getCurrentLocation
 
-  const service_types = ["Electrician", "Plumbing", "Carpentry", "AC Maintenance", "Solar Technician"]
+  const service_types = ["Electrician", "Plumbing", "Carpentry", "AC Maintenance", "Solar Technician", "CCTV Technician", "Room Cooler", "Refrigerator Technician", "Home Appliances", "Automatic Washing Machine Repair"]
 
   // Handle input changes for all form fields
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -455,6 +459,7 @@ function App() {
         registrationDate: new Date().toISOString(),
         userId: userId,
         phone_verified: true,
+        provider_display_id: prelaunchDisplayId,
       }
       const { data: supabaseData, error } = await supabase.from("ustaz_registrations").insert([dataToSave])
       if (error) {

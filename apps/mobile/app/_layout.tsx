@@ -9,6 +9,7 @@ import { ActivityIndicator, AppState, View } from 'react-native';
 import { colors } from '@ustaz/shared/theme';
 import { Lalezar_400Regular } from '@expo-google-fonts/lalezar';
 import { IBMPlexSansArabic_400Regular } from '@expo-google-fonts/ibm-plex-sans-arabic';
+
 import { NotificationsProvider } from '@/context/NotificationsContext';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { LanguageProvider } from '@/i18n';

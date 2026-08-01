@@ -1,3 +1,13 @@
-.claude/
-.agents/
-.gemini/
+node_modules/
+../node_modules/
+../.opencode/
+../.agent/
+../.gemini/
+../.claude/
+../agents/
+../ustaz-visuals/
+../apps/web/
+../apps/website/
+../apps/mobile/node_modules/
+*.apk
+*.aab

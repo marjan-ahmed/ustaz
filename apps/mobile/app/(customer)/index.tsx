@@ -30,6 +30,11 @@ const SERVICE_ILLUSTRATIONS: Record<string, any> = {
   Carpentry: require('../../assets/images/carpenter-illus-Photoroom.png'),
   'AC Maintenance': require('../../assets/images/ac-technician-illus-Photoroom.png'),
   'Solar Technician': require('../../assets/images/solar-illus-Photoroom.png'),
+  'CCTV Technician': require('../../assets/images/solar-illus-Photoroom.png'),
+  'Room Cooler': require('../../assets/images/ac-technician-illus-Photoroom.png'),
+  'Refrigerator Technician': require('../../assets/images/ac-technician-illus-Photoroom.png'),
+  'Home Appliances': require('../../assets/images/ac-technician-illus-Photoroom.png'),
+  'Automatic Washing Machine Repair': require('../../assets/images/ac-technician-illus-Photoroom.png'),
 };
 
 const SERVICE_BG: Record<string, string> = {
@@ -38,6 +43,11 @@ const SERVICE_BG: Record<string, string> = {
   Carpentry: '#D9F99D',
   'AC Maintenance': '#CFFAFE',
   'Solar Technician': '#FEF3C7',
+  'CCTV Technician': '#F3E8FF',
+  'Room Cooler': '#E0F2FE',
+  'Refrigerator Technician': '#F0FDF4',
+  'Home Appliances': '#FFF1F2',
+  'Automatic Washing Machine Repair': '#EFF6FF',
 };
 
 const QUICK = serviceCategories.slice(0, 4);

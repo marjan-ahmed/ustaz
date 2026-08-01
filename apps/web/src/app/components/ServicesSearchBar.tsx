@@ -9,6 +9,11 @@ import {
   MdCarpenter,
   MdAcUnit,
   MdSolarPower,
+  MdVideocam,
+  MdAir,
+  MdKitchen,
+  MdHomeRepairService,
+  MdLocalLaundryService,
 } from 'react-icons/md';
 
 import {
@@ -53,6 +58,11 @@ const services = [
   { label: 'Carpenter', value: 'Carpentry', icon: MdCarpenter },
   { label: 'AC Maintenance', value: 'AC Maintenance', icon: MdAcUnit },
   { label: 'Solar Technician', value: 'Solar Technician', icon: MdSolarPower },
+  { label: 'CCTV Technician', value: 'CCTV Technician', icon: MdVideocam },
+  { label: 'Room Cooler', value: 'Room Cooler', icon: MdAir },
+  { label: 'Refrigerator Technician', value: 'Refrigerator Technician', icon: MdKitchen },
+  { label: 'Home Appliances', value: 'Home Appliances', icon: MdHomeRepairService },
+  { label: 'Automatic Washing Machine Repair', value: 'Automatic Washing Machine Repair', icon: MdLocalLaundryService },
 ];
 
 const ServiceSearchBar = () => {

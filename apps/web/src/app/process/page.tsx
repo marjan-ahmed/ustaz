@@ -180,6 +180,11 @@ function ProcessPage() {
     "Carpentry",
     "AC Maintenance",
     "Solar Technician",
+    "CCTV Technician",
+    "Room Cooler",
+    "Refrigerator Technician",
+    "Home Appliances",
+    "Automatic Washing Machine Repair",
   ];
 
 

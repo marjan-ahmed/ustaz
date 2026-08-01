@@ -1,7 +1,7 @@
 export const homeCopy = {
   eyebrow: 'Trusted home services in Pakistan',
   title: 'Find trusted professionals near you.',
-  body: 'Book verified electricians, plumbers, AC technicians, carpenters, solar pros and cleaners with live tracking and a 3-day work guarantee.',
+  body: 'Book verified electricians, plumbers, AC technicians, carpenters, solar pros, CCTV installers, cooler/fridge repairmen and home appliance experts with live tracking and a 3-day work guarantee.',
   primaryCta: 'Find a provider',
   secondaryCta: 'Become an Ustaz',
 };
@@ -12,6 +12,11 @@ export const serviceCategories = [
   { name: 'Carpentry', short: 'CP', tone: '#F7FEE7', accent: '#4D7C0F', note: 'Doors, shelves, repairs' },
   { name: 'AC Maintenance', short: 'AC', tone: '#ECFEFF', accent: '#0891B2', note: 'Service, cooling, gas' },
   { name: 'Solar Technician', short: 'SO', tone: '#FEF3C7', accent: '#B45309', note: 'Panels, inverter help' },
+  { name: 'CCTV Technician', short: 'CC', tone: '#F3E8FF', accent: '#7C3AED', note: 'Cameras, DVR, wiring' },
+  { name: 'Room Cooler', short: 'RC', tone: '#E0F2FE', accent: '#0284C7', note: 'Desert cooler, pad, motor' },
+  { name: 'Refrigerator Technician', short: 'FR', tone: '#F0FDF4', accent: '#15803D', note: 'Fridge, freezer, gas refill' },
+  { name: 'Home Appliances', short: 'HA', tone: '#FFF1F2', accent: '#E11D48', note: 'Washing machine, mixer, more' },
+  { name: 'Automatic Washing Machine Repair', short: 'WM', tone: '#EFF6FF', accent: '#2563EB', note: 'Auto washer, spin, drain fix' },
 ] as const;
 
 export const webNavShortcuts = [

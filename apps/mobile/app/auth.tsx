@@ -4,8 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ExpoLinking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import { sendPhoneOtp, verifyPhoneOtp } from '@/lib/ustaz-api';
 import { getStoredRole, setStoredRole } from '@/lib/role';
 import { supabase } from '@/lib/supabase';
@@ -15,15 +13,11 @@ import {
 } from '@/components/mobile-ui';
 import { color, radius, space, touch } from '@/theme/tokens';
 
-WebBrowser.maybeCompleteAuthSession();
-
 const E164 = /^\+[1-9]\d{7,14}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const redirectTo = makeRedirectUri({ scheme: 'ustaz', path: 'auth' });
 
 type AuthTab = 'social' | 'email' | 'phone';
 type EmailMode = 'signin' | 'signup';
-type OAuthProvider = 'google' | 'facebook';
 
 function getUrlParam(url: string, key: string) {
   try {
@@ -59,7 +53,7 @@ export default function AuthScreen() {
   const phoneInputRef = useRef<TextInput>(null);
 
   const [busy, setBusy] = useState(false);
-  const [busyProvider, setBusyProvider] = useState<OAuthProvider | null>(null);
+  const [busyProvider, setBusyProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -239,30 +233,38 @@ export default function AuthScreen() {
     return () => sub.remove();
   }, []);
 
-  async function signInWithProvider(provider: OAuthProvider) {
+  async function signInWithGoogle() {
     clearMessages();
     setBusy(true);
-    setBusyProvider(provider);
+    setBusyProvider('google');
     try {
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-          queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'select_account' } : undefined,
-        },
+      const mod = require('@react-native-google-signin/google-signin');
+      console.log('[Google] module keys:', Object.keys(mod));
+      const GoogleSignin = mod.GoogleSignin ?? mod.default;
+      if (!GoogleSignin) throw new Error('GoogleSignin not exported. Keys: ' + Object.keys(mod).join(','));
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID!,
+        offlineAccess: true,
       });
-      if (oauthError) throw oauthError;
-      if (!data?.url) throw new Error(`Could not start ${provider} sign in.`);
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const userInfo = await GoogleSignin.signIn();
+      const idToken = (userInfo as any).idToken ?? (userInfo as any)?.data?.idToken;
+      if (!idToken) throw new Error('No ID token received from Google.');
 
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-      if (result.type === 'success') {
-        await handleAuthCallbackUrl(result.url);
-      } else if (result.type === 'cancel') {
-        setMessage('Sign in cancelled.');
-      }
+      const { error: sessionError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: idToken,
+      });
+      if (sessionError) throw sessionError;
+
+      setMessage('Signed in with Google.');
+      await navigateToApp();
     } catch (err: any) {
-      setError(`${provider === 'google' ? 'Google' : 'Facebook'} sign-in failed: ${err?.message ?? 'Try again.'}`);
+      if (err?.code === 'SIGN_IN_CANCELLED') {
+        setMessage('Sign in cancelled.');
+      } else {
+        setError(`Google sign-in failed: ${err?.message ?? 'Try again.'}`);
+      }
     } finally {
       setBusy(false);
       setBusyProvider(null);
@@ -510,18 +512,10 @@ export default function AuthScreen() {
                 brandColor="#DB4437"
                 busy={busyProvider === 'google'}
                 disabled={busy}
-                onPress={() => signInWithProvider('google')}
-              />
-              <SocialButton
-                label="Continue with Facebook"
-                icon="logo-facebook"
-                brandColor="#1877F2"
-                busy={busyProvider === 'facebook'}
-                disabled={busy}
-                onPress={() => signInWithProvider('facebook')}
+                onPress={signInWithGoogle}
               />
               <Text variant="caption" tone="muted" center style={{ marginTop: space.sm }}>
-                Uses the same Supabase Google and Facebook providers as the web app.
+                Uses native Google Sign-In — no browser redirect.
               </Text>
             </View>
           )}

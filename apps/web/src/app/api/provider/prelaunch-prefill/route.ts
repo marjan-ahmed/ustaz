@@ -39,7 +39,7 @@ export async function GET() {
 
   const { data, error } = await admin
     .from('provider_prelaunch_registrations')
-    .select('full_name, cnic, residency, service_types')
+    .select('full_name, cnic, residency, service_types, provider_display_id')
     .eq('claimed_user_id', user.id)
     .maybeSingle();
 
@@ -59,6 +59,7 @@ export async function GET() {
       cnic: data.cnic ?? '',
       residency: data.residency ?? '',
       serviceTypes: data.service_types ?? [],
+      providerDisplayId: data.provider_display_id ?? null,
     },
   });
 }

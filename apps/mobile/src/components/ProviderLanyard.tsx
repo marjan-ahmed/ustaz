@@ -49,6 +49,7 @@ interface ProviderLanyardProps {
   tier?: string | null;
   isVerified?: boolean;
   providerId?: string;
+  providerDisplayId?: string | null;
   phone?: string | null;
   registrationDate?: string | null;
   cnic?: string | null;
@@ -112,6 +113,7 @@ export default function ProviderLanyard({
   tier,
   isVerified,
   providerId,
+  providerDisplayId,
   phone,
   registrationDate,
   cnic,
@@ -211,7 +213,7 @@ export default function ProviderLanyard({
 
   const tierLabel = tier === 'elite' ? 'ELITE' : tier === 'trusted' ? 'TRUSTED' : tier === 'probation' ? 'PROBATION' : 'STANDARD';
   const tierColor = tier === 'elite' ? '#A78BFA' : tier === 'trusted' ? '#34D399' : tier === 'probation' ? '#FCA5A5' : 'rgba(255,255,255,0.5)';
-  const displayId = providerId ? `UST-${providerId.slice(0, 8).toUpperCase()}` : 'UST-XXXXXXXX';
+  const displayId = providerDisplayId || (providerId ? `UST-${providerId.slice(0, 8).toUpperCase()}` : 'UST-XXXXXXXX');
   const regDate = registrationDate ? new Date(registrationDate).toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' }) : null;
 
   return (

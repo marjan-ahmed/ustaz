@@ -16,7 +16,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useLanguage } from '@/i18n';
 
-const SERVICE_TYPES = ['Electrician', 'Plumbing', 'Carpentry', 'AC Maintenance', 'Solar Technician'];
+const SERVICE_TYPES = ['Electrician', 'Plumbing', 'Carpentry', 'AC Maintenance', 'Solar Technician', 'CCTV Technician', 'Room Cooler', 'Refrigerator Technician', 'Home Appliances', 'Automatic Washing Machine Repair'];
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
 interface ProviderProfile {
@@ -34,6 +34,7 @@ interface ProviderProfile {
   cnic_back_url: string | null;
   verification_status: string | null;
   verification_expires_at: string | null;
+  provider_display_id: string | null;
 }
 
 interface ProviderStanding {
@@ -70,7 +71,7 @@ export default function ProviderProfile() {
     const svc = (profile.service_types && profile.service_types.length > 0
       ? profile.service_types.join(', ')
       : profile.service_type) || 'Service provider';
-    const displayId = user?.id ? `UST-${user.id.slice(0, 8).toUpperCase()}` : 'UST-XXXXXXXX';
+    const displayId = profile.provider_display_id || (user?.id ? `UST-${user.id.slice(0, 8).toUpperCase()}` : 'UST-XXXXXXXX');
     const regDate = profile.registrationDate
       ? new Date(profile.registrationDate).toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' })
       : '—';
@@ -372,7 +373,12 @@ export default function ProviderProfile() {
                 <PressableScale onPress={() => setShowIdModal(true)}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: space.md, paddingVertical: 10, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.08)' }}>
                   <Ionicons name="card-outline" size={16} color={color.white} />
-                  <Text variant="label" style={{ fontWeight: '700', color: color.white }}>View ID Card</Text>
+                  <View style={{ alignItems: 'center' }}>
+                    <Text variant="label" style={{ fontWeight: '700', color: color.white }}>View ID Card</Text>
+                    {profile?.provider_display_id && (
+                      <Text style={{ fontFamily: font.body, fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{profile.provider_display_id}</Text>
+                    )}
+                  </View>
                 </PressableScale>
               </LinearGradient>
             </FadeInUp>
@@ -382,6 +388,7 @@ export default function ProviderProfile() {
               <SectionHeader title={t('profile.personal')} action={t('profile.edit')} onAction={startEditing} />
               <Card variant="elevated" style={{ marginBottom: space.md }}>
                 <Row label={t('profile.fullName')} value={name || t('profile.notProvided')} />
+                <Row label="Provider ID" value={profile?.provider_display_id || '—'} />
                 <Row label={t('profile.email')} value={profile?.email || t('profile.notProvided')} />
                 <Row label={t('profile.cnic')} value={profile?.cnic || t('profile.notProvided')} />
                 <Row label={t('profile.phone')} value={phone || user?.phone || t('profile.notProvided')} />
@@ -561,6 +568,7 @@ export default function ProviderProfile() {
               tier={standing?.tier}
               isVerified={!!profile?.phone_verified}
               providerId={user?.id}
+              providerDisplayId={profile?.provider_display_id}
               phone={profile?.phoneNumber || user?.phone}
               registrationDate={profile?.registrationDate}
               cnic={profile?.cnic}

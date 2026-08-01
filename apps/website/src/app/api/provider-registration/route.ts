@@ -9,6 +9,11 @@ const SERVICE_TYPES = [
   "Carpentry",
   "AC Maintenance",
   "Solar Technician",
+  "CCTV Technician",
+  "Room Cooler",
+  "Refrigerator Technician",
+  "Home Appliances",
+  "Automatic Washing Machine Repair",
 ];
 
 const digits = (v: string) => v.replace(/\D/g, "");

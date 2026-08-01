@@ -21,6 +21,11 @@ const services = [
   { label: 'Carpenter', value: 'Carpentry' },
   { label: 'AC Maintenance', value: 'AC Maintenance' },
   { label: 'Solar Technician', value: 'Solar Technician' },
+  { label: 'CCTV Technician', value: 'CCTV Technician' },
+  { label: 'Room Cooler', value: 'Room Cooler' },
+  { label: 'Refrigerator Technician', value: 'Refrigerator Technician' },
+  { label: 'Home Appliances', value: 'Home Appliances' },
+  { label: 'Automatic Washing Machine Repair', value: 'Automatic Washing Machine Repair' },
 ]
 
 function FindServiceBtn() {

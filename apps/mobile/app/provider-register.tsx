@@ -19,6 +19,11 @@ const SERVICE_TYPES = [
   'Carpentry',
   'AC Maintenance',
   'Solar Technician',
+  'CCTV Technician',
+  'Room Cooler',
+  'Refrigerator Technician',
+  'Home Appliances',
+  'Automatic Washing Machine Repair',
 ];
 
 const DASH_WELCOME_KEY_PREFIX = 'ustaz_dash_welcome_';
@@ -58,6 +63,7 @@ export default function ProviderRegisterScreen() {
   const [uploading, setUploading] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [prefilled, setPrefilled] = useState(false);
+  const [prelaunchDisplayId, setPrelaunchDisplayId] = useState<string | null>(null);
 
   function safeBack() {
     if (router.canGoBack()) router.back();
@@ -99,7 +105,7 @@ export default function ProviderRegisterScreen() {
     (async () => {
       const { data } = await supabase
         .from('provider_prelaunch_registrations')
-        .select('full_name, cnic, residency, service_types')
+        .select('full_name, cnic, residency, service_types, provider_display_id')
         .eq('claimed_user_id', user.id)
         .maybeSingle();
       if (cancelled || !data) return;
@@ -110,6 +116,9 @@ export default function ProviderRegisterScreen() {
         residency: data.residency || p.residency,
         serviceTypes: data.service_types?.length ? data.service_types : p.serviceTypes,
       }));
+      if (data.provider_display_id) {
+        setPrelaunchDisplayId(data.provider_display_id);
+      }
       setPrefilled(true);
     })();
     return () => { cancelled = true; };
@@ -322,6 +331,7 @@ export default function ProviderRegisterScreen() {
         cnic_back_url: cnicBackUrl,
         registrationDate: new Date().toISOString(),
         phone_verified: true,
+        provider_display_id: prelaunchDisplayId,
       });
       if (error) throw error;
 

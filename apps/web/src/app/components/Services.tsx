@@ -43,6 +43,36 @@ function Services() {
       image: 'https://plus.unsplash.com/premium_photo-1671808063421-697d6de53c2e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8c29sYXIlMjBpbnN0YWxsYXRpb258ZW58MHx8MHx8fDA%3D',
       serviceValue: 'Solar Technician',
     },
+    {
+      title: t('cctvTitle'),
+      description: t('cctvDesc'),
+      image: 'https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0',
+      serviceValue: 'CCTV Technician',
+    },
+    {
+      title: t('coolerTitle'),
+      description: t('coolerDesc'),
+      image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0',
+      serviceValue: 'Room Cooler',
+    },
+    {
+      title: t('fridgeTitle'),
+      description: t('fridgeDesc'),
+      image: 'https://images.unsplash.com/photo-1571175443880-49e1d25b2bc5?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0',
+      serviceValue: 'Refrigerator Technician',
+    },
+    {
+      title: t('applianceTitle'),
+      description: t('applianceDesc'),
+      image: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0',
+      serviceValue: 'Home Appliances',
+    },
+    {
+      title: t('washingMachineTitle'),
+      description: t('washingMachineDesc'),
+      image: 'https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0',
+      serviceValue: 'Automatic Washing Machine Repair',
+    },
   ];
 
   const handleServiceClick = (serviceValue: string) => {

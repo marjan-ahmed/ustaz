@@ -19,6 +19,7 @@ interface Provider {
   tier: string;
   total_completed_jobs: number;
   wallet_balance: number;
+  provider_display_id: string | null;
 }
 
 export default function AdminProvidersPage() {
@@ -41,7 +42,7 @@ export default function AdminProvidersPage() {
         .select(`
           userId, firstName, lastName, phoneNumber, service_type, city,
           online_status, provider_status, rating_avg, rating_count,
-          verification_status, warranty_strikes
+          verification_status, warranty_strikes, provider_display_id
         `)
         .order('registrationDate', { ascending: false });
 
@@ -225,6 +226,7 @@ export default function AdminProvidersPage() {
                 <thead>
                   <tr className="border-b border-gray-100 bg-gradient-to-r from-[#FFF7ED] to-white">
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Provider</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">ID</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Service</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">City</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
@@ -244,6 +246,9 @@ export default function AdminProvidersPage() {
                           <p className="text-sm font-medium text-gray-900">{p.firstName} {p.lastName}</p>
                           <p className="text-xs text-gray-400">{p.phoneNumber}</p>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-mono font-semibold text-[#db4b0d]">{p.provider_display_id || '—'}</span>
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-lg">{p.service_type}</span>

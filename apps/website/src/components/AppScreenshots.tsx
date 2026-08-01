@@ -24,6 +24,9 @@ import {
   Send,
   Droplets,
   Hammer,
+  Video,
+  Wind,
+  Wrench,
 } from "lucide-react";
 
 const screens = [
@@ -115,11 +118,17 @@ function HomeScreen() {
     { icon: Droplets, label: "Plumbing", bg: "#DBEAFE" },
     { icon: Hammer, label: "Carpentry", bg: "#D9F99D" },
     { icon: MapPin, label: "AC Repair", bg: "#CFFAFE" },
+    { icon: Video, label: "CCTV", bg: "#F3E8FF" },
+    { icon: Wind, label: "Room Cooler", bg: "#E0F2FE" },
   ];
   const all = [
     { icon: Zap, label: "Electrician", note: "Wiring, fans, panels", bg: "#FFEDD5" },
     { icon: Droplets, label: "Plumbing", note: "Leaks, tanks, fittings", bg: "#DBEAFE" },
     { icon: Hammer, label: "Carpentry", note: "Doors, shelves, repairs", bg: "#D9F99D" },
+    { icon: Video, label: "CCTV", note: "Cameras, DVR, wiring", bg: "#F3E8FF" },
+    { icon: Wind, label: "Room Cooler", note: "Desert cooler, pad, motor", bg: "#E0F2FE" },
+    { icon: Wrench, label: "Home Appliances", note: "Washing machine, mixer", bg: "#FFF1F2" },
+    { icon: Droplets, label: "Washing Machine", note: "Auto washer repair, drain", bg: "#EFF6FF" },
   ];
   const trust = [
     { icon: ShieldCheck, label: "Verified pros" },
@@ -271,7 +280,7 @@ function FindScreen() {
         <div className="mb-2">
           <div className="text-[6px] font-bold text-gray-400 tracking-wider mb-1 uppercase">Service type</div>
           <div className="flex gap-1">
-            {["Electrician", "Plumbing", "Carpentry"].map((s, i) => (
+            {["Electrician", "Plumbing", "Carpentry", "CCTV"].map((s, i) => (
               <div
                 key={s}
                 className={`px-2 py-1 rounded-full text-[6.5px] font-bold whitespace-nowrap border ${

@@ -111,6 +111,7 @@ interface IProviderData {
   phone_verified: boolean;
   verification_status: string | null;
   verification_expires_at: string | null;
+  provider_display_id: string | null;
 }
 
 // New interface for Service Request
@@ -1516,7 +1517,7 @@ function ProviderDashboardInner() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-gray-600">
-              You're signed in but haven't registered as a Ustaz provider yet.
+              You're signed in but haven't registered as an Ustaz provider yet.
               Fill out your profile to start receiving service requests.
             </p>
             <Button onClick={() => router.push('/become-ustaz')} className="w-full bg-[#db4b0d] hover:bg-[#c4420c]">
@@ -1627,6 +1628,11 @@ function ProviderDashboardInner() {
                       ? providerData.service_types.join(', ')
                       : providerData.service_type) || 'Service provider'}
                   </p>
+                  {providerData.provider_display_id && (
+                    <p className="text-xs font-mono text-[#db4b0d] font-semibold mt-1">
+                      {providerData.provider_display_id}
+                    </p>
+                  )}
                   <div className="mt-1 flex flex-wrap gap-1">
                     {providerData.phone_verified ? (
                       <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
@@ -2398,6 +2404,11 @@ function ProviderDashboardInner() {
                                   "Carpentry",
                                   "AC Maintenance",
                                   "Solar Technician",
+                                  "CCTV Technician",
+                                  "Room Cooler",
+                                  "Refrigerator Technician",
+                                  "Home Appliances",
+                                  "Automatic Washing Machine Repair",
                                 ].map((service) => {
                                   const isActive = (editableFormData.service_types || []).includes(service);
                                   return (

@@ -108,6 +108,46 @@ function Footer() {
                   {t("solar")}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/services/cctv"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("cctv")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/services/room-cooler"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("roomCooler")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/services/refrigerator"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("refrigerator")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/services/home-appliances"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("homeAppliances")}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/services/washing-machine"
+                  className="hover:text-white transition-colors"
+                >
+                  {t("washingMachine")}
+                </Link>
+              </li>
             </ul>
           </div>
 
