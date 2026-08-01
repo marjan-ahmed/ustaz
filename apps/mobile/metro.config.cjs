@@ -19,7 +19,6 @@ config.resolver.nodeModulesPaths = [projectNodeModules, rootNodeModules];
 config.resolver.extraNodeModules = {
   react: path.resolve(rootNodeModules, 'react'),
   'react-native': path.resolve(rootNodeModules, 'react-native'),
-  buffer: path.resolve(rootNodeModules, 'buffer'),
 };
 
 module.exports = withNativeWind(config, {

@@ -1,4 +1,61 @@
+# EAS ignores .gitignore ENTIRELY when this file exists, so the .gitignore
+# rules have to be mirrored here. Keep the two in sync.
+# `.git` and `node_modules` are always excluded by EAS and need no entry.
+
+# dependencies (stale/broken copies are NOT covered by the node_modules default)
+**/node_modules_old
+**/node_modules.broken-*
+
+# build output
+**/.next/
+**/dist/
+/out/
+/build
+/coverage
+*.tsbuildinfo
+*.apk
+*.aab
+
+# env files — values come from the eas.json build profile `env` block
+.env*
+
+# AI agent / MCP local configs — MAY CONTAIN SECRETS (e.g. service-role keys)
 .claude/
-.agents/
-.agent/
 .gemini/
+.agent/
+.agents/
+agents/
+.opencode/
+.playwright-mcp/
+.playwright-cli/
+.claude-browser/
+claude-browser/
+skills-lock.json
+nul
+
+# other workspaces — the mobile build only needs apps/mobile + packages/*
+apps/web/
+apps/website/
+ustaz-visuals/
+supabase/
+messages/
+
+# test artifacts and logs
+test-results/
+playwright-report/
+*.log
+server-output.txt
+
+# misc
+.DS_Store
+*.pem
+.vercel
+.vscode/
+
+# large local-only assets at the repo root (anchored — must not match
+# apps/mobile/assets/*.png, which prebuild needs)
+/*.png
+/*.jpg
+/*.jpeg
+/*.pdf
+/*.pptx
