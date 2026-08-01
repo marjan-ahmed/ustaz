@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "How Ustaz uses cookies and similar storage technologies on its platform, and how you can control them.",
 };
 
-const LAST_UPDATED = "24 July 2026";
+const LAST_UPDATED = "1 August 2026";
 
 const sections = [
   ["what-are-cookies", "1. What Are Cookies"],

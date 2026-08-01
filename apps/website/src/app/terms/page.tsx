@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Terms of Use for the Ustaz platform connecting customers with trust-professionals in Pakistan.",
 };
 
-const LAST_UPDATED = "24 July 2026";
+const LAST_UPDATED = "1 August 2026";
 
 const sections = [
   ["acceptance", "1. Acceptance & Modification"],

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "How Ustaz collects, uses, stores, and protects your personal data on our trust-professional platform.",
 };
 
-const LAST_UPDATED = "24 July 2026";
+const LAST_UPDATED = "1 August 2026";
 
 const sections = [
   ["scope", "1. Scope & Acceptance"],
