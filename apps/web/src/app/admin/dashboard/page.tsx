@@ -9,7 +9,7 @@ interface TopupRequest {
   provider_name: string;
   provider_phone: string;
   amount_sent: number;
-  transaction_id: string;
+  transaction_id: string | null;
   receipt_url: string;
   status: string;
   admin_note: string | null;
@@ -63,6 +63,8 @@ export default function AdminDashboardPage() {
   const [rejectModal, setRejectModal] = useState<{ id: string; open: boolean }>({ id: '', open: false });
   const [rejectReason, setRejectReason] = useState('');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  /** stored receipt URL → short-lived signed URL (private bucket) */
+  const [signedReceipts, setSignedReceipts] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -81,7 +83,33 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      setRequests(Array.isArray(data) ? data : []);
+      const rows: TopupRequest[] = Array.isArray(data) ? data : [];
+      setRequests(rows);
+
+      // `topup-receipts` is a private bucket, so the stored URL will not load
+      // directly — swap each one for a short-lived signed URL.
+      const pending = rows.filter((r) => r.receipt_url);
+      const signed = await Promise.all(
+        pending.map(async (r) => {
+          try {
+            const res = await fetch('/api/admin/signed-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: r.receipt_url }),
+            });
+            if (!res.ok) return null;
+            const { url } = await res.json();
+            return [r.receipt_url, url] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      setSignedReceipts((prev) => {
+        const next = { ...prev };
+        for (const entry of signed) if (entry) next[entry[0]] = entry[1];
+        return next;
+      });
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -425,18 +453,22 @@ export default function AdminDashboardPage() {
                         <span className="text-sm font-semibold text-gray-900">{req.amount_sent.toLocaleString()} PKR</span>
                       </td>
                       <td className="px-6 py-4">
-                        <code className="text-xs bg-gray-50 px-2 py-1 rounded-lg text-gray-600 font-mono border border-gray-100">
-                          {req.transaction_id}
-                        </code>
+                        {req.transaction_id ? (
+                          <code className="text-xs bg-gray-50 px-2 py-1 rounded-lg text-gray-600 font-mono border border-gray-100">
+                            {req.transaction_id}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">screenshot only</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {req.receipt_url ? (
                           <button
-                            onClick={() => setLightboxUrl(req.receipt_url)}
+                            onClick={() => setLightboxUrl(signedReceipts[req.receipt_url] ?? req.receipt_url)}
                             className="group relative w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-200 hover:border-[#FF6B4A]/50 transition-all"
                           >
                             <img
-                              src={req.receipt_url}
+                              src={signedReceipts[req.receipt_url] ?? req.receipt_url}
                               alt="Receipt"
                               className="w-full h-full object-cover"
                             />
