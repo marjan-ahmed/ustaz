@@ -49,6 +49,7 @@ server-output.txt
 # misc
 .DS_Store
 *.pem
+*.jks
 .vercel
 .vscode/
 

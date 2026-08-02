@@ -16,6 +16,36 @@ import { color, radius, space, touch } from '@/theme/tokens';
 const E164 = /^\+[1-9]\d{7,14}$/;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
+const AUTH_BRIDGE_URL = process.env.EXPO_PUBLIC_AUTH_BRIDGE_URL;
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+/**
+ * Deep link back into this screen. `apps/web/src/app/auth/callback/route.ts`
+ * only forwards to `ustaz://auth` or `exp://…/--/auth`, so produce exactly
+ * those shapes — standalone builds can render `createURL` as `ustaz:///auth`,
+ * which that check rejects.
+ */
+function appReturnUrl(): string {
+  return ExpoLinking.createURL('auth').replace(/^([a-z][a-z0-9+.-]*):\/\/\/+/i, '$1://');
+}
+
+/**
+ * Supabase mails an https link, so it cannot target `ustaz://` directly. Point
+ * it at the web bridge, which forwards every param on to the app scheme.
+ * Returns undefined when no bridge is configured — Supabase then falls back to
+ * the project's Site URL rather than throwing.
+ */
+function buildEmailRedirect(): string | undefined {
+  if (!AUTH_BRIDGE_URL) return undefined;
+  try {
+    const bridge = new URL(AUTH_BRIDGE_URL);
+    bridge.searchParams.set('mobile_redirect_to', appReturnUrl());
+    return bridge.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 type AuthTab = 'social' | 'email' | 'phone';
 type EmailMode = 'signin' | 'signup';
 
@@ -238,15 +268,30 @@ export default function AuthScreen() {
     setBusy(true);
     setBusyProvider('google');
     try {
+      if (!GOOGLE_WEB_CLIENT_ID) {
+        throw new Error(
+          'Google sign-in is not configured for this build (EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing).',
+        );
+      }
+
       const mod = require('@react-native-google-signin/google-signin');
-      console.log('[Google] module keys:', Object.keys(mod));
       const GoogleSignin = mod.GoogleSignin ?? mod.default;
       if (!GoogleSignin) throw new Error('GoogleSignin not exported. Keys: ' + Object.keys(mod).join(','));
+
       GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID!,
+        webClientId: GOOGLE_WEB_CLIENT_ID,
         offlineAccess: true,
       });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // Drop any cached Google account so a failed/!partial previous attempt
+      // cannot hand back a stale token for the wrong account.
+      try {
+        await GoogleSignin.signOut();
+      } catch {
+        // no previous session — nothing to clear
+      }
+
       const userInfo = await GoogleSignin.signIn();
       const idToken = (userInfo as any).idToken ?? (userInfo as any)?.data?.idToken;
       if (!idToken) throw new Error('No ID token received from Google.');
@@ -260,8 +305,26 @@ export default function AuthScreen() {
       setMessage('Signed in with Google.');
       await navigateToApp();
     } catch (err: any) {
-      if (err?.code === 'SIGN_IN_CANCELLED') {
+      const mod = (() => {
+        try { return require('@react-native-google-signin/google-signin'); } catch { return {}; }
+      })();
+      const statusCodes = mod.statusCodes ?? {};
+      const code = String(err?.code ?? '');
+
+      // statusCodes values come from native constants ("12501" on Android),
+      // never the literal member name — compare against the constant itself.
+      if (code === String(statusCodes.SIGN_IN_CANCELLED)) {
         setMessage('Sign in cancelled.');
+      } else if (code === String(statusCodes.IN_PROGRESS)) {
+        setError('A sign-in is already in progress.');
+      } else if (code === String(statusCodes.PLAY_SERVICES_NOT_AVAILABLE)) {
+        setError('Google Play Services is unavailable or out of date on this device.');
+      } else if (code === 'DEVELOPER_ERROR' || code === '10') {
+        // Nothing in the app can fix this — the build's signing certificate is
+        // not registered against an Android OAuth client in Google Cloud.
+        setError(
+          'Google sign-in is not set up for this build. The app\'s signing certificate (SHA-1) and package name must be registered as an Android OAuth client in Google Cloud, in the same project as the web client ID.',
+        );
       } else {
         setError(`Google sign-in failed: ${err?.message ?? 'Try again.'}`);
       }
@@ -300,7 +363,7 @@ export default function AuthScreen() {
           email: normalizedEmail,
           password,
           options: {
-            emailRedirectTo: redirectTo,
+            emailRedirectTo: buildEmailRedirect(),
           },
         });
         if (signUpError) throw signUpError;
@@ -345,7 +408,7 @@ export default function AuthScreen() {
       const { error: resendError } = await supabase.auth.resend({
         type: 'signup',
         email: normalizedEmail,
-        options: { emailRedirectTo: redirectTo },
+        options: { emailRedirectTo: buildEmailRedirect() },
       });
       if (resendError) throw resendError;
       setMessage(`Verification link re-sent to ${normalizedEmail}.`);

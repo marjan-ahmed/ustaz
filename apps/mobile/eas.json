@@ -13,7 +13,8 @@
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvbHJzbW5reGtsc3FrbHFoZ3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NTU0MDgsImV4cCI6MjA2ODMzMTQwOH0.KQ-VUMX-CSG1idPz7pRlIqBjpb7yelwlko-R9AbnHPk",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyATigqLwBwTixImNYmDMm0C9XFk9L0-qxQ",
         "EXPO_PUBLIC_AUTH_BRIDGE_URL": "https://ustaz-bice.vercel.app/auth/callback",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "260465079126-2nm0s7cids651poifrh959gtc91ls6bi.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "260465079126-hmipchfqg2pao7h6h6aiohbtkoakotq2.apps.googleusercontent.com",
+        "EXPO_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL": "https://chat.whatsapp.com/BskW6L10GPD1pSPZlcac0Z?s=s&p=a&ilr=1"
       }
     },
     "preview": {
@@ -23,7 +24,7 @@
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvbHJzbW5reGtsc3FrbHFoZ3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NTU0MDgsImV4cCI6MjA2ODMzMTQwOH0.KQ-VUMX-CSG1idPz7pRlIqBjpb7yelwlko-R9AbnHPk",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyATigqLwBwTixImNYmDMm0C9XFk9L0-qxQ",
         "EXPO_PUBLIC_AUTH_BRIDGE_URL": "https://ustaz-bice.vercel.app/auth/callback",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "260465079126-2nm0s7cids651poifrh959gtc91ls6bi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "260465079126-hmipchfqg2pao7h6h6aiohbtkoakotq2.apps.googleusercontent.com",
         "EXPO_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL": "https://chat.whatsapp.com/BskW6L10GPD1pSPZlcac0Z?s=s&p=a&ilr=1",
         "EAS_SKIP_AUTO_FINGERPRINT": "1"
       }
@@ -34,7 +35,9 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://solrsmnkxklsqklqhgxf.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvbHJzbW5reGtsc3FrbHFoZ3hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI3NTU0MDgsImV4cCI6MjA2ODMzMTQwOH0.KQ-VUMX-CSG1idPz7pRlIqBjpb7yelwlko-R9AbnHPk",
         "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyATigqLwBwTixImNYmDMm0C9XFk9L0-qxQ",
-        "EXPO_PUBLIC_AUTH_BRIDGE_URL": "https://ustaz-bice.vercel.app/auth/callback"
+        "EXPO_PUBLIC_AUTH_BRIDGE_URL": "https://ustaz-bice.vercel.app/auth/callback",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "260465079126-hmipchfqg2pao7h6h6aiohbtkoakotq2.apps.googleusercontent.com",
+        "EXPO_PUBLIC_PROVIDER_WHATSAPP_GROUP_URL": "https://chat.whatsapp.com/BskW6L10GPD1pSPZlcac0Z?s=s&p=a&ilr=1"
       }
     }
   },

@@ -63,3 +63,8 @@ nul
 # marketing video project (standalone, no .gitmodules)
 ustaz-visuals
 ustaz_logo.jpg
+
+# release signing keystores — `eas credentials` downloads these into the cwd.
+# Never commit one: keystore + password is the app's signing identity.
+# (android/app/debug.keystore is already tracked and is the public debug key.)
+*.jks
