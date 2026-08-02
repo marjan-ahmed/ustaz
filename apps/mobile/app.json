@@ -25,12 +25,13 @@
     "android": {
       "package": "com.ustaz.mobile",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FEF3C7"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+
       },
       "notification": {
-        "icon": "./assets/notification-icon.png",
-        "color": "#DB4B0D"
+        "icon": "./assets/icon.png",
+        "color": "#ffffff"
       },
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
