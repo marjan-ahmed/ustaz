@@ -220,7 +220,7 @@ export default function TermsOfUse() {
             <h2 className='text-2xl font-extrabold mt-6 scroll-mt-24' id="wallet-settlement">10. Provider Wallet, Top-ups &amp; Settlement</h2>
             <ul>
               <li>A minimum Wallet balance is required for a Provider to receive new Service Requests.</li>
-              <li>Top-ups may be made via JazzCash, EasyPaisa, bank transfer (Raast / IBAN), or designated cash agents.</li>
+              <li>Top-ups may be made via JazzCash, Easypaisa, or bank transfer, by selecting an amount and uploading a photograph of your payment receipt. The receiving account details for each method are shown in the top-up screen.</li>
               <li>Top-ups are reviewed by Ustaz operations and credited to the Wallet typically within <strong>24 hours</strong> of receipt verification.</li>
               <li>Wallet balances are non-refundable except where a Provider closes their account in good standing with no outstanding fees, in which case the remaining balance is paid out via the Provider&apos;s registered method within 30 days.</li>
               <li><strong>Deductions.</strong> The Wallet may be debited for (a) per-job platform commission on completion, and (b) a <strong>warranty-refusal penalty of PKR 200</strong> where a Provider declines a valid warranty claim (see &sect; 12). All deductions are recorded in the Provider&apos;s in-app transaction ledger.</li>

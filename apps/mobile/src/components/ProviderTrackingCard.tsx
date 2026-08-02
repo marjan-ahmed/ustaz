@@ -1,4 +1,5 @@
-import { Linking, View } from 'react-native';
+import { Image, Linking, View } from 'react-native';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useServiceTimer } from '../hooks/useServiceTimer';
 import { Badge, Button, Card, LottieScene, Numeric, PressableScale, PulseRadar, Text, lottieSources } from './mobile-ui';
@@ -9,6 +10,8 @@ interface ProviderInfo {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  /** Profile photo. Most providers have none, so initials remain the norm. */
+  avatarUrl?: string | null;
   rating_avg?: number;
   rating_count?: number;
   service_type?: string;
@@ -62,6 +65,10 @@ export default function ProviderTrackingCard({ status, provider, liveLocation, u
   const meta = STATUS_META[status] ?? STATUS_META.accepted;
   const providerName = `${provider.firstName ?? ''} ${provider.lastName ?? ''}`.trim() || 'Provider';
 
+  /** Falls back to the initial if the photo cannot be loaded. */
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  useEffect(() => { setAvatarFailed(false); }, [provider.id]);
+
   const hasCustomerLocation = Number.isFinite(userLat) && Number.isFinite(userLng);
   const distance = liveLocation && hasCustomerLocation ? haversine(userLat as number, userLng as number, liveLocation.latitude, liveLocation.longitude) : null;
   const hasLive = !!liveLocation && (Date.now() - new Date(liveLocation.updated_at).getTime()) < 30000;
@@ -84,8 +91,17 @@ export default function ProviderTrackingCard({ status, provider, liveLocation, u
       <View style={{ padding: space.xl }}>
         {/* Provider identity */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.lg, marginBottom: space.xl }}>
-          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${color.primary}14`, alignItems: 'center', justifyContent: 'center' }}>
-            <Numeric size={22} tone="primary">{providerName.charAt(0).toUpperCase()}</Numeric>
+          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${color.primary}14`, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            {provider.avatarUrl && !avatarFailed ? (
+              <Image
+                source={{ uri: provider.avatarUrl }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="cover"
+                onError={() => setAvatarFailed(true)}
+              />
+            ) : (
+              <Numeric size={22} tone="primary">{providerName.charAt(0).toUpperCase()}</Numeric>
+            )}
           </View>
           <View style={{ flex: 1 }}>
             <Text variant="h3">{providerName}</Text>

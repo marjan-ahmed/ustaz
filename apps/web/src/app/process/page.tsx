@@ -82,6 +82,7 @@ interface ProviderInfo {
   lastName: string;
   phoneNumber: string;
   email?: string;
+  avatarUrl?: string | null; // provider profile photo, shown once they accept
   latitude?: number; // Added for displaying on map or filtering
   longitude?: number; // Added for displaying on map or filtering
 }
@@ -427,6 +428,7 @@ const handlePlaceSelect = useCallback((
         lastName: row.last_name,
         phoneNumber: row.phone_number,
         email: row.email,
+        avatarUrl: row.avatar_url,
       });
     } catch (err) {
       console.error('Error fetching accepted provider details:', err);
@@ -842,6 +844,7 @@ const handlePlaceSelect = useCallback((
                 lastName: row.last_name,
                 phoneNumber: row.phone_number,
                 email: row.email,
+                avatarUrl: row.avatar_url,
               });
             }
           }

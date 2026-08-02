@@ -63,13 +63,44 @@ export default function AdminVerificationPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionNotes, setActionNotes] = useState('');
   const [actingId, setActingId] = useState<string | null>(null);
+  /** stored document URL → short-lived signed URL (private bucket) */
+  const [signedDocs, setSignedDocs] = useState<Record<string, string>>({});
 
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/verification');
       const data = await res.json();
-      if (data.success) setSubmissions(data.data);
+      if (data.success) {
+        setSubmissions(data.data);
+
+        // `provider-docs` is a private bucket, so the stored URLs will not load
+        // in an <img>. Exchange each for a short-lived signed URL.
+        const urls = (data.data as VerificationSubmission[])
+          .flatMap((s) => [s.cnic_front_url, s.cnic_back_url, s.selfie_url])
+          .filter(Boolean);
+        const pairs = await Promise.all(
+          urls.map(async (u) => {
+            try {
+              const r = await fetch('/api/admin/signed-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: u }),
+              });
+              if (!r.ok) return null;
+              const { url } = await r.json();
+              return [u, url] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+        setSignedDocs((prev) => {
+          const next = { ...prev };
+          for (const p of pairs) if (p) next[p[0]] = p[1];
+          return next;
+        });
+      }
     } catch {}
     setLoading(false);
   };
@@ -206,17 +237,17 @@ export default function AdminVerificationPage() {
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div>
                           <p className="text-xs font-medium text-gray-500 mb-2">CNIC Front</p>
-                          <img src={sub.cnic_front_url} alt="CNIC Front"
+                          <img src={signedDocs[sub.cnic_front_url] ?? sub.cnic_front_url} alt="CNIC Front"
                             className="w-full rounded-lg border border-gray-200 object-cover h-48" />
                         </div>
                         <div>
                           <p className="text-xs font-medium text-gray-500 mb-2">CNIC Back</p>
-                          <img src={sub.cnic_back_url} alt="CNIC Back"
+                          <img src={signedDocs[sub.cnic_back_url] ?? sub.cnic_back_url} alt="CNIC Back"
                             className="w-full rounded-lg border border-gray-200 object-cover h-48" />
                         </div>
                         <div>
                           <p className="text-xs font-medium text-gray-500 mb-2">Selfie</p>
-                          <img src={sub.selfie_url} alt="Selfie"
+                          <img src={signedDocs[sub.selfie_url] ?? sub.selfie_url} alt="Selfie"
                             className="w-full rounded-lg border border-gray-200 object-cover h-48" />
                         </div>
                       </div>

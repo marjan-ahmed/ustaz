@@ -288,7 +288,7 @@ export default function TermsOfUse() {
                 <strong>not</strong> forced offline mid-session, but will be unable to go back online
                 after switching off until the Wallet is topped up.
               </li>
-              <li>Top-ups may be made via <strong>JazzCash</strong> or <strong>Easypaisa</strong>, by submitting the transaction amount, the payment reference, and a photograph of the payment receipt.</li>
+              <li>Top-ups may be made via <strong>JazzCash</strong>, <strong>Easypaisa</strong>, or <strong>bank transfer</strong>, by selecting an amount and uploading a photograph of your payment receipt. The receiving account details for each method are shown in the top-up screen.</li>
               <li>Top-ups are reviewed manually by Ustaz operations and credited to the Wallet typically within <strong>24 hours</strong> of receipt verification. A top-up may be rejected where the receipt is unreadable, the reference cannot be matched, or the amount does not correspond.</li>
               <li>Wallet balances are non-refundable except where a Provider closes their account in good standing with no outstanding fees, in which case the remaining balance is paid out via the Provider&apos;s registered method within 30 days.</li>
               <li>

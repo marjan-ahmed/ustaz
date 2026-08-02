@@ -14,6 +14,9 @@ interface ProviderInfo {
   lastName: string;
   phoneNumber: string;
   email?: string;
+  /** Provider profile photo. Only ~1 in 4 providers have one, so the
+   *  initials fallback below is the common case, not an edge case. */
+  avatarUrl?: string | null;
 }
 
 interface LiveLocation {
@@ -68,6 +71,11 @@ const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
   const [address, setAddress] = useState<string | null>(null);
   const [addrLoading, setAddrLoading] = useState(false);
   const lastGeoKey = useRef<string | null>(null);
+  /** Falls back to initials if the photo 404s or the bucket rejects it. */
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  // A different provider means a different photo — clear any previous failure.
+  useEffect(() => { setAvatarFailed(false); }, [provider?.user_id]);
 
   // Distance + ETA
   useEffect(() => {
@@ -190,10 +198,20 @@ const ProviderTrackingInfo: React.FC<ProviderTrackingInfoProps> = ({
         {/* Provider identity */}
         <div className="flex items-center gap-4">
           <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 border-2 border-white shadow flex items-center justify-center">
-              <span className="font-bold text-[#a93a0b] text-lg">
-                {provider.firstName.charAt(0)}{provider.lastName.charAt(0)}
-              </span>
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 border-2 border-white shadow flex items-center justify-center overflow-hidden">
+              {provider.avatarUrl && !avatarFailed ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={provider.avatarUrl}
+                  alt={`${provider.firstName} ${provider.lastName}`}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarFailed(true)}
+                />
+              ) : (
+                <span className="font-bold text-[#a93a0b] text-lg">
+                  {provider.firstName.charAt(0)}{provider.lastName.charAt(0)}
+                </span>
+              )}
             </div>
             <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white shadow flex items-center justify-center">
               <ShieldCheck className="w-3.5 h-3.5 text-[#db4b0d]" />
