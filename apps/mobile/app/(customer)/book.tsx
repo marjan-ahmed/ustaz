@@ -425,8 +425,6 @@ export default function BookScreen() {
           lastName: row.last_name,
           phoneNumber: row.phone_number,
           avatarUrl: row.avatar_url,
-          // NOTE: get_assigned_provider does not return rating columns, so
-          // these are always undefined and the card hides the rating.
           rating_avg: row.rating_avg,
           rating_count: row.rating_count,
         });
