@@ -549,11 +549,10 @@ export async function uploadTopupReceipt(input: { providerId: string; uri: strin
   return { path: data.path, url: publicUrlData.publicUrl };
 }
 
-export async function createTopupRequest(input: { providerId: string; amountSent: number; transactionId: string; receiptUrl: string }) {
+export async function createTopupRequest(input: { providerId: string; amountSent: number; receiptUrl: string }) {
   const { data, error } = await supabase.rpc('create_topup_request', {
     p_provider_id: input.providerId,
     p_amount_sent: input.amountSent,
-    p_transaction_id: input.transactionId.trim(),
     p_receipt_url: input.receiptUrl.trim(),
   });
   if (error) throw error;

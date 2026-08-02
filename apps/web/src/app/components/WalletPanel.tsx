@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -30,7 +29,7 @@ interface Transaction {
   request_id: string | null; description: string | null; created_at: string;
 }
 interface TopupRequest {
-  id: string; amount_sent: number; transaction_id: string;
+  id: string; amount_sent: number; transaction_id: string | null;
   receipt_url: string; status: string; admin_note: string | null;
   created_at: string; updated_at: string;
 }
@@ -46,9 +45,15 @@ const PACKAGES = [
 ];
 
 const BANK = {
-  easypaisa: { label: "Easypaisa",  number: "0305-1126649", name: "Ustaz Platform" },
-  jazzcash:  { label: "JazzCash",   number: "0305-1126649", name: "Ustaz Platform" },
-  bank:      { label: "Bank",       number: "0012-3456-7890", name: "USTAZ", bankName: "Alfalah Islamic Bank" },
+  easypaisa: { label: "Easypaisa", number: "0306 2806717", name: "Masood Alam" },
+  jazzcash:  { label: "JazzCash",  number: "0309 2657165", name: "Naila" },
+  bank:      {
+    label: "Bank",
+    bankName: "HABIBMETRO",
+    name: "MASOOD ALAM",
+    number: "6016220610714130974",
+    iban: "PK68MPBL0162017140130974",
+  },
 };
 
 const fmt = (n: number) =>
@@ -65,7 +70,6 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
   /* top-up form (only shown when balance insufficient) */
   const [selectedPkg, setSelectedPkg]       = useState<string | null>(null);
   const [activeMethod, setActiveMethod]     = useState<"easypaisa" | "jazzcash" | "bank">("easypaisa");
-  const [transactionId, setTransactionId]   = useState("");
   const [receiptFile, setReceiptFile]       = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [submitting, setSubmitting]         = useState(false);
@@ -114,8 +118,8 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
   };
 
   const handleSubmitTopup = async () => {
-    if (!selectedPkg || !receiptFile || !transactionId.trim()) {
-      toast.error("Select a package, enter transaction ID, and upload your receipt.");
+    if (!selectedPkg || !receiptFile) {
+      toast.error("Select a package and upload your payment screenshot.");
       return;
     }
     setSubmitting(true);
@@ -132,7 +136,6 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount_sent: pkg.amount,
-          transaction_id: transactionId.trim(),
           receipt_url: upData.url,
         }),
       });
@@ -140,7 +143,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
       if (!crRes.ok) throw new Error(crData.error || "Request failed");
 
       toast.success("Top-up request submitted! Admin will verify and credit your wallet.");
-      setSelectedPkg(null); setTransactionId("");
+      setSelectedPkg(null);
       setReceiptFile(null); setReceiptPreview(null);
       fetchWallet();
     } catch (err: any) {
@@ -317,6 +320,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
                           <BankRow label="Bank Name" value={BANK.bank.bankName} field="bankName" copied={copiedField} onCopy={copyText} />
                           <BankRow label="Account Title" value={BANK.bank.name} field="title" copied={copiedField} onCopy={copyText} />
                           <BankRow label="Account Number" value={BANK.bank.number} field="accNum" copied={copiedField} onCopy={copyText} />
+                          <BankRow label="IBAN" value={BANK.bank.iban} field="iban" copied={copiedField} onCopy={copyText} />
                         </>
                       )}
                       <div className="flex items-center justify-between pt-1 border-t border-gray-100">
@@ -330,27 +334,14 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
 
                   <Separator />
 
-                  {/* ── Transaction ID + Receipt Upload ── */}
+                  {/* ── Receipt Upload ── */}
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="txId" className="text-sm font-medium text-gray-700">
-                        Transaction ID / TRX Ref
-                      </Label>
-                      <Input
-                        id="txId"
-                        value={transactionId}
-                        onChange={e => setTransactionId(e.target.value)}
-                        placeholder="e.g. TRX-1234567890"
-                        className="mt-1"
-                      />
-                    </div>
-
                     <div>
                       <Label className="text-sm font-medium text-gray-700">
                         Payment Screenshot
                       </Label>
                       <p className="text-xs text-gray-400 mb-2">
-                        Upload your Easypaisa / JazzCash confirmation screenshot
+                        Upload the confirmation screenshot from Easypaisa, JazzCash, or your bank app
                       </p>
 
                       <input
@@ -394,7 +385,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
 
                   <Button
                     onClick={handleSubmitTopup}
-                    disabled={!transactionId.trim() || !receiptFile || submitting}
+                    disabled={!receiptFile || submitting}
                     className="w-full h-12 rounded-xl bg-gradient-to-r from-[#db4b0d] to-[#f59e0b] hover:opacity-90 text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-md"
                   >
                     {submitting ? (
@@ -424,7 +415,7 @@ export default function WalletPanel({ providerId }: WalletPanelProps) {
                   <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-medium text-gray-900">{fmt(t.amount_sent)}</p>
-                      <p className="text-xs text-gray-500">TX: {t.transaction_id} · {new Date(t.created_at).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-500">{t.transaction_id ? `TX: ${t.transaction_id} · ` : ""}{new Date(t.created_at).toLocaleDateString()}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {statusBadge(t.status)}

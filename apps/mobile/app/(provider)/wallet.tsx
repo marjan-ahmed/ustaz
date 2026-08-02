@@ -19,9 +19,15 @@ const PACKAGES = [
 ];
 
 const BANK = {
-  easypaisa: { label: 'Easypaisa', number: '0305-1126649', name: 'Ustaz Platform' },
-  jazzcash: { label: 'JazzCash', number: '0305-1126649', name: 'Ustaz Platform' },
-  bank: { label: 'Bank', number: '0012-3456-7890', name: 'USTAZ', bankName: 'Alfalah Islamic Bank' },
+  easypaisa: { label: 'Easypaisa', number: '0306 2806717', name: 'Masood Alam' },
+  jazzcash: { label: 'JazzCash', number: '0309 2657165', name: 'Naila' },
+  bank: {
+    label: 'Bank',
+    bankName: 'HABIBMETRO',
+    name: 'MASOOD ALAM',
+    number: '6016220610714130974',
+    iban: 'PK68MPBL0162017140130974',
+  },
 };
 
 const fmt = (n: number) => `Rs. ${n.toLocaleString('en-PK', { minimumFractionDigits: 0 })}`;
@@ -36,7 +42,6 @@ export default function WalletScreen() {
   const [showTopup, setShowTopup] = useState(false);
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
   const [activeMethod, setActiveMethod] = useState<'easypaisa' | 'jazzcash' | 'bank'>('easypaisa');
-  const [transactionId, setTransactionId] = useState('');
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -75,15 +80,14 @@ export default function WalletScreen() {
 
   function resetTopup() {
     setSelectedPkg(null);
-    setTransactionId('');
     setReceiptUri(null);
     setReceiptFile(null);
     setShowTopup(false);
   }
 
   async function submitTopup() {
-    if (!selectedPkg || !receiptFile || !transactionId.trim() || !user) {
-      Alert.alert('Missing info', 'Select a package, enter transaction ID, and upload your receipt.');
+    if (!selectedPkg || !receiptFile || !user) {
+      Alert.alert('Missing info', 'Select a package and upload your payment screenshot.');
       return;
     }
     setSubmitting(true); setError(null);
@@ -100,7 +104,6 @@ export default function WalletScreen() {
       await createTopupRequest({
         providerId: user.id,
         amountSent: pkg.amount,
-        transactionId: transactionId.trim(),
         receiptUrl: upload.url,
       });
 
@@ -216,18 +219,49 @@ export default function WalletScreen() {
 
               {/* Package selection */}
               <Text variant="label" tone="muted" style={{ marginBottom: space.sm, fontWeight: '700' }}>{t('wallet.chooseAmount')}</Text>
-              <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.xl }}>
+              <View style={{ flexDirection: 'row', gap: space.sm, marginBottom: space.xl, alignItems: 'stretch' }}>
                 {PACKAGES.map((pkg) => {
                   const isActive = selectedPkg === pkg.id;
                   return (
-                    <PressableScale key={pkg.id} onPress={() => setSelectedPkg(pkg.id)}>
-                      <Card variant={isActive ? 'elevated' : 'flat'} padded={false} style={{ flex: 1, padding: space.md, alignItems: 'center', borderWidth: 2, borderColor: isActive ? pkg.accent : color.line }}>
+                    // flex:1 belongs on the pressable — it is the flex child of
+                    // the row. On the Card it did nothing, so the three tiles
+                    // sized to their content and came out uneven.
+                    <PressableScale key={pkg.id} onPress={() => setSelectedPkg(pkg.id)} style={{ flex: 1 }}>
+                      <Card
+                        variant={isActive ? 'elevated' : 'flat'}
+                        padded={false}
+                        style={{
+                          flex: 1,
+                          paddingHorizontal: space.xs,
+                          paddingBottom: space.md,
+                          alignItems: 'center',
+                          borderWidth: 2,
+                          borderColor: isActive ? pkg.accent : color.line,
+                        }}
+                      >
+                        {/* Fixed-height slot: the badge no longer adds height to
+                            the middle tile, so all three stay level. */}
+                        <View style={{ height: 24, paddingHorizontal: 18, justifyContent: 'center' }}>
+                          {pkg.popular && <Badge label={t('wallet.popular')} tone="primary" />}
+                        </View>
+
                         <Ionicons name={pkg.icon} size={20} color={pkg.accent} />
-                        <Text variant="caption" style={{ fontWeight: '700', marginTop: space.xs }}>{pkg.label}</Text>
-                        <Text variant="caption" tone="muted">{pkg.tag}</Text>
+                        <Text variant="caption" style={{ fontWeight: '700', marginTop: space.xs }} numberOfLines={1}>
+                          {pkg.label}
+                        </Text>
+                        <Text variant="caption" tone="muted" numberOfLines={1}>
+                          {pkg.tag}
+                        </Text>
                         <Numeric size={16} tone="ink" style={{ marginTop: space.xs }}>{fmt(pkg.amount)}</Numeric>
-                        {pkg.popular && <Badge label={t('wallet.popular')} tone="primary" />}
-                        {isActive && <Ionicons name="checkmark-circle" size={18} color={pkg.accent} style={{ position: 'absolute', top: 8, right: 8 }} />}
+
+                        {isActive && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={18}
+                            color={pkg.accent}
+                            style={{ position: 'absolute', top: 6, right: 6 }}
+                          />
+                        )}
                       </Card>
                     </PressableScale>
                   );
@@ -260,6 +294,7 @@ export default function WalletScreen() {
                         <BankRow label="Bank Name" value={BANK.bank.bankName} field="bankName" copied={copiedField} onCopy={copyText} />
                         <BankRow label="Account Title" value={BANK.bank.name} field="title" copied={copiedField} onCopy={copyText} />
                         <BankRow label="Account Number" value={BANK.bank.number} field="accNum" copied={copiedField} onCopy={copyText} />
+                        <BankRow label="IBAN" value={BANK.bank.iban} field="iban" copied={copiedField} onCopy={copyText} />
                       </>
                     )}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.sm, marginTop: space.sm }}>
@@ -270,7 +305,6 @@ export default function WalletScreen() {
 
                   {/* Transaction ID */}
                   <View style={{ marginBottom: space.lg }}>
-                    <TextField label="Transaction ID / TRX Ref" value={transactionId} onChangeText={setTransactionId} placeholder="e.g. TRX-1234567890" />
                   </View>
 
                   {/* Receipt upload */}
@@ -304,7 +338,7 @@ export default function WalletScreen() {
                     variant="primary"
                     icon={<Ionicons name="arrow-up-circle" size={18} color={color.white} />}
                     onPress={submitTopup}
-                    disabled={!transactionId.trim() || !receiptFile || submitting}
+                    disabled={!receiptFile || submitting}
                     loading={submitting}
                   />
                 </>
@@ -323,7 +357,7 @@ export default function WalletScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View>
                       <Text variant="bodyLg" style={{ fontWeight: '700' }}>{fmt(t.amount_sent)}</Text>
-                      <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>TX: {t.transaction_id} · {new Date(t.created_at).toLocaleDateString()}</Text>
+                      <Text variant="caption" tone="muted" style={{ marginTop: space.xs }}>{t.transaction_id ? `TX: ${t.transaction_id} · ` : ""}{new Date(t.created_at).toLocaleDateString()}</Text>
                     </View>
                     <Badge
                       label={t.status.charAt(0).toUpperCase() + t.status.slice(1)}
