@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { verifyAdminToken } from '@/lib/adminAuth';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -27,8 +28,8 @@ export async function POST(request: Request) {
   );
 
   // Verify admin session
-  const adminSession = cookieStore.get('admin_session')?.value;
-  if (!adminSession) {
+  // Verify admin session cookie: HMAC signature + expiry + email, fail-closed.
+  if (!verifyAdminToken(cookieStore.get('admin_session')?.value)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
